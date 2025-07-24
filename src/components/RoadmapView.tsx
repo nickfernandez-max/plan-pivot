@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { DndContext, DragEndEvent, DragOverlay, DragStartEvent, useSensor, useSensors, PointerSensor } from '@dnd-kit/core';
+import { DndContext, DragEndEvent, DragOverlay, DragStartEvent, useSensor, useSensors, PointerSensor, useDraggable, useDroppable } from '@dnd-kit/core';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Project } from '@/types/roadmap';
@@ -25,14 +25,31 @@ function DraggableProject({ project, startDate, endDate, totalDays, timelineStar
   const leftPosition = (daysBetween / totalDays) * 100;
   const width = (projectDuration / totalDays) * 100;
 
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    isDragging,
+  } = useDraggable({
+    id: project.id,
+  });
+
+  const style = {
+    left: `${leftPosition}%`,
+    width: `${width}%`,
+    minWidth: '60px',
+    transform: transform ? `translate3d(${transform.x}px, ${transform.y}px, 0)` : undefined,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
   return (
     <div
+      ref={setNodeRef}
+      style={style}
+      {...listeners}
+      {...attributes}
       className="absolute h-8 bg-primary text-primary-foreground rounded-md border border-primary-glow shadow-md hover:shadow-lg transition-all cursor-grab active:cursor-grabbing z-10"
-      style={{
-        left: `${leftPosition}%`,
-        width: `${width}%`,
-        minWidth: '60px'
-      }}
     >
       <div className="flex items-center justify-between h-full px-2 text-xs font-medium">
         <span className="truncate flex-1">{project.name}</span>
@@ -171,21 +188,26 @@ export function RoadmapView({ projects, onUpdateProject }: RoadmapViewProps) {
                     p.assignees.includes(assignee)
                   );
 
-                  return (
-                    <div
-                      key={assignee}
-                      id={assignee}
-                      className="flex border-b border-swimlane-border hover:bg-muted/20 transition-colors min-h-[80px]"
-                    >
-                      <div className="w-48 p-4 border-r border-border bg-swimlane-bg flex items-center">
-                        <div>
-                          <div className="font-medium">{assignee}</div>
-                          <div className="text-xs text-muted-foreground">
-                            {assigneeProjects.length} project{assigneeProjects.length !== 1 ? 's' : ''}
+                  const DroppableRow = ({ assignee, assigneeProjects }: { assignee: string, assigneeProjects: Project[] }) => {
+                    const { setNodeRef } = useDroppable({
+                      id: assignee,
+                    });
+
+                    return (
+                      <div
+                        key={assignee}
+                        ref={setNodeRef}
+                        className="flex border-b border-swimlane-border hover:bg-muted/20 transition-colors min-h-[80px]"
+                      >
+                        <div className="w-48 p-4 border-r border-border bg-swimlane-bg flex items-center">
+                          <div>
+                            <div className="font-medium">{assignee}</div>
+                            <div className="text-xs text-muted-foreground">
+                              {assigneeProjects.length} project{assigneeProjects.length !== 1 ? 's' : ''}
+                            </div>
                           </div>
                         </div>
-                      </div>
-                      <div className="flex-1 relative p-2 bg-swimlane-bg">
+                        <div className="flex-1 relative p-2 bg-swimlane-bg">
                         {assigneeProjects.map((project) => {
                           const startDate = parseISO(project.startDate);
                           const endDate = parseISO(project.endDate);
@@ -201,8 +223,17 @@ export function RoadmapView({ projects, onUpdateProject }: RoadmapViewProps) {
                             />
                           );
                         })}
+                        </div>
                       </div>
-                    </div>
+                    );
+                  };
+
+                  return (
+                    <DroppableRow
+                      key={assignee}
+                      assignee={assignee}
+                      assigneeProjects={assigneeProjects}
+                    />
                   );
                 })
               )}
