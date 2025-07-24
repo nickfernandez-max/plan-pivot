@@ -1,10 +1,12 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ProjectList } from '@/components/ProjectList';
 import { RoadmapView } from '@/components/RoadmapView';
 import { Project } from '@/types/roadmap';
 
 export function RoadmapApp() {
+  const [selectedTeam, setSelectedTeam] = useState<string>('all');
   const [projects, setProjects] = useState<Project[]>([
     {
       id: '1',
@@ -38,6 +40,18 @@ export function RoadmapApp() {
     }
   ]);
 
+  // Get unique teams for filter
+  const teams = useMemo(() => {
+    const allTeams = [...new Set(projects.map(p => p.team))].sort();
+    return allTeams;
+  }, [projects]);
+
+  // Filter projects based on selected team
+  const filteredProjects = useMemo(() => {
+    if (selectedTeam === 'all') return projects;
+    return projects.filter(p => p.team === selectedTeam);
+  }, [projects, selectedTeam]);
+
   const handleAddProject = (newProject: Omit<Project, 'id'>) => {
     const project: Project = {
       ...newProject,
@@ -65,18 +79,35 @@ export function RoadmapApp() {
         </div>
 
         <Tabs defaultValue="projects" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-2 max-w-md">
-            <TabsTrigger value="projects" className="text-sm font-medium">
-              Project List
-            </TabsTrigger>
-            <TabsTrigger value="roadmap" className="text-sm font-medium">
-              Roadmap View
-            </TabsTrigger>
-          </TabsList>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <TabsList className="grid w-full grid-cols-2 max-w-md">
+              <TabsTrigger value="projects" className="text-sm font-medium">
+                Project List
+              </TabsTrigger>
+              <TabsTrigger value="roadmap" className="text-sm font-medium">
+                Roadmap View
+              </TabsTrigger>
+            </TabsList>
+            
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-medium text-muted-foreground">Filter by team:</span>
+              <Select value={selectedTeam} onValueChange={setSelectedTeam}>
+                <SelectTrigger className="w-48">
+                  <SelectValue placeholder="Select team" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Teams</SelectItem>
+                  {teams.map(team => (
+                    <SelectItem key={team} value={team}>{team}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
 
           <TabsContent value="projects" className="space-y-6">
             <ProjectList
-              projects={projects}
+              projects={filteredProjects}
               onAddProject={handleAddProject}
               onUpdateProject={handleUpdateProject}
             />
@@ -84,7 +115,7 @@ export function RoadmapApp() {
 
           <TabsContent value="roadmap" className="space-y-6">
             <RoadmapView
-              projects={projects}
+              projects={filteredProjects}
               onUpdateProject={handleUpdateProject}
             />
           </TabsContent>
