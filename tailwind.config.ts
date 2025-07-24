@@ -26,7 +26,8 @@ export default {
 				foreground: 'hsl(var(--foreground))',
 				primary: {
 					DEFAULT: 'hsl(var(--primary))',
-					foreground: 'hsl(var(--primary-foreground))'
+					foreground: 'hsl(var(--primary-foreground))',
+					glow: 'hsl(var(--primary-glow))'
 				},
 				secondary: {
 					DEFAULT: 'hsl(var(--secondary))',
@@ -51,6 +52,13 @@ export default {
 				card: {
 					DEFAULT: 'hsl(var(--card))',
 					foreground: 'hsl(var(--card-foreground))'
+				},
+				roadmap: {
+					bg: 'hsl(var(--roadmap-bg))',
+					swimlane: 'hsl(var(--swimlane-bg))',
+					border: 'hsl(var(--swimlane-border))',
+					project: 'hsl(var(--project-bg))',
+					shadow: 'hsl(var(--project-shadow))'
 				},
 				sidebar: {
 					DEFAULT: 'hsl(var(--sidebar-background))',
