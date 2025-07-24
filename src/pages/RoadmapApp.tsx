@@ -14,7 +14,7 @@ export function RoadmapApp() {
       team: 'Design Team',
       startDate: '2024-08-01',
       endDate: '2024-10-15',
-      valueScore: 85,
+      valueScore: 8,
       isRD: false,
       assignees: ['Sarah Johnson', 'Mike Chen']
     },
@@ -24,7 +24,7 @@ export function RoadmapApp() {
       team: 'R&D Team',
       startDate: '2024-07-15',
       endDate: '2024-12-01',
-      valueScore: 95,
+      valueScore: 9,
       isRD: true,
       assignees: ['Dr. Emily Watson', 'Alex Rodriguez']
     },
@@ -34,7 +34,7 @@ export function RoadmapApp() {
       team: 'Backend Team',
       startDate: '2024-09-01',
       endDate: '2024-11-30',
-      valueScore: 70,
+      valueScore: 7,
       isRD: false,
       assignees: ['John Smith', 'Lisa Park']
     }

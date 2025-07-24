@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
+import { Slider } from '@/components/ui/slider';
 import { Plus, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
 import { Project, SortField, SortDirection } from '@/types/roadmap';
 
@@ -26,7 +27,7 @@ export function ProjectList({ projects, onAddProject, onUpdateProject }: Project
     team: '',
     startDate: '',
     endDate: '',
-    valueScore: 0,
+    valueScore: 5,
     isRD: false,
     assignees: ['']
   });
@@ -65,7 +66,7 @@ export function ProjectList({ projects, onAddProject, onUpdateProject }: Project
       team: '',
       startDate: '',
       endDate: '',
-      valueScore: 0,
+      valueScore: 5,
       isRD: false,
       assignees: ['']
     });
@@ -161,15 +162,17 @@ export function ProjectList({ projects, onAddProject, onUpdateProject }: Project
                 </div>
               </div>
               <div>
-                <Label htmlFor="valueScore">Value Score</Label>
-                <Input
-                  id="valueScore"
-                  type="number"
-                  min="0"
-                  max="100"
-                  value={newProject.valueScore}
-                  onChange={(e) => setNewProject(prev => ({ ...prev, valueScore: parseInt(e.target.value) || 0 }))}
-                />
+                <Label htmlFor="valueScore">Value Score ({newProject.valueScore}/10)</Label>
+                <div className="pt-2">
+                  <Slider
+                    value={[newProject.valueScore]}
+                    onValueChange={(value) => setNewProject(prev => ({ ...prev, valueScore: value[0] }))}
+                    max={10}
+                    min={1}
+                    step={1}
+                    className="w-full"
+                  />
+                </div>
               </div>
               <div className="flex items-center space-x-2">
                 <Switch
@@ -345,21 +348,22 @@ export function ProjectList({ projects, onAddProject, onUpdateProject }: Project
                       </td>
                       <td className="p-4">
                         {isEditing ? (
-                          <Input
-                            type="number"
-                            min="0"
-                            max="100"
-                            value={editForm?.valueScore || 0}
-                            onChange={(e) => setEditForm(prev => prev ? { ...prev, valueScore: parseInt(e.target.value) || 0 } : null)}
-                            onClick={(e) => e.stopPropagation()}
-                            onKeyDown={(e) => {
-                              if (e.key === 'Enter') handleSaveEdit();
-                              if (e.key === 'Escape') handleCancelEdit();
-                            }}
-                          />
+                          <div className="w-24" onClick={(e) => e.stopPropagation()}>
+                            <div className="text-xs text-muted-foreground mb-1">
+                              {editForm?.valueScore || 1}/10
+                            </div>
+                            <Slider
+                              value={[editForm?.valueScore || 1]}
+                              onValueChange={(value) => setEditForm(prev => prev ? { ...prev, valueScore: value[0] } : null)}
+                              max={10}
+                              min={1}
+                              step={1}
+                              className="w-full"
+                            />
+                          </div>
                         ) : (
                           <Badge variant="outline" className="bg-primary/10">
-                            {project.valueScore}
+                            {project.valueScore}/10
                           </Badge>
                         )}
                       </td>
