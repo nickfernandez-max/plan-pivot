@@ -114,17 +114,39 @@ export function RoadmapView({ projects, onUpdateProject }: RoadmapViewProps) {
   };
 
   const handleDragEnd = (event: DragEndEvent) => {
-    const { active, over } = event;
+    const { active, over, delta } = event;
     setActiveProject(null);
 
     if (!over) return;
 
     const projectId = active.id as string;
-    const newAssignee = over.id as string;
-    
-    // Update project assignee
     const project = projects.find(p => p.id === projectId);
-    if (project && !project.assignees.includes(newAssignee)) {
+    
+    if (!project) return;
+
+    // Calculate days moved based on horizontal drag distance
+    const timelineElement = document.querySelector('[data-timeline]');
+    if (timelineElement && delta.x !== 0) {
+      const timelineWidth = timelineElement.getBoundingClientRect().width;
+      const daysPerPixel = totalDays / timelineWidth;
+      const daysMoved = Math.round(delta.x * daysPerPixel);
+      
+      if (daysMoved !== 0) {
+        const currentStart = parseISO(project.startDate);
+        const currentEnd = parseISO(project.endDate);
+        const newStart = addDays(currentStart, daysMoved);
+        const newEnd = addDays(currentEnd, daysMoved);
+        
+        onUpdateProject(projectId, {
+          startDate: format(newStart, 'yyyy-MM-dd'),
+          endDate: format(newEnd, 'yyyy-MM-dd')
+        });
+      }
+    }
+
+    // Update assignee if dropped on different row
+    const newAssignee = over.id as string;
+    if (!project.assignees.includes(newAssignee)) {
       onUpdateProject(projectId, {
         assignees: [newAssignee]
       });
@@ -152,7 +174,7 @@ export function RoadmapView({ projects, onUpdateProject }: RoadmapViewProps) {
                 <div className="w-48 p-4 border-r border-border bg-muted/30 font-semibold">
                   Team Member
                 </div>
-                <div className="flex-1 relative">
+                <div className="flex-1 relative" data-timeline>
                   <div className="flex h-12">
                     {months.map((month, index) => {
                       const monthDays = differenceInDays(
