@@ -3,7 +3,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ProjectList } from '@/components/ProjectList';
 import { RoadmapView } from '@/components/RoadmapView';
-import { Project } from '@/types/roadmap';
+import { Project, TeamMember } from '@/types/roadmap';
 
 export function RoadmapApp() {
   const [selectedTeam, setSelectedTeam] = useState<string>('all');
@@ -40,17 +40,76 @@ export function RoadmapApp() {
     }
   ]);
 
+  const [teamMembers, setTeamMembers] = useState<TeamMember[]>([
+    {
+      id: '1',
+      name: 'Sarah Johnson',
+      team: 'Design Team',
+      role: 'Senior Designer',
+      startDate: '2024-01-15'
+    },
+    {
+      id: '2',
+      name: 'Mike Chen',
+      team: 'Design Team',
+      role: 'UX Designer',
+      startDate: '2024-03-01'
+    },
+    {
+      id: '3',
+      name: 'Dr. Emily Watson',
+      team: 'R&D Team',
+      role: 'Research Lead',
+      startDate: '2024-01-01'
+    },
+    {
+      id: '4',
+      name: 'Alex Rodriguez',
+      team: 'R&D Team',
+      role: 'ML Engineer',
+      startDate: '2024-02-15'
+    },
+    {
+      id: '5',
+      name: 'John Smith',
+      team: 'Backend Team',
+      role: 'Senior Developer',
+      startDate: '2024-01-10'
+    },
+    {
+      id: '6',
+      name: 'Lisa Park',
+      team: 'Backend Team',
+      role: 'DevOps Engineer',
+      startDate: '2024-04-01'
+    },
+    {
+      id: '7',
+      name: 'David Kim',
+      team: 'Design Team',
+      role: 'Product Designer',
+      startDate: '2024-05-15'
+    }
+  ]);
+
   // Get unique teams for filter
   const teams = useMemo(() => {
-    const allTeams = [...new Set(projects.map(p => p.team))].sort();
+    const projectTeams = projects.map(p => p.team);
+    const memberTeams = teamMembers.map(m => m.team);
+    const allTeams = [...new Set([...projectTeams, ...memberTeams])].sort();
     return allTeams;
-  }, [projects]);
+  }, [projects, teamMembers]);
 
-  // Filter projects based on selected team
+  // Filter projects and team members based on selected team
   const filteredProjects = useMemo(() => {
     if (selectedTeam === 'all') return projects;
     return projects.filter(p => p.team === selectedTeam);
   }, [projects, selectedTeam]);
+
+  const filteredTeamMembers = useMemo(() => {
+    if (selectedTeam === 'all') return teamMembers;
+    return teamMembers.filter(m => m.team === selectedTeam);
+  }, [teamMembers, selectedTeam]);
 
   const handleAddProject = (newProject: Omit<Project, 'id'>) => {
     const project: Project = {
@@ -63,6 +122,20 @@ export function RoadmapApp() {
   const handleUpdateProject = (id: string, updates: Partial<Project>) => {
     setProjects(prev => prev.map(project => 
       project.id === id ? { ...project, ...updates } : project
+    ));
+  };
+
+  const handleAddTeamMember = (newMember: Omit<TeamMember, 'id'>) => {
+    const member: TeamMember = {
+      ...newMember,
+      id: Date.now().toString()
+    };
+    setTeamMembers(prev => [...prev, member]);
+  };
+
+  const handleUpdateTeamMember = (id: string, updates: Partial<TeamMember>) => {
+    setTeamMembers(prev => prev.map(member => 
+      member.id === id ? { ...member, ...updates } : member
     ));
   };
 
@@ -116,7 +189,10 @@ export function RoadmapApp() {
           <TabsContent value="roadmap" className="space-y-6">
             <RoadmapView
               projects={filteredProjects}
+              teamMembers={filteredTeamMembers}
               onUpdateProject={handleUpdateProject}
+              onAddTeamMember={handleAddTeamMember}
+              onUpdateTeamMember={handleUpdateTeamMember}
             />
           </TabsContent>
         </Tabs>

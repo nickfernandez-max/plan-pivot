@@ -2,13 +2,21 @@ import { useMemo } from 'react';
 import { DndContext, DragEndEvent, DragOverlay, DragStartEvent, useSensor, useSensors, PointerSensor, useDraggable, useDroppable } from '@dnd-kit/core';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Project } from '@/types/roadmap';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Project, TeamMember } from '@/types/roadmap';
 import { addDays, differenceInDays, format, parseISO, startOfMonth, endOfMonth, eachMonthOfInterval } from 'date-fns';
 import { useState } from 'react';
+import { Plus, Edit2 } from 'lucide-react';
 
 interface RoadmapViewProps {
   projects: Project[];
+  teamMembers: TeamMember[];
   onUpdateProject: (id: string, project: Partial<Project>) => void;
+  onAddTeamMember: (member: Omit<TeamMember, 'id'>) => void;
+  onUpdateTeamMember: (id: string, updates: Partial<TeamMember>) => void;
 }
 
 interface DraggableProjectProps {
@@ -63,8 +71,16 @@ function DraggableProject({ project, startDate, endDate, totalDays, timelineStar
   );
 }
 
-export function RoadmapView({ projects, onUpdateProject }: RoadmapViewProps) {
+export function RoadmapView({ projects, teamMembers, onUpdateProject, onAddTeamMember, onUpdateTeamMember }: RoadmapViewProps) {
   const [activeProject, setActiveProject] = useState<Project | null>(null);
+  const [isAddMemberDialogOpen, setIsAddMemberDialogOpen] = useState(false);
+  const [editingMember, setEditingMember] = useState<TeamMember | null>(null);
+  const [newMember, setNewMember] = useState({
+    name: '',
+    team: '',
+    role: '',
+    startDate: ''
+  });
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
@@ -73,11 +89,10 @@ export function RoadmapView({ projects, onUpdateProject }: RoadmapViewProps) {
     })
   );
 
-  // Get all unique assignees
-  const assignees = useMemo(() => {
-    const allAssignees = projects.flatMap(p => p.assignees);
-    return [...new Set(allAssignees)].sort();
-  }, [projects]);
+  // Use all team members, not just those with projects assigned
+  const allTeamMembers = useMemo(() => {
+    return teamMembers.sort((a, b) => a.name.localeCompare(b.name));
+  }, [teamMembers]);
 
   // Calculate timeline range
   const { timelineStart, timelineEnd, totalDays, months } = useMemo(() => {
@@ -146,19 +161,94 @@ export function RoadmapView({ projects, onUpdateProject }: RoadmapViewProps) {
 
     // Update assignee if dropped on different row
     const newAssignee = over.id as string;
-    if (!project.assignees.includes(newAssignee)) {
+    const targetMember = teamMembers.find(m => m.name === newAssignee);
+    if (targetMember && !project.assignees.includes(newAssignee)) {
       onUpdateProject(projectId, {
         assignees: [newAssignee]
       });
     }
   };
 
+  const handleAddMember = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newMember.name || !newMember.team || !newMember.role || !newMember.startDate) return;
+    
+    onAddTeamMember(newMember);
+    setNewMember({ name: '', team: '', role: '', startDate: '' });
+    setIsAddMemberDialogOpen(false);
+  };
+
+  const handleEditMember = (member: TeamMember) => {
+    setEditingMember({ ...member });
+  };
+
+  const handleSaveMember = () => {
+    if (!editingMember) return;
+    onUpdateTeamMember(editingMember.id, editingMember);
+    setEditingMember(null);
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h2 className="text-2xl font-semibold text-foreground">Roadmap</h2>
-        <div className="text-sm text-muted-foreground">
-          {format(timelineStart, 'MMM yyyy')} - {format(timelineEnd, 'MMM yyyy')}
+        <div className="flex items-center gap-4">
+          <Dialog open={isAddMemberDialogOpen} onOpenChange={setIsAddMemberDialogOpen}>
+            <DialogTrigger asChild>
+              <Button variant="outline">
+                <Plus className="h-4 w-4 mr-2" />
+                Add Team Member
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-md">
+              <DialogHeader>
+                <DialogTitle>Add Team Member</DialogTitle>
+              </DialogHeader>
+              <form onSubmit={handleAddMember} className="space-y-4">
+                <div>
+                  <Label htmlFor="memberName">Name</Label>
+                  <Input
+                    id="memberName"
+                    value={newMember.name}
+                    onChange={(e) => setNewMember(prev => ({ ...prev, name: e.target.value }))}
+                    required
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="memberTeam">Team</Label>
+                  <Input
+                    id="memberTeam"
+                    value={newMember.team}
+                    onChange={(e) => setNewMember(prev => ({ ...prev, team: e.target.value }))}
+                    required
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="memberRole">Role</Label>
+                  <Input
+                    id="memberRole"
+                    value={newMember.role}
+                    onChange={(e) => setNewMember(prev => ({ ...prev, role: e.target.value }))}
+                    required
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="memberStartDate">Start Date</Label>
+                  <Input
+                    id="memberStartDate"
+                    type="date"
+                    value={newMember.startDate}
+                    onChange={(e) => setNewMember(prev => ({ ...prev, startDate: e.target.value }))}
+                    required
+                  />
+                </div>
+                <Button type="submit" className="w-full">Add Member</Button>
+              </form>
+            </DialogContent>
+          </Dialog>
+          <div className="text-sm text-muted-foreground">
+            {format(timelineStart, 'MMM yyyy')} - {format(timelineEnd, 'MMM yyyy')}
+          </div>
         </div>
       </div>
 
@@ -200,37 +290,81 @@ export function RoadmapView({ projects, onUpdateProject }: RoadmapViewProps) {
 
             {/* Swimlanes */}
             <div className="max-h-96 overflow-y-auto">
-              {assignees.length === 0 ? (
+              {allTeamMembers.length === 0 ? (
                 <div className="p-8 text-center text-muted-foreground">
-                  No team members assigned to projects yet.
+                  No team members yet. Add your first team member to get started!
                 </div>
               ) : (
-                assignees.map((assignee) => {
-                  const assigneeProjects = projects.filter(p => 
-                    p.assignees.includes(assignee)
+                allTeamMembers.map((member) => {
+                  const memberProjects = projects.filter(p => 
+                    p.assignees.includes(member.name)
                   );
 
-                  const DroppableRow = ({ assignee, assigneeProjects }: { assignee: string, assigneeProjects: Project[] }) => {
+                  const DroppableRow = ({ member, memberProjects }: { member: TeamMember, memberProjects: Project[] }) => {
                     const { setNodeRef } = useDroppable({
-                      id: assignee,
+                      id: member.name,
                     });
 
                     return (
                       <div
-                        key={assignee}
+                        key={member.id}
                         ref={setNodeRef}
                         className="flex border-b border-swimlane-border hover:bg-muted/20 transition-colors min-h-[80px]"
                       >
-                        <div className="w-48 p-4 border-r border-border bg-swimlane-bg flex items-center">
+                        <div className="w-48 p-4 border-r border-border bg-swimlane-bg flex items-center justify-between">
                           <div>
-                            <div className="font-medium">{assignee}</div>
-                            <div className="text-xs text-muted-foreground">
-                              {assigneeProjects.length} project{assigneeProjects.length !== 1 ? 's' : ''}
-                            </div>
+                            {editingMember?.id === member.id ? (
+                              <div className="space-y-2">
+                                <Input
+                                  value={editingMember.name}
+                                  onChange={(e) => setEditingMember(prev => prev ? {...prev, name: e.target.value} : null)}
+                                  className="text-sm"
+                                />
+                                <Input
+                                  value={editingMember.team}
+                                  onChange={(e) => setEditingMember(prev => prev ? {...prev, team: e.target.value} : null)}
+                                  className="text-xs"
+                                />
+                                <Input
+                                  value={editingMember.role}
+                                  onChange={(e) => setEditingMember(prev => prev ? {...prev, role: e.target.value} : null)}
+                                  className="text-xs"
+                                />
+                                <Input
+                                  type="date"
+                                  value={editingMember.startDate}
+                                  onChange={(e) => setEditingMember(prev => prev ? {...prev, startDate: e.target.value} : null)}
+                                  className="text-xs"
+                                />
+                                <div className="flex gap-1">
+                                  <Button size="sm" onClick={handleSaveMember}>Save</Button>
+                                  <Button size="sm" variant="outline" onClick={() => setEditingMember(null)}>Cancel</Button>
+                                </div>
+                              </div>
+                            ) : (
+                              <>
+                                <div className="font-medium">{member.name}</div>
+                                <div className="text-xs text-muted-foreground">{member.role}</div>
+                                <div className="text-xs text-muted-foreground">{member.team}</div>
+                                <div className="text-xs text-muted-foreground">
+                                  {memberProjects.length} project{memberProjects.length !== 1 ? 's' : ''}
+                                </div>
+                              </>
+                            )}
                           </div>
+                          {editingMember?.id !== member.id && (
+                            <Button 
+                              size="sm" 
+                              variant="ghost" 
+                              onClick={() => handleEditMember(member)}
+                              className="opacity-50 hover:opacity-100"
+                            >
+                              <Edit2 className="h-3 w-3" />
+                            </Button>
+                          )}
                         </div>
                         <div className="flex-1 relative p-2 bg-swimlane-bg">
-                        {assigneeProjects.map((project) => {
+                        {memberProjects.map((project) => {
                           const startDate = parseISO(project.startDate);
                           const endDate = parseISO(project.endDate);
                           
@@ -252,9 +386,9 @@ export function RoadmapView({ projects, onUpdateProject }: RoadmapViewProps) {
 
                   return (
                     <DroppableRow
-                      key={assignee}
-                      assignee={assignee}
-                      assigneeProjects={assigneeProjects}
+                      key={member.id}
+                      member={member}
+                      memberProjects={memberProjects}
                     />
                   );
                 })

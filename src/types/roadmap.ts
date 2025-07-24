@@ -13,7 +13,9 @@ export interface Project {
 export interface TeamMember {
   id: string;
   name: string;
-  role?: string;
+  team: string;
+  role: string;
+  startDate: string;
 }
 
 export type SortField = keyof Omit<Project, 'id' | 'assignees' | 'color'>;
