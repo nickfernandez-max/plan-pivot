@@ -17,6 +17,8 @@ interface ProjectListProps {
 
 export function ProjectList({ projects, onAddProject, onUpdateProject }: ProjectListProps) {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [editingProject, setEditingProject] = useState<string | null>(null);
+  const [editForm, setEditForm] = useState<Project | null>(null);
   const [sortField, setSortField] = useState<SortField>('startDate');
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
   const [newProject, setNewProject] = useState({
@@ -73,6 +75,33 @@ export function ProjectList({ projects, onAddProject, onUpdateProject }: Project
   const getSortIcon = (field: SortField) => {
     if (sortField !== field) return <ArrowUpDown className="h-4 w-4" />;
     return sortDirection === 'asc' ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />;
+  };
+
+  const handleEditProject = (project: Project) => {
+    setEditingProject(project.id);
+    setEditForm({ ...project });
+  };
+
+  const handleSaveEdit = () => {
+    if (!editForm || !editingProject) return;
+    
+    onUpdateProject(editingProject, {
+      name: editForm.name,
+      team: editForm.team,
+      startDate: editForm.startDate,
+      endDate: editForm.endDate,
+      valueScore: editForm.valueScore,
+      isRD: editForm.isRD,
+      assignees: editForm.assignees
+    });
+    
+    setEditingProject(null);
+    setEditForm(null);
+  };
+
+  const handleCancelEdit = () => {
+    setEditingProject(null);
+    setEditForm(null);
   };
 
   return (
@@ -238,38 +267,170 @@ export function ProjectList({ projects, onAddProject, onUpdateProject }: Project
                     </Button>
                   </th>
                   <th className="text-left p-4 font-semibold">Assignees</th>
+                  <th className="text-left p-4 font-semibold">Actions</th>
                 </tr>
               </thead>
               <tbody>
-                {sortedProjects.map((project) => (
-                  <tr key={project.id} className="border-b hover:bg-muted/25 transition-colors">
-                    <td className="p-4 font-medium">{project.name}</td>
-                    <td className="p-4">{project.team}</td>
-                    <td className="p-4">{new Date(project.startDate).toLocaleDateString()}</td>
-                    <td className="p-4">{new Date(project.endDate).toLocaleDateString()}</td>
-                    <td className="p-4">
-                      <Badge variant="outline" className="bg-primary/10">
-                        {project.valueScore}
-                      </Badge>
-                    </td>
-                    <td className="p-4">
-                      {project.isRD ? (
-                        <Badge className="bg-primary text-primary-foreground">Yes</Badge>
-                      ) : (
-                        <Badge variant="outline">No</Badge>
-                      )}
-                    </td>
-                    <td className="p-4">
-                      <div className="flex flex-wrap gap-1">
-                        {project.assignees.map((assignee, index) => (
-                          <Badge key={index} variant="secondary" className="text-xs">
-                            {assignee}
+                {sortedProjects.map((project) => {
+                  const isEditing = editingProject === project.id;
+                  
+                  return (
+                    <tr 
+                      key={project.id} 
+                      className="border-b hover:bg-muted/25 transition-colors cursor-pointer"
+                      onClick={() => !isEditing && handleEditProject(project)}
+                    >
+                      <td className="p-4 font-medium">
+                        {isEditing ? (
+                          <Input
+                            value={editForm?.name || ''}
+                            onChange={(e) => setEditForm(prev => prev ? { ...prev, name: e.target.value } : null)}
+                            onClick={(e) => e.stopPropagation()}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') handleSaveEdit();
+                              if (e.key === 'Escape') handleCancelEdit();
+                            }}
+                            autoFocus
+                          />
+                        ) : (
+                          project.name
+                        )}
+                      </td>
+                      <td className="p-4">
+                        {isEditing ? (
+                          <Input
+                            value={editForm?.team || ''}
+                            onChange={(e) => setEditForm(prev => prev ? { ...prev, team: e.target.value } : null)}
+                            onClick={(e) => e.stopPropagation()}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') handleSaveEdit();
+                              if (e.key === 'Escape') handleCancelEdit();
+                            }}
+                          />
+                        ) : (
+                          project.team
+                        )}
+                      </td>
+                      <td className="p-4">
+                        {isEditing ? (
+                          <Input
+                            type="date"
+                            value={editForm?.startDate || ''}
+                            onChange={(e) => setEditForm(prev => prev ? { ...prev, startDate: e.target.value } : null)}
+                            onClick={(e) => e.stopPropagation()}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') handleSaveEdit();
+                              if (e.key === 'Escape') handleCancelEdit();
+                            }}
+                          />
+                        ) : (
+                          new Date(project.startDate).toLocaleDateString()
+                        )}
+                      </td>
+                      <td className="p-4">
+                        {isEditing ? (
+                          <Input
+                            type="date"
+                            value={editForm?.endDate || ''}
+                            onChange={(e) => setEditForm(prev => prev ? { ...prev, endDate: e.target.value } : null)}
+                            onClick={(e) => e.stopPropagation()}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') handleSaveEdit();
+                              if (e.key === 'Escape') handleCancelEdit();
+                            }}
+                          />
+                        ) : (
+                          new Date(project.endDate).toLocaleDateString()
+                        )}
+                      </td>
+                      <td className="p-4">
+                        {isEditing ? (
+                          <Input
+                            type="number"
+                            min="0"
+                            max="100"
+                            value={editForm?.valueScore || 0}
+                            onChange={(e) => setEditForm(prev => prev ? { ...prev, valueScore: parseInt(e.target.value) || 0 } : null)}
+                            onClick={(e) => e.stopPropagation()}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') handleSaveEdit();
+                              if (e.key === 'Escape') handleCancelEdit();
+                            }}
+                          />
+                        ) : (
+                          <Badge variant="outline" className="bg-primary/10">
+                            {project.valueScore}
                           </Badge>
-                        ))}
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                        )}
+                      </td>
+                      <td className="p-4">
+                        {isEditing ? (
+                          <Switch
+                            checked={editForm?.isRD || false}
+                            onCheckedChange={(checked) => setEditForm(prev => prev ? { ...prev, isRD: checked } : null)}
+                            onClick={(e) => e.stopPropagation()}
+                          />
+                        ) : (
+                          project.isRD ? (
+                            <Badge className="bg-primary text-primary-foreground">Yes</Badge>
+                          ) : (
+                            <Badge variant="outline">No</Badge>
+                          )
+                        )}
+                      </td>
+                      <td className="p-4">
+                        {isEditing ? (
+                          <Input
+                            value={editForm?.assignees.join(', ') || ''}
+                            onChange={(e) => setEditForm(prev => prev ? { 
+                              ...prev, 
+                              assignees: e.target.value.split(',').map(a => a.trim()).filter(a => a !== '')
+                            } : null)}
+                            onClick={(e) => e.stopPropagation()}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') handleSaveEdit();
+                              if (e.key === 'Escape') handleCancelEdit();
+                            }}
+                            placeholder="John Doe, Jane Smith"
+                          />
+                        ) : (
+                          <div className="flex flex-wrap gap-1">
+                            {project.assignees.map((assignee, index) => (
+                              <Badge key={index} variant="secondary" className="text-xs">
+                                {assignee}
+                              </Badge>
+                            ))}
+                          </div>
+                        )}
+                      </td>
+                      {isEditing && (
+                        <td className="p-4">
+                          <div className="flex gap-2">
+                            <Button
+                              size="sm"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleSaveEdit();
+                              }}
+                            >
+                              Save
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleCancelEdit();
+                              }}
+                            >
+                              Cancel
+                            </Button>
+                          </div>
+                        </td>
+                      )}
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
             {projects.length === 0 && (
