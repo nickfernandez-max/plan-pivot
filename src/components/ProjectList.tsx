@@ -1,35 +1,58 @@
-import { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Switch } from '@/components/ui/switch';
-import { Badge } from '@/components/ui/badge';
-import { Slider } from '@/components/ui/slider';
-import { Plus, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
-import { Project, SortField, SortDirection } from '@/types/roadmap';
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Textarea } from "@/components/ui/textarea";
+import { Plus, Edit, Save, X, ChevronUp, ChevronDown } from "lucide-react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
+import { Project, Team, SortField, SortDirection } from "@/types/roadmap";
 
 interface ProjectListProps {
   projects: Project[];
-  onAddProject: (project: Omit<Project, 'id'>) => void;
+  teams: Team[];
+  onAddProject: (project: Omit<Project, 'id' | 'created_at' | 'updated_at'>) => void;
   onUpdateProject: (id: string, project: Partial<Project>) => void;
 }
 
-export function ProjectList({ projects, onAddProject, onUpdateProject }: ProjectListProps) {
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [editingProject, setEditingProject] = useState<string | null>(null);
-  const [editForm, setEditForm] = useState<Project | null>(null);
-  const [sortField, setSortField] = useState<SortField>('startDate');
+const projectSchema = z.object({
+  name: z.string().min(1, "Project name is required"),
+  team_id: z.string().min(1, "Team is required"),
+  start_date: z.string().min(1, "Start date is required"),
+  end_date: z.string().min(1, "End date is required"),
+  value_score: z.number().min(1).max(10),
+  is_rd: z.boolean(),
+  description: z.string().optional(),
+});
+
+export function ProjectList({ projects, teams, onAddProject, onUpdateProject }: ProjectListProps) {
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [editingProject, setEditingProject] = useState<Project | null>(null);
+  const [sortField, setSortField] = useState<SortField>('start_date');
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
-  const [newProject, setNewProject] = useState({
-    name: '',
-    team: '',
-    startDate: '',
-    endDate: '',
-    valueScore: 5,
-    isRD: false,
-    assignees: ['']
+
+  const form = useForm<z.infer<typeof projectSchema>>({
+    resolver: zodResolver(projectSchema),
+    defaultValues: {
+      name: "",
+      team_id: "",
+      start_date: "",
+      end_date: "",
+      value_score: 5,
+      is_rd: false,
+      description: "",
+    },
+  });
+
+  const editForm = useForm<z.infer<typeof projectSchema>>({
+    resolver: zodResolver(projectSchema),
   });
 
   const handleSort = (field: SortField) => {
@@ -45,404 +68,475 @@ export function ProjectList({ projects, onAddProject, onUpdateProject }: Project
     const aValue = a[sortField];
     const bValue = b[sortField];
     
-    if (sortDirection === 'asc') {
-      return aValue < bValue ? -1 : aValue > bValue ? 1 : 0;
-    } else {
-      return aValue > bValue ? -1 : aValue < bValue ? 1 : 0;
+    if (typeof aValue === 'string' && typeof bValue === 'string') {
+      return sortDirection === 'asc' 
+        ? aValue.localeCompare(bValue)
+        : bValue.localeCompare(aValue);
     }
+    
+    if (typeof aValue === 'number' && typeof bValue === 'number') {
+      return sortDirection === 'asc' ? aValue - bValue : bValue - aValue;
+    }
+    
+    if (typeof aValue === 'boolean' && typeof bValue === 'boolean') {
+      return sortDirection === 'asc' 
+        ? (aValue === bValue ? 0 : aValue ? 1 : -1)
+        : (aValue === bValue ? 0 : aValue ? -1 : 1);
+    }
+    
+    return 0;
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newProject.name || !newProject.team || !newProject.startDate || !newProject.endDate) return;
-    
-    onAddProject({
-      ...newProject,
-      assignees: newProject.assignees.filter(a => a.trim() !== '')
-    });
-    
-    setNewProject({
-      name: '',
-      team: '',
-      startDate: '',
-      endDate: '',
-      valueScore: 5,
-      isRD: false,
-      assignees: ['']
-    });
-    setIsDialogOpen(false);
-  };
-
   const getSortIcon = (field: SortField) => {
-    if (sortField !== field) return <ArrowUpDown className="h-4 w-4" />;
-    return sortDirection === 'asc' ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />;
+    if (sortField !== field) return null;
+    return sortDirection === 'asc' ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />;
   };
 
   const handleEditProject = (project: Project) => {
-    setEditingProject(project.id);
-    setEditForm({ ...project });
+    setEditingProject(project);
+    editForm.reset({
+      name: project.name,
+      team_id: project.team_id,
+      start_date: project.start_date,
+      end_date: project.end_date,
+      value_score: project.value_score,
+      is_rd: project.is_rd,
+      description: project.description || "",
+    });
   };
 
-  const handleSaveEdit = () => {
-    if (!editForm || !editingProject) return;
-    
-    onUpdateProject(editingProject, {
-      name: editForm.name,
-      team: editForm.team,
-      startDate: editForm.startDate,
-      endDate: editForm.endDate,
-      valueScore: editForm.valueScore,
-      isRD: editForm.isRD,
-      assignees: editForm.assignees
-    });
-    
-    setEditingProject(null);
-    setEditForm(null);
+  const handleSaveEdit = (values: z.infer<typeof projectSchema>) => {
+    if (editingProject) {
+      onUpdateProject(editingProject.id, values);
+      setEditingProject(null);
+    }
   };
 
   const handleCancelEdit = () => {
     setEditingProject(null);
-    setEditForm(null);
+  };
+
+  const onSubmit = (values: z.infer<typeof projectSchema>) => {
+    onAddProject(values as Omit<Project, 'id' | 'created_at' | 'updated_at'>);
+    form.reset();
+    setIsAddDialogOpen(false);
+  };
+
+  const onEditSubmit = (values: z.infer<typeof projectSchema>) => {
+    handleSaveEdit(values);
   };
 
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-semibold text-foreground">Projects</h2>
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <div>
+          <h2 className="text-2xl font-bold">Projects</h2>
+          <p className="text-muted-foreground">Manage your project portfolio</p>
+        </div>
+        <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
           <DialogTrigger asChild>
-            <Button className="bg-gradient-to-r from-primary to-primary-glow text-primary-foreground shadow-md hover:shadow-lg transition-all">
-              <Plus className="h-4 w-4 mr-2" />
+            <Button>
+              <Plus className="w-4 h-4 mr-2" />
               Add Project
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-md">
+          <DialogContent className="sm:max-w-md">
             <DialogHeader>
               <DialogTitle>Add New Project</DialogTitle>
+              <DialogDescription>
+                Create a new project and assign it to a team.
+              </DialogDescription>
             </DialogHeader>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <Label htmlFor="name">Project Name</Label>
-                <Input
-                  id="name"
-                  value={newProject.name}
-                  onChange={(e) => setNewProject(prev => ({ ...prev, name: e.target.value }))}
-                  required
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                <FormField
+                  control={form.control}
+                  name="name"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Project Name</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Enter project name" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
                 />
-              </div>
-              <div>
-                <Label htmlFor="team">Team</Label>
-                <Input
-                  id="team"
-                  value={newProject.team}
-                  onChange={(e) => setNewProject(prev => ({ ...prev, team: e.target.value }))}
-                  required
+                <FormField
+                  control={form.control}
+                  name="team_id"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Team</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select a team" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {teams.map((team) => (
+                            <SelectItem key={team.id} value={team.id}>
+                              {team.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
                 />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="startDate">Start Date</Label>
-                  <Input
-                    id="startDate"
-                    type="date"
-                    value={newProject.startDate}
-                    onChange={(e) => setNewProject(prev => ({ ...prev, startDate: e.target.value }))}
-                    required
+                <div className="grid grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="start_date"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Start Date</FormLabel>
+                        <FormControl>
+                          <Input type="date" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="end_date"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>End Date</FormLabel>
+                        <FormControl>
+                          <Input type="date" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
                   />
                 </div>
-                <div>
-                  <Label htmlFor="endDate">End Date</Label>
-                  <Input
-                    id="endDate"
-                    type="date"
-                    value={newProject.endDate}
-                    onChange={(e) => setNewProject(prev => ({ ...prev, endDate: e.target.value }))}
-                    required
-                  />
-                </div>
-              </div>
-              <div>
-                <Label htmlFor="valueScore">Value Score ({newProject.valueScore}/10)</Label>
-                <div className="pt-2">
-                  <Slider
-                    value={[newProject.valueScore]}
-                    onValueChange={(value) => setNewProject(prev => ({ ...prev, valueScore: value[0] }))}
-                    max={10}
-                    min={1}
-                    step={1}
-                    className="w-full"
-                  />
-                </div>
-              </div>
-              <div className="flex items-center space-x-2">
-                <Switch
-                  id="isRD"
-                  checked={newProject.isRD}
-                  onCheckedChange={(checked) => setNewProject(prev => ({ ...prev, isRD: checked }))}
+                <FormField
+                  control={form.control}
+                  name="value_score"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Value Score (1-10)</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          min="1"
+                          max="10"
+                          {...field}
+                          onChange={(e) => field.onChange(parseInt(e.target.value))}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
                 />
-                <Label htmlFor="isRD">R&D Project</Label>
-              </div>
-              <div>
-                <Label htmlFor="assignees">Assignees (comma-separated)</Label>
-                <Input
-                  id="assignees"
-                  value={newProject.assignees.join(', ')}
-                  onChange={(e) => setNewProject(prev => ({ 
-                    ...prev, 
-                    assignees: e.target.value.split(',').map(a => a.trim())
-                  }))}
-                  placeholder="John Doe, Jane Smith"
+                <FormField
+                  control={form.control}
+                  name="is_rd"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
+                      <div className="space-y-0.5">
+                        <FormLabel>R&D Project</FormLabel>
+                        <div className="text-xs text-muted-foreground">
+                          Mark this as a research and development project
+                        </div>
+                      </div>
+                      <FormControl>
+                        <Switch
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                        />
+                      </FormControl>
+                    </FormItem>
+                  )}
                 />
-              </div>
-              <Button type="submit" className="w-full">Add Project</Button>
-            </form>
+                <FormField
+                  control={form.control}
+                  name="description"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Description (Optional)</FormLabel>
+                      <FormControl>
+                        <Textarea 
+                          placeholder="Enter project description"
+                          className="resize-none"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <div className="flex justify-end space-x-2">
+                  <Button type="button" variant="outline" onClick={() => setIsAddDialogOpen(false)}>
+                    Cancel
+                  </Button>
+                  <Button type="submit">Create Project</Button>
+                </div>
+              </form>
+            </Form>
           </DialogContent>
         </Dialog>
       </div>
 
-      <Card className="shadow-md">
+      <Card>
         <CardHeader>
           <CardTitle>Project List</CardTitle>
+          <CardDescription>
+            {projects.length} project{projects.length !== 1 ? 's' : ''} total
+          </CardDescription>
         </CardHeader>
-        <CardContent className="p-0">
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-muted/50 border-b">
-                <tr>
-                  <th className="text-left p-4">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleSort('name')}
-                      className="font-semibold"
-                    >
-                      Project Name {getSortIcon('name')}
-                    </Button>
-                  </th>
-                  <th className="text-left p-4">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleSort('team')}
-                      className="font-semibold"
-                    >
-                      Team {getSortIcon('team')}
-                    </Button>
-                  </th>
-                  <th className="text-left p-4">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleSort('startDate')}
-                      className="font-semibold"
-                    >
-                      Start Date {getSortIcon('startDate')}
-                    </Button>
-                  </th>
-                  <th className="text-left p-4">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleSort('endDate')}
-                      className="font-semibold"
-                    >
-                      End Date {getSortIcon('endDate')}
-                    </Button>
-                  </th>
-                  <th className="text-left p-4">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleSort('valueScore')}
-                      className="font-semibold"
-                    >
-                      Value Score {getSortIcon('valueScore')}
-                    </Button>
-                  </th>
-                  <th className="text-left p-4">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleSort('isRD')}
-                      className="font-semibold"
-                    >
-                      R&D {getSortIcon('isRD')}
-                    </Button>
-                  </th>
-                  <th className="text-left p-4 font-semibold">Assignees</th>
-                  <th className="text-left p-4 font-semibold">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {sortedProjects.map((project) => {
-                  const isEditing = editingProject === project.id;
-                  
-                  return (
-                    <tr 
-                      key={project.id} 
-                      className="border-b hover:bg-muted/25 transition-colors cursor-pointer"
-                      onClick={() => !isEditing && handleEditProject(project)}
-                    >
-                      <td className="p-4 font-medium">
-                        {isEditing ? (
-                          <Input
-                            value={editForm?.name || ''}
-                            onChange={(e) => setEditForm(prev => prev ? { ...prev, name: e.target.value } : null)}
-                            onClick={(e) => e.stopPropagation()}
-                            onKeyDown={(e) => {
-                              if (e.key === 'Enter') handleSaveEdit();
-                              if (e.key === 'Escape') handleCancelEdit();
-                            }}
-                            autoFocus
-                          />
-                        ) : (
-                          project.name
-                        )}
-                      </td>
-                      <td className="p-4">
-                        {isEditing ? (
-                          <Input
-                            value={editForm?.team || ''}
-                            onChange={(e) => setEditForm(prev => prev ? { ...prev, team: e.target.value } : null)}
-                            onClick={(e) => e.stopPropagation()}
-                            onKeyDown={(e) => {
-                              if (e.key === 'Enter') handleSaveEdit();
-                              if (e.key === 'Escape') handleCancelEdit();
-                            }}
-                          />
-                        ) : (
-                          project.team
-                        )}
-                      </td>
-                      <td className="p-4">
-                        {isEditing ? (
-                          <Input
-                            type="date"
-                            value={editForm?.startDate || ''}
-                            onChange={(e) => setEditForm(prev => prev ? { ...prev, startDate: e.target.value } : null)}
-                            onClick={(e) => e.stopPropagation()}
-                            onKeyDown={(e) => {
-                              if (e.key === 'Enter') handleSaveEdit();
-                              if (e.key === 'Escape') handleCancelEdit();
-                            }}
-                          />
-                        ) : (
-                          new Date(project.startDate).toLocaleDateString()
-                        )}
-                      </td>
-                      <td className="p-4">
-                        {isEditing ? (
-                          <Input
-                            type="date"
-                            value={editForm?.endDate || ''}
-                            onChange={(e) => setEditForm(prev => prev ? { ...prev, endDate: e.target.value } : null)}
-                            onClick={(e) => e.stopPropagation()}
-                            onKeyDown={(e) => {
-                              if (e.key === 'Enter') handleSaveEdit();
-                              if (e.key === 'Escape') handleCancelEdit();
-                            }}
-                          />
-                        ) : (
-                          new Date(project.endDate).toLocaleDateString()
-                        )}
-                      </td>
-                      <td className="p-4">
-                        {isEditing ? (
-                          <div className="w-24" onClick={(e) => e.stopPropagation()}>
-                            <div className="text-xs text-muted-foreground mb-1">
-                              {editForm?.valueScore || 1}/10
-                            </div>
-                            <Slider
-                              value={[editForm?.valueScore || 1]}
-                              onValueChange={(value) => setEditForm(prev => prev ? { ...prev, valueScore: value[0] } : null)}
-                              max={10}
-                              min={1}
-                              step={1}
-                              className="w-full"
-                            />
-                          </div>
-                        ) : (
-                          <Badge variant="outline" className="bg-primary/10">
-                            {project.valueScore}/10
+        <CardContent>
+          {projects.length === 0 ? (
+            <div className="text-center py-8">
+              <p className="text-muted-foreground mb-4">No projects found</p>
+              <Button onClick={() => setIsAddDialogOpen(true)}>
+                <Plus className="w-4 h-4 mr-2" />
+                Add Your First Project
+              </Button>
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead 
+                    className="cursor-pointer select-none"
+                    onClick={() => handleSort('name')}
+                  >
+                    <div className="flex items-center space-x-1">
+                      <span>Name</span>
+                      {getSortIcon('name')}
+                    </div>
+                  </TableHead>
+                  <TableHead>Team</TableHead>
+                  <TableHead 
+                    className="cursor-pointer select-none"
+                    onClick={() => handleSort('start_date')}
+                  >
+                    <div className="flex items-center space-x-1">
+                      <span>Start Date</span>
+                      {getSortIcon('start_date')}
+                    </div>
+                  </TableHead>
+                  <TableHead 
+                    className="cursor-pointer select-none"
+                    onClick={() => handleSort('end_date')}
+                  >
+                    <div className="flex items-center space-x-1">
+                      <span>End Date</span>
+                      {getSortIcon('end_date')}
+                    </div>
+                  </TableHead>
+                  <TableHead 
+                    className="cursor-pointer select-none"
+                    onClick={() => handleSort('value_score')}
+                  >
+                    <div className="flex items-center space-x-1">
+                      <span>Value Score</span>
+                      {getSortIcon('value_score')}
+                    </div>
+                  </TableHead>
+                  <TableHead 
+                    className="cursor-pointer select-none"
+                    onClick={() => handleSort('is_rd')}
+                  >
+                    <div className="flex items-center space-x-1">
+                      <span>R&D</span>
+                      {getSortIcon('is_rd')}
+                    </div>
+                  </TableHead>
+                  <TableHead>Assignees</TableHead>
+                  <TableHead>Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {sortedProjects.map((project) => (
+                  <TableRow key={project.id}>
+                    {editingProject?.id === project.id ? (
+                      <>
+                        <TableCell colSpan={8}>
+                          <Form {...editForm}>
+                            <form onSubmit={editForm.handleSubmit(onEditSubmit)} className="space-y-4">
+                              <div className="grid grid-cols-2 gap-4">
+                                <FormField
+                                  control={editForm.control}
+                                  name="name"
+                                  render={({ field }) => (
+                                    <FormItem>
+                                      <FormLabel>Project Name</FormLabel>
+                                      <FormControl>
+                                        <Input {...field} />
+                                      </FormControl>
+                                      <FormMessage />
+                                    </FormItem>
+                                  )}
+                                />
+                                <FormField
+                                  control={editForm.control}
+                                  name="team_id"
+                                  render={({ field }) => (
+                                    <FormItem>
+                                      <FormLabel>Team</FormLabel>
+                                      <Select onValueChange={field.onChange} value={field.value}>
+                                        <FormControl>
+                                          <SelectTrigger>
+                                            <SelectValue />
+                                          </SelectTrigger>
+                                        </FormControl>
+                                        <SelectContent>
+                                          {teams.map((team) => (
+                                            <SelectItem key={team.id} value={team.id}>
+                                              {team.name}
+                                            </SelectItem>
+                                          ))}
+                                        </SelectContent>
+                                      </Select>
+                                      <FormMessage />
+                                    </FormItem>
+                                  )}
+                                />
+                                <FormField
+                                  control={editForm.control}
+                                  name="start_date"
+                                  render={({ field }) => (
+                                    <FormItem>
+                                      <FormLabel>Start Date</FormLabel>
+                                      <FormControl>
+                                        <Input type="date" {...field} />
+                                      </FormControl>
+                                      <FormMessage />
+                                    </FormItem>
+                                  )}
+                                />
+                                <FormField
+                                  control={editForm.control}
+                                  name="end_date"
+                                  render={({ field }) => (
+                                    <FormItem>
+                                      <FormLabel>End Date</FormLabel>
+                                      <FormControl>
+                                        <Input type="date" {...field} />
+                                      </FormControl>
+                                      <FormMessage />
+                                    </FormItem>
+                                  )}
+                                />
+                                <FormField
+                                  control={editForm.control}
+                                  name="value_score"
+                                  render={({ field }) => (
+                                    <FormItem>
+                                      <FormLabel>Value Score</FormLabel>
+                                      <FormControl>
+                                        <Input
+                                          type="number"
+                                          min="1"
+                                          max="10"
+                                          {...field}
+                                          onChange={(e) => field.onChange(parseInt(e.target.value))}
+                                        />
+                                      </FormControl>
+                                      <FormMessage />
+                                    </FormItem>
+                                  )}
+                                />
+                                <FormField
+                                  control={editForm.control}
+                                  name="is_rd"
+                                  render={({ field }) => (
+                                    <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3">
+                                      <FormLabel>R&D Project</FormLabel>
+                                      <FormControl>
+                                        <Switch
+                                          checked={field.value}
+                                          onCheckedChange={field.onChange}
+                                        />
+                                      </FormControl>
+                                    </FormItem>
+                                  )}
+                                />
+                              </div>
+                              <FormField
+                                control={editForm.control}
+                                name="description"
+                                render={({ field }) => (
+                                  <FormItem>
+                                    <FormLabel>Description</FormLabel>
+                                    <FormControl>
+                                      <Textarea {...field} />
+                                    </FormControl>
+                                    <FormMessage />
+                                  </FormItem>
+                                )}
+                              />
+                              <div className="flex justify-end space-x-2">
+                                <Button type="button" variant="outline" onClick={handleCancelEdit}>
+                                  <X className="w-4 h-4 mr-2" />
+                                  Cancel
+                                </Button>
+                                <Button type="submit">
+                                  <Save className="w-4 h-4 mr-2" />
+                                  Save Changes
+                                </Button>
+                              </div>
+                            </form>
+                          </Form>
+                        </TableCell>
+                      </>
+                    ) : (
+                      <>
+                        <TableCell className="font-medium">{project.name}</TableCell>
+                        <TableCell>
+                          <Badge variant="secondary" style={{ backgroundColor: project.team?.color + '20', color: project.team?.color }}>
+                            {project.team?.name}
                           </Badge>
-                        )}
-                      </td>
-                      <td className="p-4">
-                        {isEditing ? (
-                          <Switch
-                            checked={editForm?.isRD || false}
-                            onCheckedChange={(checked) => setEditForm(prev => prev ? { ...prev, isRD: checked } : null)}
-                            onClick={(e) => e.stopPropagation()}
-                          />
-                        ) : (
-                          project.isRD ? (
-                            <Badge className="bg-primary text-primary-foreground">Yes</Badge>
+                        </TableCell>
+                        <TableCell>{new Date(project.start_date).toLocaleDateString()}</TableCell>
+                        <TableCell>{new Date(project.end_date).toLocaleDateString()}</TableCell>
+                        <TableCell>
+                          <Badge variant={project.value_score >= 8 ? "default" : project.value_score >= 6 ? "secondary" : "outline"}>
+                            {project.value_score}/10
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          {project.is_rd ? (
+                            <Badge variant="default">R&D</Badge>
                           ) : (
-                            <Badge variant="outline">No</Badge>
-                          )
-                        )}
-                      </td>
-                      <td className="p-4">
-                        {isEditing ? (
-                          <Input
-                            value={editForm?.assignees.join(', ') || ''}
-                            onChange={(e) => setEditForm(prev => prev ? { 
-                              ...prev, 
-                              assignees: e.target.value.split(',').map(a => a.trim()).filter(a => a !== '')
-                            } : null)}
-                            onClick={(e) => e.stopPropagation()}
-                            onKeyDown={(e) => {
-                              if (e.key === 'Enter') handleSaveEdit();
-                              if (e.key === 'Escape') handleCancelEdit();
-                            }}
-                            placeholder="John Doe, Jane Smith"
-                          />
-                        ) : (
+                            <span className="text-muted-foreground">—</span>
+                          )}
+                        </TableCell>
+                        <TableCell>
                           <div className="flex flex-wrap gap-1">
-                            {project.assignees.map((assignee, index) => (
-                              <Badge key={index} variant="secondary" className="text-xs">
-                                {assignee}
-                              </Badge>
-                            ))}
+                            {project.assignees && project.assignees.length > 0 ? (
+                              project.assignees.map((assignee) => (
+                                <Badge key={assignee.id} variant="outline" className="text-xs">
+                                  {assignee.name}
+                                </Badge>
+                              ))
+                            ) : (
+                              <span className="text-muted-foreground text-sm">No assignees</span>
+                            )}
                           </div>
-                        )}
-                      </td>
-                      {isEditing && (
-                        <td className="p-4">
-                          <div className="flex gap-2">
-                            <Button
-                              size="sm"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleSaveEdit();
-                              }}
-                            >
-                              Save
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleCancelEdit();
-                              }}
-                            >
-                              Cancel
-                            </Button>
-                          </div>
-                        </td>
-                      )}
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-            {projects.length === 0 && (
-              <div className="p-8 text-center text-muted-foreground">
-                No projects yet. Add your first project to get started!
-              </div>
-            )}
-          </div>
+                        </TableCell>
+                        <TableCell>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleEditProject(project)}
+                          >
+                            <Edit className="w-4 h-4" />
+                          </Button>
+                        </TableCell>
+                      </>
+                    )}
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
         </CardContent>
       </Card>
     </div>
