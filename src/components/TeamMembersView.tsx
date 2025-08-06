@@ -104,7 +104,7 @@ export function TeamMembersView({
       name: "",
       description: "",
       color: "#3B82F6",
-      product_id: "",
+      product_id: "none",
     },
   });
 
@@ -149,11 +149,17 @@ export function TeamMembersView({
   };
 
   const onTeamSubmit = (values: z.infer<typeof teamSchema>) => {
+    // Convert "none" back to empty string for database
+    const submitValues = {
+      ...values,
+      product_id: values.product_id === "none" ? undefined : values.product_id
+    };
+    
     if (editingTeam) {
-      onUpdateTeam(editingTeam.id, values);
+      onUpdateTeam(editingTeam.id, submitValues);
       setEditingTeam(null);
     } else {
-      onAddTeam(values as Omit<Team, 'id' | 'created_at' | 'updated_at'>);
+      onAddTeam(submitValues as Omit<Team, 'id' | 'created_at' | 'updated_at'>);
     }
     teamForm.reset();
     setIsAddTeamDialogOpen(false);
@@ -165,7 +171,7 @@ export function TeamMembersView({
       name: team.name,
       description: team.description || "",
       color: team.color || "#3B82F6",
-      product_id: team.product_id || "",
+      product_id: team.product_id || "none",
     });
     setIsAddTeamDialogOpen(true);
   };
@@ -239,7 +245,7 @@ export function TeamMembersView({
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            <SelectItem value="">No Product</SelectItem>
+                            <SelectItem value="none">No Product</SelectItem>
                             {products.map((product) => (
                               <SelectItem key={product.id} value={product.id}>
                                 {product.name}
