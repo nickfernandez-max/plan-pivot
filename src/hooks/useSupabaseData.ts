@@ -14,15 +14,23 @@ export const useSupabaseData = () => {
       setLoading(true);
       setError(null);
 
+      console.log('Starting data fetch...');
+
       // Fetch teams
+      console.log('Fetching teams...');
       const { data: teamsData, error: teamsError } = await supabase
         .from('teams')
         .select('*')
         .order('name');
 
-      if (teamsError) throw teamsError;
+      if (teamsError) {
+        console.error('Teams error:', teamsError);
+        throw teamsError;
+      }
+      console.log('Teams fetched:', teamsData?.length || 0);
 
       // Fetch team members with their teams
+      console.log('Fetching team members...');
       const { data: teamMembersData, error: teamMembersError } = await supabase
         .from('team_members')
         .select(`
@@ -31,9 +39,14 @@ export const useSupabaseData = () => {
         `)
         .order('name');
 
-      if (teamMembersError) throw teamMembersError;
+      if (teamMembersError) {
+        console.error('Team members error:', teamMembersError);
+        throw teamMembersError;
+      }
+      console.log('Team members fetched:', teamMembersData?.length || 0);
 
       // Fetch projects with teams and assignees
+      console.log('Fetching projects...');
       const { data: projectsData, error: projectsError } = await supabase
         .from('projects')
         .select(`
@@ -45,7 +58,11 @@ export const useSupabaseData = () => {
         `)
         .order('start_date');
 
-      if (projectsError) throw projectsError;
+      if (projectsError) {
+        console.error('Projects error:', projectsError);
+        throw projectsError;
+      }
+      console.log('Projects fetched:', projectsData?.length || 0);
 
       // Transform the data to match our interface
       const transformedProjects = projectsData?.map(project => ({
@@ -56,9 +73,16 @@ export const useSupabaseData = () => {
       setTeams(teamsData || []);
       setTeamMembers(teamMembersData || []);
       setProjects(transformedProjects);
+      console.log('Data fetch completed successfully');
     } catch (err) {
       console.error('Error fetching data:', err);
-      setError(err instanceof Error ? err.message : 'An error occurred');
+      const errorMessage = err instanceof Error ? err.message : 'An error occurred';
+      console.error('Error details:', {
+        message: errorMessage,
+        name: err instanceof Error ? err.name : 'Unknown',
+        stack: err instanceof Error ? err.stack : undefined
+      });
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
