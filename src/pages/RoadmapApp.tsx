@@ -16,6 +16,7 @@ export default function RoadmapApp() {
     teamMembers, 
     teams, 
     products,
+    assignments,
     loading, 
     error, 
     addProject, 
@@ -25,6 +26,7 @@ export default function RoadmapApp() {
     addTeam,
     updateTeam,
     updateProjectAssignees,
+    updateProjectAssignments,
     addProduct,
     updateProduct,
     updateProjectProducts
@@ -235,10 +237,15 @@ export default function RoadmapApp() {
               teamMembers={filteredTeamMembers} 
               teams={teams}
               products={products}
+              assignments={assignments}
               onUpdateProject={handleUpdateProject}
               onUpdateProjectAssignees={async (projectId: string, assigneeIds: string[]) => {
                 await updateProjectAssignees(projectId, assigneeIds);
               }}
+              onUpdateProjectProducts={async (projectId: string, productIds: string[]) => {
+                await updateProjectProducts(projectId, productIds);
+              }}
+              onUpdateProjectAssignments={updateProjectAssignments}
             />
           </TabsContent>
 

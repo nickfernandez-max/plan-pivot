@@ -1,12 +1,13 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { Project, TeamMember, Team, Product } from '@/types/roadmap';
+import { Project, TeamMember, Team, Product, ProjectAssignment } from '@/types/roadmap';
 
 export function useSupabaseData() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
   const [teams, setTeams] = useState<Team[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
+  const [assignments, setAssignments] = useState<ProjectAssignment[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -80,6 +81,18 @@ export function useSupabaseData() {
       }
       console.log('Projects fetched:', projectsData?.length || 0);
 
+      // Fetch project assignments with allocations
+      console.log('Fetching project assignments...');
+      const { data: assignmentsData, error: assignmentsError } = await supabase
+        .from('project_assignees')
+        .select('*');
+
+      if (assignmentsError) {
+        console.error('Assignments error:', assignmentsError);
+        throw assignmentsError;
+      }
+      console.log('Assignments fetched:', assignmentsData?.length || 0);
+
       // Transform the data to match our interface
       const transformedProjects = projectsData?.map(project => ({
         ...project,
@@ -91,6 +104,7 @@ export function useSupabaseData() {
       setTeams(teamsData || []);
       setTeamMembers(teamMembersData || []);
       setProjects(transformedProjects);
+      setAssignments(assignmentsData || []);
       console.log('Data fetch completed successfully');
     } catch (err) {
       console.error('Error fetching data:', err);
@@ -379,6 +393,45 @@ export function useSupabaseData() {
     }
   };
 
+  const updateProjectAssignments = async (projectId: string, assignments: { teamMemberId: string; percentAllocation: number }[]) => {
+    try {
+      // Delete existing assignments for this project
+      const { error: deleteError } = await supabase
+        .from('project_assignees')
+        .delete()
+        .eq('project_id', projectId);
+
+      if (deleteError) {
+        console.error('Error deleting project assignments:', deleteError);
+        throw deleteError;
+      }
+
+      // Insert new assignments with allocations
+      if (assignments.length > 0) {
+        const { error: insertError } = await supabase
+          .from('project_assignees')
+          .insert(
+            assignments.map(assignment => ({
+              project_id: projectId,
+              team_member_id: assignment.teamMemberId,
+              percent_allocation: assignment.percentAllocation,
+            }))
+          );
+
+        if (insertError) {
+          console.error('Error inserting project assignments:', insertError);
+          throw insertError;
+        }
+      }
+
+      // Refetch data to update UI
+      await fetchData();
+    } catch (err) {
+      console.error('Error updating project assignments:', err);
+      throw err;
+    }
+  };
+
   useEffect(() => {
     fetchData();
 
@@ -416,6 +469,7 @@ export function useSupabaseData() {
     teamMembers,
     teams,
     products,
+    assignments,
     loading,
     error,
     addProject,
@@ -425,6 +479,7 @@ export function useSupabaseData() {
     addTeam,
     updateTeam,
     updateProjectAssignees,
+    updateProjectAssignments,
     addProduct,
     updateProduct,
     updateProjectProducts,

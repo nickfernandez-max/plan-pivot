@@ -46,5 +46,13 @@ export interface TeamMember {
   team?: Team;
 }
 
+export interface ProjectAssignment {
+  id: string;
+  project_id: string;
+  team_member_id: string;
+  percent_allocation: number;
+  created_at?: string;
+}
+
 export type SortField = keyof Omit<Project, 'id' | 'assignees' | 'color' | 'created_at' | 'updated_at' | 'description'> | 'team';
 export type SortDirection = 'asc' | 'desc';

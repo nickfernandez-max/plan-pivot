@@ -1,12 +1,13 @@
-import { useMemo, Fragment } from 'react';
+import { useMemo, Fragment, useState } from 'react';
 import { DndContext, DragOverlay } from '@dnd-kit/core';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Project, TeamMember, Team, Product } from '@/types/roadmap';
+import { Project, TeamMember, Team, Product, ProjectAssignment } from '@/types/roadmap';
 import { format, differenceInDays, addDays, startOfMonth, endOfMonth } from 'date-fns';
 import { useDragAndDrop } from '@/hooks/useDragAndDrop';
 import { DraggableProject } from '@/components/DraggableProject';
 import { DroppableMemberRow } from '@/components/DroppableMemberRow';
+import { EditProjectDialog } from '@/components/EditProjectDialog';
 import { Users } from 'lucide-react';
 
 interface RoadmapViewProps {
@@ -14,8 +15,11 @@ interface RoadmapViewProps {
   teamMembers: TeamMember[];
   teams: Team[];
   products: Product[];
+  assignments: ProjectAssignment[];
   onUpdateProject: (id: string, updates: Partial<Project>) => Promise<void>;
   onUpdateProjectAssignees: (projectId: string, assigneeIds: string[]) => Promise<void>;
+  onUpdateProjectProducts: (projectId: string, productIds: string[]) => Promise<void>;
+  onUpdateProjectAssignments: (projectId: string, assignments: { teamMemberId: string; percentAllocation: number }[]) => Promise<void>;
 }
 
 interface ProjectWithPosition extends Project {
@@ -85,9 +89,13 @@ export function RoadmapView({
   teamMembers, 
   teams, 
   products,
+  assignments,
   onUpdateProject, 
-  onUpdateProjectAssignees 
+  onUpdateProjectAssignees,
+  onUpdateProjectProducts,
+  onUpdateProjectAssignments
 }: RoadmapViewProps) {
+  const [editingProject, setEditingProject] = useState<Project | null>(null);
   // Calculate timeline bounds
   const timelineBounds = useMemo(() => {
     if (projects.length === 0) {
@@ -571,6 +579,20 @@ export function RoadmapView({
         </div>
       </CardContent>
     </Card>
+
+    {/* Edit Project Dialog */}
+    <EditProjectDialog
+      project={editingProject}
+      teams={teams}
+      products={products}
+      teamMembers={teamMembers}
+      assignments={assignments}
+      isOpen={!!editingProject}
+      onClose={() => setEditingProject(null)}
+      onUpdateProject={onUpdateProject}
+      onUpdateProjectProducts={onUpdateProjectProducts}
+      onUpdateProjectAssignments={onUpdateProjectAssignments}
+    />
 
     <DragOverlay>
       {activeDrag && (

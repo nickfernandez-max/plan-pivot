@@ -1,6 +1,7 @@
 import { useDraggable } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
 import { format } from 'date-fns';
+import { Edit } from 'lucide-react';
 import { Project, Team } from '@/types/roadmap';
 
 interface DraggableProjectProps {
@@ -9,6 +10,7 @@ interface DraggableProjectProps {
   style: React.CSSProperties;
   memberId: string;
   isPreview?: boolean;
+  onEdit?: () => void;
 }
 
 export function DraggableProject({ 
@@ -16,7 +18,8 @@ export function DraggableProject({
   team, 
   style, 
   memberId, 
-  isPreview = false 
+  isPreview = false,
+  onEdit
 }: DraggableProjectProps) {
   const {
     attributes,
@@ -64,6 +67,18 @@ export function DraggableProject({
             <div className="text-white/80 text-xs">R&D</div>
           )}
         </div>
+        {onEdit && !isPreview && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onEdit();
+            }}
+            className="ml-1 p-1 rounded hover:bg-white/20 transition-colors opacity-0 group-hover:opacity-100"
+            title="Edit project"
+          >
+            <Edit className="h-3 w-3 text-white" />
+          </button>
+        )}
       </div>
       
       {/* Tooltip */}

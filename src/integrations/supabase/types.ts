@@ -45,18 +45,21 @@ export type Database = {
         Row: {
           created_at: string
           id: string
+          percent_allocation: number | null
           project_id: string
           team_member_id: string
         }
         Insert: {
           created_at?: string
           id?: string
+          percent_allocation?: number | null
           project_id: string
           team_member_id: string
         }
         Update: {
           created_at?: string
           id?: string
+          percent_allocation?: number | null
           project_id?: string
           team_member_id?: string
         }
