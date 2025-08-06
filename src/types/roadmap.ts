@@ -34,5 +34,5 @@ export interface TeamMember {
   team?: Team;
 }
 
-export type SortField = keyof Omit<Project, 'id' | 'assignees' | 'color' | 'created_at' | 'updated_at' | 'team' | 'description'>;
+export type SortField = keyof Omit<Project, 'id' | 'assignees' | 'color' | 'created_at' | 'updated_at' | 'description'> | 'team';
 export type SortDirection = 'asc' | 'desc';

@@ -65,8 +65,17 @@ export function ProjectList({ projects, teams, onAddProject, onUpdateProject }: 
   };
 
   const sortedProjects = [...projects].sort((a, b) => {
-    const aValue = a[sortField];
-    const bValue = b[sortField];
+    let aValue: any;
+    let bValue: any;
+    
+    // Handle special case for team sorting
+    if (sortField === 'team') {
+      aValue = a.team?.name || '';
+      bValue = b.team?.name || '';
+    } else {
+      aValue = a[sortField as keyof Project];
+      bValue = b[sortField as keyof Project];
+    }
     
     if (typeof aValue === 'string' && typeof bValue === 'string') {
       return sortDirection === 'asc' 
@@ -311,7 +320,15 @@ export function ProjectList({ projects, teams, onAddProject, onUpdateProject }: 
                       {getSortIcon('name')}
                     </div>
                   </TableHead>
-                  <TableHead>Team</TableHead>
+                  <TableHead 
+                    className="cursor-pointer select-none"
+                    onClick={() => handleSort('team')}
+                  >
+                    <div className="flex items-center space-x-1">
+                      <span>Team</span>
+                      {getSortIcon('team')}
+                    </div>
+                  </TableHead>
                   <TableHead 
                     className="cursor-pointer select-none"
                     onClick={() => handleSort('start_date')}
