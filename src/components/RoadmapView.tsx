@@ -10,6 +10,68 @@ interface RoadmapViewProps {
   teams: Team[];
 }
 
+interface ProjectWithPosition extends Project {
+  left: number;
+  width: number;
+  lane: number;
+}
+
+interface MemberRow {
+  member: TeamMember;
+  team: Team;
+  projects: ProjectWithPosition[];
+  laneCount: number;
+  rowHeight: number;
+}
+
+// Function to detect overlapping date ranges
+const projectsOverlap = (p1: Project, p2: Project): boolean => {
+  const start1 = new Date(p1.start_date);
+  const end1 = new Date(p1.end_date);
+  const start2 = new Date(p2.start_date);
+  const end2 = new Date(p2.end_date);
+  
+  return start1 <= end2 && start2 <= end1;
+};
+
+// Function to assign lanes to projects to avoid overlaps
+const assignLanes = (projects: Array<Project & { left: number; width: number }>): ProjectWithPosition[] => {
+  if (projects.length === 0) return [];
+  
+  // Sort projects by start date
+  const sortedProjects = [...projects].sort((a, b) => 
+    new Date(a.start_date).getTime() - new Date(b.start_date).getTime()
+  );
+  
+  const lanes: ProjectWithPosition[][] = [];
+  
+  sortedProjects.forEach(project => {
+    // Find the first lane where this project doesn't overlap with existing projects
+    let assignedLane = -1;
+    
+    for (let laneIndex = 0; laneIndex < lanes.length; laneIndex++) {
+      const lane = lanes[laneIndex];
+      const hasOverlap = lane.some(existingProject => projectsOverlap(project, existingProject));
+      
+      if (!hasOverlap) {
+        assignedLane = laneIndex;
+        break;
+      }
+    }
+    
+    // If no existing lane works, create a new one
+    if (assignedLane === -1) {
+      assignedLane = lanes.length;
+      lanes.push([]);
+    }
+    
+    const projectWithLane: ProjectWithPosition = { ...project, lane: assignedLane };
+    lanes[assignedLane].push(projectWithLane);
+  });
+  
+  return lanes.flat();
+};
+
 export function RoadmapView({ projects, teamMembers, teams }: RoadmapViewProps) {
   // Calculate timeline bounds
   const timelineBounds = useMemo(() => {
@@ -57,62 +119,71 @@ export function RoadmapView({ projects, teamMembers, teams }: RoadmapViewProps) 
     return months;
   }, [timelineBounds, totalDays]);
 
-  // Group team members by team and create rows
-  const teamGroupsWithRows = useMemo(() => {
-    const teamGroups = teams.map(team => ({
-      team,
-      members: teamMembers.filter(member => member.team_id === team.id)
-    }));
+  // Calculate member rows with dynamic heights based on overlapping projects
+  const memberRows = useMemo(() => {
+    const BASE_ROW_HEIGHT = 60;
+    const LANE_HEIGHT = 36;
+    const MIN_LANES = 1;
+    
+    const rows: MemberRow[] = [];
 
-    let currentRowIndex = 0;
-    return teamGroups.map(group => ({
-      ...group,
-      startRow: currentRowIndex,
-      rowCount: group.members.length,
-      endRow: (currentRowIndex += group.members.length)
-    }));
-  }, [teams, teamMembers]);
-
-  // Map each team member to their assigned projects with positioning
-  const memberProjectRows = useMemo(() => {
-    const rows: Array<{
-      member: TeamMember;
-      team: Team;
-      rowIndex: number;
-      projects: Array<Project & { left: number; width: number }>;
-    }> = [];
-
-    let currentRowIndex = 0;
-
-    teamGroupsWithRows.forEach(({ team, members }) => {
-      members.forEach(member => {
+    teams.forEach(team => {
+      const membersInTeam = teamMembers.filter(member => member.team_id === team.id);
+      
+      membersInTeam.forEach(member => {
         // Find projects assigned to this member
-        const memberProjects = projects.filter(project => 
-          project.assignees?.some(assignee => assignee.id === member.id)
-        ).map(project => {
-          const startDate = new Date(project.start_date);
-          const endDate = new Date(project.end_date);
-          const daysFromStart = differenceInDays(startDate, timelineBounds.start);
-          const duration = differenceInDays(endDate, startDate) + 1;
-          
-          return {
-            ...project,
-            left: (daysFromStart / totalDays) * 100,
-            width: Math.max((duration / totalDays) * 100, 2) // Minimum width for visibility
-          };
-        });
+        const memberProjects = projects
+          .filter(project => project.assignees?.some(assignee => assignee.id === member.id))
+          .map(project => {
+            const startDate = new Date(project.start_date);
+            const endDate = new Date(project.end_date);
+            const daysFromStart = differenceInDays(startDate, timelineBounds.start);
+            const duration = differenceInDays(endDate, startDate) + 1;
+            
+            return {
+              ...project,
+              left: (daysFromStart / totalDays) * 100,
+              width: Math.max((duration / totalDays) * 100, 2) // Minimum width for visibility
+            };
+          });
+
+        // Assign lanes to avoid overlaps
+        const projectsWithLanes = assignLanes(memberProjects);
+        const laneCount = Math.max(MIN_LANES, Math.max(0, ...projectsWithLanes.map(p => p.lane + 1)));
+        const rowHeight = BASE_ROW_HEIGHT + (Math.max(0, laneCount - 1) * LANE_HEIGHT);
 
         rows.push({
           member,
           team,
-          rowIndex: currentRowIndex++,
-          projects: memberProjects
+          projects: projectsWithLanes,
+          laneCount,
+          rowHeight
         });
       });
     });
 
     return rows;
-  }, [teamGroupsWithRows, projects, timelineBounds, totalDays]);
+  }, [teams, teamMembers, projects, timelineBounds, totalDays]);
+
+  // Group rows by team for layout calculations
+  const teamGroups = useMemo(() => {
+    const groups: Array<{ team: Team; memberRows: MemberRow[]; totalHeight: number }> = [];
+    
+    teams.forEach(team => {
+      const teamMemberRows = memberRows.filter(row => row.team.id === team.id);
+      const totalHeight = teamMemberRows.reduce((sum, row) => sum + row.rowHeight, 0);
+      
+      if (teamMemberRows.length > 0) {
+        groups.push({
+          team,
+          memberRows: teamMemberRows,
+          totalHeight
+        });
+      }
+    });
+    
+    return groups;
+  }, [teams, memberRows]);
 
   if (teamMembers.length === 0) {
     return (
@@ -124,7 +195,6 @@ export function RoadmapView({ projects, teamMembers, teams }: RoadmapViewProps) 
     );
   }
 
-  const ROW_HEIGHT = 60;
   const TEAM_HEADER_HEIGHT = 40;
   
   return (
@@ -154,7 +224,7 @@ export function RoadmapView({ projects, teamMembers, teams }: RoadmapViewProps) 
           <div className="flex">
             {/* Left sidebar with names */}
             <div className="w-48 flex-shrink-0">
-              {teamGroupsWithRows.map(({ team, members }) => (
+              {teamGroups.map(({ team, memberRows: teamMemberRows }) => (
                 <div key={team.id}>
                   {/* Team header */}
                   <div 
@@ -169,12 +239,12 @@ export function RoadmapView({ projects, teamMembers, teams }: RoadmapViewProps) 
                     <span className="truncate">{team.name}</span>
                   </div>
                   
-                  {/* Team members */}
-                  {members.map(member => (
+                  {/* Team members with dynamic heights */}
+                  {teamMemberRows.map(({ member, rowHeight }) => (
                     <div
                       key={member.id}
                       className="flex items-center px-4 py-2 text-sm border-b border-border/50 bg-background"
-                      style={{ height: `${ROW_HEIGHT}px` }}
+                      style={{ height: `${rowHeight}px` }}
                     >
                       <div className="flex-1 min-w-0">
                         <div className="font-medium truncate">{member.name}</div>
@@ -189,8 +259,8 @@ export function RoadmapView({ projects, teamMembers, teams }: RoadmapViewProps) 
             {/* Right timeline area */}
             <div className="flex-1 relative border-l border-border">
               {/* Team headers for timeline */}
-              {teamGroupsWithRows.map(({ team, rowCount }, teamIndex) => {
-                const topOffset = teamGroupsWithRows.slice(0, teamIndex).reduce((acc, g) => acc + TEAM_HEADER_HEIGHT + (g.rowCount * ROW_HEIGHT), 0);
+              {teamGroups.map(({ team, totalHeight }, teamIndex) => {
+                const topOffset = teamGroups.slice(0, teamIndex).reduce((acc, g) => acc + TEAM_HEADER_HEIGHT + g.totalHeight, 0);
                 return (
                   <div
                     key={`${team.id}-header`}
@@ -204,66 +274,76 @@ export function RoadmapView({ projects, teamMembers, teams }: RoadmapViewProps) 
                 );
               })}
 
-              {/* Member rows with projects */}
-              {memberProjectRows.map(({ member, team, rowIndex, projects }) => {
-                const teamIndex = teamGroupsWithRows.findIndex(g => g.team.id === team.id);
-                const memberIndexInTeam = teamGroupsWithRows[teamIndex].members.findIndex(m => m.id === member.id);
-                const topOffset = teamGroupsWithRows.slice(0, teamIndex).reduce((acc, g) => acc + TEAM_HEADER_HEIGHT + (g.rowCount * ROW_HEIGHT), 0) 
-                  + TEAM_HEADER_HEIGHT + (memberIndexInTeam * ROW_HEIGHT);
-
-                return (
-                  <div key={member.id}>
-                    {/* Row background */}
-                    <div
-                      className="absolute w-full border-b border-border/50"
-                      style={{
-                        top: `${topOffset}px`,
-                        height: `${ROW_HEIGHT}px`
-                      }}
-                    />
-                    
-                    {/* Projects for this member */}
-                    {projects.map(project => (
+              {/* Member rows with projects in lanes */}
+              {teamGroups.map(({ team, memberRows: teamMemberRows }, teamIndex) => {
+                let memberTopOffset = teamGroups.slice(0, teamIndex).reduce((acc, g) => acc + TEAM_HEADER_HEIGHT + g.totalHeight, 0) + TEAM_HEADER_HEIGHT;
+                
+                return teamMemberRows.map(({ member, projects, rowHeight, laneCount }) => {
+                  const currentMemberTop = memberTopOffset;
+                  memberTopOffset += rowHeight;
+                  
+                  const LANE_HEIGHT = 36;
+                  const LANE_PADDING = 4;
+                  
+                  return (
+                    <div key={member.id}>
+                      {/* Row background */}
                       <div
-                        key={`${member.id}-${project.id}`}
-                        className="absolute rounded-md shadow-sm border transition-all hover:shadow-md cursor-pointer group"
+                        className="absolute w-full border-b border-border/50"
                         style={{
-                          left: `${project.left}%`,
-                          width: `${project.width}%`,
-                          top: `${topOffset + 8}px`,
-                          height: `${ROW_HEIGHT - 16}px`,
-                          backgroundColor: project.team?.color || project.color || team.color || 'hsl(var(--primary))',
-                          borderColor: project.team?.color || project.color || team.color || 'hsl(var(--primary))'
+                          top: `${currentMemberTop}px`,
+                          height: `${rowHeight}px`
                         }}
-                      >
-                        <div className="h-full flex items-center px-2 overflow-hidden">
-                          <div className="flex-1 min-w-0">
-                            <div className="text-white text-xs font-medium truncate">
-                              {project.name}
-                            </div>
-                            {project.is_rd && (
-                              <div className="text-white/80 text-xs">R&D</div>
-                            )}
-                          </div>
-                        </div>
+                      />
+                      
+                      {/* Projects in their assigned lanes */}
+                      {projects.map(project => {
+                        const laneTop = currentMemberTop + LANE_PADDING + (project.lane * LANE_HEIGHT);
+                        const projectHeight = LANE_HEIGHT - (LANE_PADDING * 2);
                         
-                        {/* Tooltip */}
-                        <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-popover text-popover-foreground rounded-md shadow-md opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10 whitespace-nowrap">
-                          <div className="text-sm font-medium">{project.name}</div>
-                          <div className="text-xs text-muted-foreground mt-1">
-                            {format(new Date(project.start_date), 'MMM d, yyyy')} - {format(new Date(project.end_date), 'MMM d, yyyy')}
+                        return (
+                          <div
+                            key={`${member.id}-${project.id}`}
+                            className="absolute rounded-md shadow-sm border transition-all hover:shadow-md cursor-pointer group animate-fade-in"
+                            style={{
+                              left: `${project.left}%`,
+                              width: `${project.width}%`,
+                              top: `${laneTop}px`,
+                              height: `${projectHeight}px`,
+                              backgroundColor: project.team?.color || project.color || team.color || 'hsl(var(--primary))',
+                              borderColor: project.team?.color || project.color || team.color || 'hsl(var(--primary))'
+                            }}
+                          >
+                            <div className="h-full flex items-center px-2 overflow-hidden">
+                              <div className="flex-1 min-w-0">
+                                <div className="text-white text-xs font-medium truncate">
+                                  {project.name}
+                                </div>
+                                {project.is_rd && (
+                                  <div className="text-white/80 text-xs">R&D</div>
+                                )}
+                              </div>
+                            </div>
+                            
+                            {/* Tooltip */}
+                            <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-popover text-popover-foreground rounded-md shadow-md opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10 whitespace-nowrap">
+                              <div className="text-sm font-medium">{project.name}</div>
+                              <div className="text-xs text-muted-foreground mt-1">
+                                {format(new Date(project.start_date), 'MMM d, yyyy')} - {format(new Date(project.end_date), 'MMM d, yyyy')}
+                              </div>
+                              {project.description && (
+                                <div className="text-xs mt-1 max-w-xs">{project.description}</div>
+                              )}
+                              <div className="text-xs mt-1">
+                                Value Score: {project.value_score}
+                              </div>
+                            </div>
                           </div>
-                          {project.description && (
-                            <div className="text-xs mt-1 max-w-xs">{project.description}</div>
-                          )}
-                          <div className="text-xs mt-1">
-                            Value Score: {project.value_score}
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                );
+                        );
+                      })}
+                    </div>
+                  );
+                });
               })}
             </div>
           </div>
