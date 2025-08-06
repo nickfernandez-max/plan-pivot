@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { Project, TeamMember, Team } from '@/types/roadmap';
+import { Project, TeamMember, Team, Product } from '@/types/roadmap';
 
-export const useSupabaseData = () => {
+export function useSupabaseData() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
   const [teams, setTeams] = useState<Team[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -16,11 +17,27 @@ export const useSupabaseData = () => {
 
       console.log('Starting data fetch...');
 
-      // Fetch teams
+      // Fetch products
+      console.log('Fetching products...');
+      const { data: productsData, error: productsError } = await supabase
+        .from('products')
+        .select('*')
+        .order('name');
+
+      if (productsError) {
+        console.error('Products error:', productsError);
+        throw productsError;
+      }
+      console.log('Products fetched:', productsData?.length || 0);
+
+      // Fetch teams with their products
       console.log('Fetching teams...');
       const { data: teamsData, error: teamsError } = await supabase
         .from('teams')
-        .select('*')
+        .select(`
+          *,
+          product:products(*)
+        `)
         .order('name');
 
       if (teamsError) {
@@ -45,16 +62,15 @@ export const useSupabaseData = () => {
       }
       console.log('Team members fetched:', teamMembersData?.length || 0);
 
-      // Fetch projects with teams and assignees
+      // Fetch projects with teams, assignees, and products
       console.log('Fetching projects...');
       const { data: projectsData, error: projectsError } = await supabase
         .from('projects')
         .select(`
           *,
-          team:teams(*),
-          assignees:project_assignees(
-            team_member:team_members(*)
-          )
+          team:teams(*, product:products(*)),
+          assignees:project_assignees(team_member:team_members(*)),
+          products:project_products(product:products(*))
         `)
         .order('start_date');
 
@@ -67,9 +83,11 @@ export const useSupabaseData = () => {
       // Transform the data to match our interface
       const transformedProjects = projectsData?.map(project => ({
         ...project,
-        assignees: project.assignees?.map(assignee => assignee.team_member).filter(Boolean) || []
+        assignees: project.assignees?.map((a: any) => a.team_member) || [],
+        products: project.products?.map((p: any) => p.product) || []
       })) || [];
 
+      setProducts(productsData || []);
       setTeams(teamsData || []);
       setTeamMembers(teamMembersData || []);
       setProjects(transformedProjects);
@@ -190,50 +208,128 @@ export const useSupabaseData = () => {
     }
   };
 
+  const addProduct = async (newProduct: Omit<Product, 'id' | 'created_at' | 'updated_at'>) => {
+    const { data, error } = await supabase
+      .from('products')
+      .insert([newProduct])
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error adding product:', error);
+      throw error;
+    }
+
+    setProducts(prev => [...prev, data]);
+    return data;
+  };
+
+  const updateProduct = async (id: string, updates: Partial<Product>) => {
+    const { data, error } = await supabase
+      .from('products')
+      .update(updates)
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error updating product:', error);
+      throw error;
+    }
+
+    setProducts(prev => prev.map(product => 
+      product.id === id ? { ...product, ...updates } : product
+    ));
+    return data;
+  };
+
+  const updateProjectProducts = async (projectId: string, productIds: string[]) => {
+    // Delete existing product assignments
+    const { error: deleteError } = await supabase
+      .from('project_products')
+      .delete()
+      .eq('project_id', projectId);
+
+    if (deleteError) {
+      console.error('Error deleting project products:', deleteError);
+      throw deleteError;
+    }
+
+    // Insert new product assignments
+    if (productIds.length > 0) {
+      const { error: insertError } = await supabase
+        .from('project_products')
+        .insert(
+          productIds.map(productId => ({
+            project_id: projectId,
+            product_id: productId,
+          }))
+        );
+
+      if (insertError) {
+        console.error('Error inserting project products:', insertError);
+        throw insertError;
+      }
+    }
+
+    // Refetch the updated project
+    await fetchData();
+    
+    return await supabase
+      .from('projects')
+      .select(`
+        *,
+        team:teams(*, product:products(*)),
+        assignees:project_assignees(team_member:team_members(*)),
+        products:project_products(product:products(*))
+      `)
+      .eq('id', projectId)
+      .single();
+  };
+
   const updateProjectAssignees = async (projectId: string, assigneeIds: string[]) => {
     try {
-      // First, remove all existing assignees for this project
-      await supabase
+      // Delete existing assignees for this project
+      const { error: deleteError } = await supabase
         .from('project_assignees')
         .delete()
         .eq('project_id', projectId);
 
-      // Then add the new assignees
+      if (deleteError) {
+        console.error('Error deleting project assignees:', deleteError);
+        throw deleteError;
+      }
+
+      // Insert new assignees
       if (assigneeIds.length > 0) {
-        const { error } = await supabase
+        const { error: insertError } = await supabase
           .from('project_assignees')
           .insert(
             assigneeIds.map(memberId => ({
               project_id: projectId,
-              team_member_id: memberId
+              team_member_id: memberId,
             }))
           );
 
-        if (error) throw error;
+        if (insertError) {
+          console.error('Error inserting project assignees:', insertError);
+          throw insertError;
+        }
       }
 
-      // Refresh the project data
-      const { data, error: fetchError } = await supabase
+      // Refetch the updated project
+      await fetchData();
+      
+      return await supabase
         .from('projects')
         .select(`
           *,
-          team:teams(*),
-          assignees:project_assignees(
-            team_member:team_members(*)
-          )
+          team:teams(*, product:products(*)),
+          assignees:project_assignees(team_member:team_members(*)),
+          products:project_products(product:products(*))
         `)
         .eq('id', projectId)
         .single();
-
-      if (fetchError) throw fetchError;
-
-      const transformedProject = {
-        ...data,
-        assignees: data.assignees?.map(assignee => assignee.team_member).filter(Boolean) || []
-      };
-
-      setProjects(prev => prev.map(p => p.id === projectId ? transformedProject : p));
-      return transformedProject;
     } catch (err) {
       console.error('Error updating project assignees:', err);
       throw err;
@@ -276,6 +372,7 @@ export const useSupabaseData = () => {
     projects,
     teamMembers,
     teams,
+    products,
     loading,
     error,
     addProject,
@@ -283,6 +380,9 @@ export const useSupabaseData = () => {
     addTeamMember,
     updateTeamMember,
     updateProjectAssignees,
-    refetch: fetchData
+    addProduct,
+    updateProduct,
+    updateProjectProducts,
+    refetch: fetchData,
   };
-};
+}

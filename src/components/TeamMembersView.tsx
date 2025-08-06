@@ -12,12 +12,16 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { format, addMonths, startOfMonth, differenceInMonths } from 'date-fns';
-import { TeamMember, Team } from '@/types/roadmap';
+import { TeamMember, Team, Product } from '@/types/roadmap';
 
 interface TeamMembersViewProps {
   teamMembers: TeamMember[];
   teams: Team[];
+  products: Product[];
   onAddTeamMember: (member: Omit<TeamMember, 'id' | 'created_at' | 'updated_at'>) => void;
+  onUpdateTeamMember: (id: string, updates: Partial<TeamMember>) => void;
+  onAddProduct: (product: Omit<Product, 'id' | 'created_at' | 'updated_at'>) => void;
+  onUpdateProduct: (id: string, updates: Partial<Product>) => void;
 }
 
 const teamMemberSchema = z.object({
@@ -27,8 +31,23 @@ const teamMemberSchema = z.object({
   start_date: z.string().min(1, "Start date is required"),
 });
 
-export function TeamMembersView({ teamMembers, teams, onAddTeamMember }: TeamMembersViewProps) {
+const productSchema = z.object({
+  name: z.string().min(1, "Product name is required"),
+  description: z.string().optional(),
+  color: z.string().optional(),
+});
+
+export function TeamMembersView({ 
+  teamMembers, 
+  teams, 
+  products, 
+  onAddTeamMember, 
+  onUpdateTeamMember, 
+  onAddProduct, 
+  onUpdateProduct 
+}: TeamMembersViewProps) {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [isAddProductDialogOpen, setIsAddProductDialogOpen] = useState(false);
 
   const form = useForm<z.infer<typeof teamMemberSchema>>({
     resolver: zodResolver(teamMemberSchema),
@@ -57,6 +76,15 @@ export function TeamMembersView({ teamMembers, teams, onAddTeamMember }: TeamMem
     return months;
   }, []);
 
+  const productForm = useForm<z.infer<typeof productSchema>>({
+    resolver: zodResolver(productSchema),
+    defaultValues: {
+      name: "",
+      description: "",
+      color: "#6366F1",
+    },
+  });
+
   // Group team members by team
   const groupedMembers = useMemo(() => {
     return teams.map(team => ({
@@ -81,6 +109,12 @@ export function TeamMembersView({ teamMembers, teams, onAddTeamMember }: TeamMem
     setIsAddDialogOpen(false);
   };
 
+  const onProductSubmit = (values: z.infer<typeof productSchema>) => {
+    onAddProduct(values as Omit<Product, 'id' | 'created_at' | 'updated_at'>);
+    productForm.reset();
+    setIsAddProductDialogOpen(false);
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -88,13 +122,80 @@ export function TeamMembersView({ teamMembers, teams, onAddTeamMember }: TeamMem
           <h2 className="text-2xl font-bold">Team Members</h2>
           <p className="text-muted-foreground">Manage your team members and their involvement over time</p>
         </div>
-        <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="w-4 h-4 mr-2" />
-              Add Person
-            </Button>
-          </DialogTrigger>
+        <div className="flex gap-2">
+          <Dialog open={isAddProductDialogOpen} onOpenChange={setIsAddProductDialogOpen}>
+            <DialogTrigger asChild>
+              <Button variant="outline">
+                <Plus className="w-4 h-4 mr-2" />
+                Add Product
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-md">
+              <DialogHeader>
+                <DialogTitle>Add New Product</DialogTitle>
+                <DialogDescription>
+                  Create a new product that teams can be assigned to.
+                </DialogDescription>
+              </DialogHeader>
+              <Form {...productForm}>
+                <form onSubmit={productForm.handleSubmit(onProductSubmit)} className="space-y-4">
+                  <FormField
+                    control={productForm.control}
+                    name="name"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Product Name</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Enter product name" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={productForm.control}
+                    name="description"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Description (Optional)</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Enter product description" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={productForm.control}
+                    name="color"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Color</FormLabel>
+                        <FormControl>
+                          <Input type="color" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <div className="flex justify-end space-x-2">
+                    <Button type="button" variant="outline" onClick={() => setIsAddProductDialogOpen(false)}>
+                      Cancel
+                    </Button>
+                    <Button type="submit">Add Product</Button>
+                  </div>
+                </form>
+              </Form>
+            </DialogContent>
+          </Dialog>
+
+          <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+            <DialogTrigger asChild>
+              <Button>
+                <Plus className="w-4 h-4 mr-2" />
+                Add Person
+              </Button>
+            </DialogTrigger>
           <DialogContent className="sm:max-w-md">
             <DialogHeader>
               <DialogTitle>Add New Team Member</DialogTitle>
@@ -177,6 +278,7 @@ export function TeamMembersView({ teamMembers, teams, onAddTeamMember }: TeamMem
             </Form>
           </DialogContent>
         </Dialog>
+        </div>
       </div>
 
       <Card>

@@ -1,10 +1,21 @@
-export interface Team {
+export interface Product {
   id: string;
   name: string;
   description?: string;
   color?: string;
   created_at?: string;
   updated_at?: string;
+}
+
+export interface Team {
+  id: string;
+  name: string;
+  description?: string;
+  color?: string;
+  product_id?: string;
+  created_at?: string;
+  updated_at?: string;
+  product?: Product;
 }
 
 export interface Project {
@@ -20,6 +31,7 @@ export interface Project {
   created_at?: string;
   updated_at?: string;
   team?: Team;
+  products?: Product[];
   assignees?: TeamMember[];
 }
 

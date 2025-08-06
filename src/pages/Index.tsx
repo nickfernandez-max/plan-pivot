@@ -1,4 +1,4 @@
-import { RoadmapApp } from './RoadmapApp';
+import RoadmapApp from './RoadmapApp';
 
 const Index = () => {
   return <RoadmapApp />;

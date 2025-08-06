@@ -1,82 +1,120 @@
 import { useState, useMemo } from 'react';
+import { useSupabaseData } from '@/hooks/useSupabaseData';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ProjectList } from '@/components/ProjectList';
 import { RoadmapView } from '@/components/RoadmapView';
 import { TeamMembersView } from '@/components/TeamMembersView';
+import { toast } from 'sonner';
 
-import { Project, TeamMember } from '@/types/roadmap';
-import { useSupabaseData } from '@/hooks/useSupabaseData';
-
-export function RoadmapApp() {
+export default function RoadmapApp() {
   const [selectedTeam, setSelectedTeam] = useState<string>('all');
+  const [selectedProduct, setSelectedProduct] = useState<string>('all');
+  
   const { 
     projects, 
     teamMembers, 
     teams, 
+    products,
     loading, 
     error, 
     addProject, 
     updateProject, 
     addTeamMember, 
-    updateTeamMember,
-    updateProjectAssignees
+    updateTeamMember, 
+    updateProjectAssignees,
+    addProduct,
+    updateProduct,
+    updateProjectProducts
   } = useSupabaseData();
 
-  // Get unique team names for filter
+  // Generate filter options
   const teamNames = useMemo(() => {
-    return teams.map(t => t.name).sort();
+    return Array.from(new Set(teams.map(team => team.name))).sort();
   }, [teams]);
 
-  // Filter projects and team members based on selected team
+  const productNames = useMemo(() => {
+    return Array.from(new Set(products.map(product => product.name))).sort();
+  }, [products]);
+
+  // Filter data based on selected filters
   const filteredProjects = useMemo(() => {
-    if (selectedTeam === 'all') return projects;
-    return projects.filter(p => p.team?.name === selectedTeam);
-  }, [projects, selectedTeam]);
+    return projects.filter(project => {
+      const teamMatches = selectedTeam === 'all' || project.team?.name === selectedTeam;
+      const productMatches = selectedProduct === 'all' || 
+        (selectedTeam === 'all' ? 
+          project.products?.some(p => p.name === selectedProduct) || project.team?.product?.name === selectedProduct :
+          project.team?.product?.name === selectedProduct);
+      return teamMatches && productMatches;
+    });
+  }, [projects, selectedTeam, selectedProduct]);
 
   const filteredTeamMembers = useMemo(() => {
-    if (selectedTeam === 'all') return teamMembers;
-    return teamMembers.filter(m => m.team?.name === selectedTeam);
-  }, [teamMembers, selectedTeam]);
+    return teamMembers.filter(member => {
+      const teamMatches = selectedTeam === 'all' || teams.find(t => t.id === member.team_id)?.name === selectedTeam;
+      const productMatches = selectedProduct === 'all' || 
+        teams.find(t => t.id === member.team_id)?.product?.name === selectedProduct;
+      return teamMatches && productMatches;
+    });
+  }, [teamMembers, teams, selectedTeam, selectedProduct]);
 
-  const handleAddProject = async (newProject: Omit<Project, 'id' | 'created_at' | 'updated_at'>) => {
+  // Event handlers for data manipulation
+  const handleAddProject = async (projectData: any) => {
     try {
-      await addProject(newProject);
-    } catch (err) {
-      console.error('Error adding project:', err);
+      await addProject(projectData);
+      toast.success('Project added successfully');
+    } catch (error) {
+      console.error('Error adding project:', error);
+      toast.error('Failed to add project');
     }
   };
 
-  const handleUpdateProject = async (id: string, updates: Partial<Project>) => {
+  const handleUpdateProject = async (id: string, updates: any) => {
     try {
       await updateProject(id, updates);
-    } catch (err) {
-      console.error('Error updating project:', err);
+      toast.success('Project updated successfully');
+    } catch (error) {
+      console.error('Error updating project:', error);
+      toast.error('Failed to update project');
     }
   };
 
-  const handleAddTeamMember = async (newMember: Omit<TeamMember, 'id' | 'created_at' | 'updated_at'>) => {
+  const handleAddTeamMember = async (memberData: any) => {
     try {
-      await addTeamMember(newMember);
-    } catch (err) {
-      console.error('Error adding team member:', err);
+      await addTeamMember(memberData);
+      toast.success('Team member added successfully');
+    } catch (error) {
+      console.error('Error adding team member:', error);
+      toast.error('Failed to add team member');
     }
   };
 
-  const handleUpdateTeamMember = async (id: string, updates: Partial<TeamMember>) => {
+  const handleUpdateTeamMember = async (id: string, updates: any) => {
     try {
       await updateTeamMember(id, updates);
-    } catch (err) {
-      console.error('Error updating team member:', err);
+      toast.success('Team member updated successfully');
+    } catch (error) {
+      console.error('Error updating team member:', error);
+      toast.error('Failed to update team member');
+    }
+  };
+
+  const handleAddProduct = async (productData: any) => {
+    try {
+      await addProduct(productData);
+      toast.success('Product added successfully');
+    } catch (error) {
+      console.error('Error adding product:', error);
+      toast.error('Failed to add product');
     }
   };
 
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary mx-auto"></div>
-          <p className="mt-4 text-muted-foreground">Loading roadmap data...</p>
+        <div className="flex flex-col items-center space-y-4">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+          <p className="text-muted-foreground">Loading your roadmap...</p>
         </div>
       </div>
     );
@@ -85,8 +123,9 @@ export function RoadmapApp() {
   if (error) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center">
-          <p className="text-destructive mb-4">Error loading data: {error}</p>
+        <div className="text-center space-y-4">
+          <h2 className="text-2xl font-bold text-destructive">Error Loading Data</h2>
+          <p className="text-muted-foreground">{error}</p>
           <button 
             onClick={() => window.location.reload()} 
             className="px-4 py-2 bg-primary text-primary-foreground rounded hover:bg-primary/90"
@@ -124,48 +163,67 @@ export function RoadmapApp() {
               </TabsTrigger>
             </TabsList>
             
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-medium text-muted-foreground">Filter by team:</span>
+            <div className="flex gap-4">
               <Select value={selectedTeam} onValueChange={setSelectedTeam}>
                 <SelectTrigger className="w-48">
-                  <SelectValue placeholder="Select team" />
+                  <SelectValue placeholder="Filter by team" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Teams</SelectItem>
-                  {teamNames.map(team => (
-                    <SelectItem key={team} value={team}>{team}</SelectItem>
+                  {teamNames.map((teamName) => (
+                    <SelectItem key={teamName} value={teamName}>
+                      {teamName}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              
+              <Select value={selectedProduct} onValueChange={setSelectedProduct}>
+                <SelectTrigger className="w-48">
+                  <SelectValue placeholder="Filter by product" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Products</SelectItem>
+                  {productNames.map((productName) => (
+                    <SelectItem key={productName} value={productName}>
+                      {productName}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
           </div>
 
-          <TabsContent value="projects" className="space-y-6">
-            <ProjectList
-              projects={filteredProjects}
+          <TabsContent value="projects">
+            <ProjectList 
+              projects={filteredProjects} 
               teams={teams}
-              onAddProject={handleAddProject}
+              onAddProject={handleAddProject} 
               onUpdateProject={handleUpdateProject}
             />
           </TabsContent>
 
-          <TabsContent value="roadmap" className="space-y-6">
-          <RoadmapView 
-            projects={filteredProjects} 
-            teamMembers={filteredTeamMembers} 
-            teams={teams}
-            onUpdateProject={handleUpdateProject}
-            onUpdateProjectAssignees={async (projectId: string, assigneeIds: string[]) => {
-              await updateProjectAssignees(projectId, assigneeIds);
-            }}
-          />
+          <TabsContent value="roadmap">
+            <RoadmapView 
+              projects={filteredProjects} 
+              teamMembers={filteredTeamMembers} 
+              teams={teams}
+              onUpdateProject={handleUpdateProject}
+              onUpdateProjectAssignees={async (projectId: string, assigneeIds: string[]) => {
+                await updateProjectAssignees(projectId, assigneeIds);
+              }}
+            />
           </TabsContent>
 
-          <TabsContent value="members" className="space-y-6">
-            <TeamMembersView
-              teamMembers={filteredTeamMembers}
+          <TabsContent value="members">
+            <TeamMembersView 
+              teamMembers={filteredTeamMembers} 
               teams={teams}
-              onAddTeamMember={handleAddTeamMember}
+              products={products}
+              onAddTeamMember={handleAddTeamMember} 
+              onUpdateTeamMember={handleUpdateTeamMember}
+              onAddProduct={handleAddProduct}
+              onUpdateProduct={updateProduct}
             />
           </TabsContent>
         </Tabs>

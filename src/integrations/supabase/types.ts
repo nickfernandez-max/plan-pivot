@@ -14,6 +14,33 @@ export type Database = {
   }
   public: {
     Tables: {
+      products: {
+        Row: {
+          color: string | null
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          color?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          color?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       project_assignees: {
         Row: {
           created_at: string
@@ -46,6 +73,42 @@ export type Database = {
             columns: ["team_member_id"]
             isOneToOne: false
             referencedRelation: "team_members"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      project_products: {
+        Row: {
+          created_at: string
+          id: string
+          product_id: string
+          project_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          product_id: string
+          project_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          product_id?: string
+          project_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_products_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_products_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
             referencedColumns: ["id"]
           },
         ]
@@ -145,6 +208,7 @@ export type Database = {
           description: string | null
           id: string
           name: string
+          product_id: string | null
           updated_at: string
         }
         Insert: {
@@ -153,6 +217,7 @@ export type Database = {
           description?: string | null
           id?: string
           name: string
+          product_id?: string | null
           updated_at?: string
         }
         Update: {
@@ -161,9 +226,18 @@ export type Database = {
           description?: string | null
           id?: string
           name?: string
+          product_id?: string | null
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "teams_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
