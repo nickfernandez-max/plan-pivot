@@ -146,7 +146,11 @@ export function RoadmapApp() {
           </TabsContent>
 
           <TabsContent value="roadmap" className="space-y-6">
-            <RoadmapView projects={filteredProjects} />
+            <RoadmapView 
+              projects={filteredProjects} 
+              teamMembers={filteredTeamMembers}
+              teams={teams}
+            />
           </TabsContent>
         </Tabs>
       </div>
