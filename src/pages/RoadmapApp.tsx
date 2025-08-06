@@ -150,11 +150,15 @@ export function RoadmapApp() {
           </TabsContent>
 
           <TabsContent value="roadmap" className="space-y-6">
-            <RoadmapView 
-              projects={filteredProjects} 
-              teamMembers={filteredTeamMembers}
-              teams={teams}
-            />
+          <RoadmapView 
+            projects={filteredProjects} 
+            teamMembers={filteredTeamMembers} 
+            teams={teams}
+            onUpdateProject={handleUpdateProject}
+            onUpdateProjectAssignees={async (projectId: string, assigneeIds: string[]) => {
+              await updateProjectAssignees(projectId, assigneeIds);
+            }}
+          />
           </TabsContent>
 
           <TabsContent value="members" className="space-y-6">

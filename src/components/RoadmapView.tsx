@@ -1,13 +1,19 @@
 import { useMemo } from 'react';
+import { DndContext, DragOverlay } from '@dnd-kit/core';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Project, TeamMember, Team } from '@/types/roadmap';
 import { format, differenceInDays, addDays, startOfMonth, endOfMonth } from 'date-fns';
+import { useDragAndDrop } from '@/hooks/useDragAndDrop';
+import { DraggableProject } from '@/components/DraggableProject';
+import { DroppableMemberRow } from '@/components/DroppableMemberRow';
 
 interface RoadmapViewProps {
   projects: Project[];
   teamMembers: TeamMember[];
   teams: Team[];
+  onUpdateProject: (id: string, updates: Partial<Project>) => Promise<void>;
+  onUpdateProjectAssignees: (projectId: string, assigneeIds: string[]) => Promise<void>;
 }
 
 interface ProjectWithPosition extends Project {
@@ -72,7 +78,13 @@ const assignLanes = (projects: Array<Project & { left: number; width: number }>)
   return lanes.flat();
 };
 
-export function RoadmapView({ projects, teamMembers, teams }: RoadmapViewProps) {
+export function RoadmapView({ 
+  projects, 
+  teamMembers, 
+  teams, 
+  onUpdateProject, 
+  onUpdateProjectAssignees 
+}: RoadmapViewProps) {
   // Calculate timeline bounds
   const timelineBounds = useMemo(() => {
     if (projects.length === 0) {
@@ -94,6 +106,21 @@ export function RoadmapView({ projects, teamMembers, teams }: RoadmapViewProps) 
   }, [projects]);
 
   const totalDays = differenceInDays(timelineBounds.end, timelineBounds.start);
+
+  // Initialize drag and drop functionality
+  const {
+    activeDrag,
+    dragOverData,
+    handleDragStart,
+    handleDragOver,
+    handleDragEnd,
+    calculatePreviewPosition,
+  } = useDragAndDrop({
+    timelineBounds,
+    totalDays,
+    onUpdateProject,
+    onUpdateProjectAssignees,
+  });
 
   // Generate month headers
   const monthHeaders = useMemo(() => {
@@ -198,12 +225,17 @@ export function RoadmapView({ projects, teamMembers, teams }: RoadmapViewProps) 
   const TEAM_HEADER_HEIGHT = 40;
   
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Team Roadmap Timeline</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="relative">
+    <DndContext
+      onDragStart={handleDragStart}
+      onDragOver={handleDragOver}
+      onDragEnd={handleDragEnd}
+    >
+      <Card>
+        <CardHeader>
+          <CardTitle>Team Roadmap Timeline</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="relative timeline-container">
           {/* Month headers */}
           <div className="relative h-8 mb-4 border-b border-border ml-48">
             {monthHeaders.map((month, index) => (
@@ -285,64 +317,38 @@ export function RoadmapView({ projects, teamMembers, teams }: RoadmapViewProps) 
                   const LANE_HEIGHT = 36;
                   const LANE_PADDING = 4;
                   
-                  return (
-                    <div key={member.id}>
-                      {/* Row background */}
-                      <div
-                        className="absolute w-full border-b border-border/50"
-                        style={{
-                          top: `${currentMemberTop}px`,
-                          height: `${rowHeight}px`
-                        }}
-                      />
-                      
-                      {/* Projects in their assigned lanes */}
-                      {projects.map(project => {
-                        const laneTop = currentMemberTop + LANE_PADDING + (project.lane * LANE_HEIGHT);
-                        const projectHeight = LANE_HEIGHT - (LANE_PADDING * 2);
-                        
-                        return (
-                          <div
-                            key={`${member.id}-${project.id}`}
-                            className="absolute rounded-md shadow-sm border transition-all hover:shadow-md cursor-pointer group animate-fade-in"
-                            style={{
-                              left: `${project.left}%`,
-                              width: `${project.width}%`,
-                              top: `${laneTop}px`,
-                              height: `${projectHeight}px`,
-                              backgroundColor: project.team?.color || project.color || team.color || 'hsl(var(--primary))',
-                              borderColor: project.team?.color || project.color || team.color || 'hsl(var(--primary))'
-                            }}
-                          >
-                            <div className="h-full flex items-center px-2 overflow-hidden">
-                              <div className="flex-1 min-w-0">
-                                <div className="text-white text-xs font-medium truncate">
-                                  {project.name}
-                                </div>
-                                {project.is_rd && (
-                                  <div className="text-white/80 text-xs">R&D</div>
-                                )}
-                              </div>
-                            </div>
-                            
-                            {/* Tooltip */}
-                            <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-popover text-popover-foreground rounded-md shadow-md opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10 whitespace-nowrap">
-                              <div className="text-sm font-medium">{project.name}</div>
-                              <div className="text-xs text-muted-foreground mt-1">
-                                {format(new Date(project.start_date), 'MMM d, yyyy')} - {format(new Date(project.end_date), 'MMM d, yyyy')}
-                              </div>
-                              {project.description && (
-                                <div className="text-xs mt-1 max-w-xs">{project.description}</div>
-                              )}
-                              <div className="text-xs mt-1">
-                                Value Score: {project.value_score}
-                              </div>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  );
+                    const isDropTarget = dragOverData.memberId === member.id;
+                    
+                    return (
+                      <DroppableMemberRow
+                        key={member.id}
+                        member={member}
+                        rowHeight={rowHeight}
+                        top={currentMemberTop}
+                        isOver={isDropTarget}
+                      >
+                        {/* Projects in their assigned lanes */}
+                        {projects.map(project => {
+                          const laneTop = currentMemberTop + LANE_PADDING + (project.lane * LANE_HEIGHT);
+                          const projectHeight = LANE_HEIGHT - (LANE_PADDING * 2);
+                          
+                          return (
+                            <DraggableProject
+                              key={`${member.id}-${project.id}`}
+                              project={project}
+                              team={team}
+                              memberId={member.id}
+                              style={{
+                                left: `${project.left}%`,
+                                width: `${project.width}%`,
+                                top: `${laneTop - currentMemberTop}px`,
+                                height: `${projectHeight}px`,
+                              }}
+                            />
+                          );
+                        })}
+                      </DroppableMemberRow>
+                    );
                 });
               })}
             </div>
@@ -350,5 +356,28 @@ export function RoadmapView({ projects, teamMembers, teams }: RoadmapViewProps) 
         </div>
       </CardContent>
     </Card>
+
+    <DragOverlay>
+      {activeDrag && (
+        <div className="opacity-80 pointer-events-none">
+          <div
+            className="rounded-md shadow-lg border-2 border-primary"
+            style={{
+              width: '200px',
+              height: '28px',
+              backgroundColor: 'hsl(var(--primary))',
+              borderColor: 'hsl(var(--primary))',
+            }}
+          >
+            <div className="h-full flex items-center px-2 overflow-hidden">
+              <div className="text-white text-xs font-medium">
+                Dragging project...
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </DragOverlay>
+  </DndContext>
   );
 }
