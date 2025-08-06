@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ProjectList } from '@/components/ProjectList';
+import { RoadmapView } from '@/components/RoadmapView';
 
 import { Project, TeamMember } from '@/types/roadmap';
 import { useSupabaseData } from '@/hooks/useSupabaseData';
@@ -145,10 +146,7 @@ export function RoadmapApp() {
           </TabsContent>
 
           <TabsContent value="roadmap" className="space-y-6">
-            <div className="text-center py-8">
-              <p className="text-muted-foreground mb-4">Roadmap view is being updated for the new database structure.</p>
-              <p className="text-sm text-muted-foreground">Use the Project List view to manage your projects.</p>
-            </div>
+            <RoadmapView projects={filteredProjects} />
           </TabsContent>
         </Tabs>
       </div>
