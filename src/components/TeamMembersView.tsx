@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, Fragment } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -217,7 +217,7 @@ export function TeamMembersView({ teamMembers, teams, onAddTeamMember }: TeamMem
                 </TableHeader>
                 <TableBody>
                   {groupedMembers.map(({ team, members }) => (
-                    <React.Fragment key={team.id}>
+                    <Fragment key={team.id}>
                       {/* Team header row */}
                       <TableRow className="bg-muted/50">
                         <TableCell 
@@ -277,7 +277,7 @@ export function TeamMembersView({ teamMembers, teams, onAddTeamMember }: TeamMem
                           })}
                         </TableRow>
                       ))}
-                    </React.Fragment>
+                    </Fragment>
                   ))}
                 </TableBody>
               </Table>
