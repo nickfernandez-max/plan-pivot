@@ -3,6 +3,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ProjectList } from '@/components/ProjectList';
 import { RoadmapView } from '@/components/RoadmapView';
+import { TeamMembersView } from '@/components/TeamMembersView';
 
 import { Project, TeamMember } from '@/types/roadmap';
 import { useSupabaseData } from '@/hooks/useSupabaseData';
@@ -111,12 +112,15 @@ export function RoadmapApp() {
 
         <Tabs defaultValue="projects" className="space-y-6">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <TabsList className="grid w-full grid-cols-2 max-w-md">
+            <TabsList className="grid w-full grid-cols-3 max-w-lg">
               <TabsTrigger value="projects" className="text-sm font-medium">
-                Project List
+                Projects
               </TabsTrigger>
               <TabsTrigger value="roadmap" className="text-sm font-medium">
-                Roadmap View
+                Roadmap
+              </TabsTrigger>
+              <TabsTrigger value="members" className="text-sm font-medium">
+                Team Members
               </TabsTrigger>
             </TabsList>
             
@@ -150,6 +154,14 @@ export function RoadmapApp() {
               projects={filteredProjects} 
               teamMembers={filteredTeamMembers}
               teams={teams}
+            />
+          </TabsContent>
+
+          <TabsContent value="members" className="space-y-6">
+            <TeamMembersView
+              teamMembers={filteredTeamMembers}
+              teams={teams}
+              onAddTeamMember={handleAddTeamMember}
             />
           </TabsContent>
         </Tabs>
