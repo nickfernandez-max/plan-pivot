@@ -507,6 +507,7 @@ export function RoadmapView({
                                 project={project}
                                 team={team}
                                 memberId={member.id}
+                                onEdit={() => setEditingProject(project)}
                                 style={{
                                   left: `${project.left}%`,
                                   width: `${project.width}%`,
