@@ -243,6 +243,49 @@ export function useSupabaseData() {
     return data;
   };
 
+  const addTeam = async (newTeam: Omit<Team, 'id' | 'created_at' | 'updated_at'>) => {
+    try {
+      const { data, error } = await supabase
+        .from('teams')
+        .insert(newTeam)
+        .select(`
+          *,
+          product:products(*)
+        `)
+        .single();
+
+      if (error) throw error;
+
+      setTeams(prev => [...prev, data]);
+      return data;
+    } catch (err) {
+      console.error('Error adding team:', err);
+      throw err;
+    }
+  };
+
+  const updateTeam = async (id: string, updates: Partial<Team>) => {
+    try {
+      const { data, error } = await supabase
+        .from('teams')
+        .update(updates)
+        .eq('id', id)
+        .select(`
+          *,
+          product:products(*)
+        `)
+        .single();
+
+      if (error) throw error;
+
+      setTeams(prev => prev.map(t => t.id === id ? data : t));
+      return data;
+    } catch (err) {
+      console.error('Error updating team:', err);
+      throw err;
+    }
+  };
+
   const updateProjectProducts = async (projectId: string, productIds: string[]) => {
     // Delete existing product assignments
     const { error: deleteError } = await supabase
@@ -379,6 +422,8 @@ export function useSupabaseData() {
     updateProject,
     addTeamMember,
     updateTeamMember,
+    addTeam,
+    updateTeam,
     updateProjectAssignees,
     addProduct,
     updateProduct,

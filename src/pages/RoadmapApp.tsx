@@ -21,7 +21,9 @@ export default function RoadmapApp() {
     addProject, 
     updateProject, 
     addTeamMember, 
-    updateTeamMember, 
+    updateTeamMember,
+    addTeam,
+    updateTeam,
     updateProjectAssignees,
     addProduct,
     updateProduct,
@@ -106,6 +108,26 @@ export default function RoadmapApp() {
     } catch (error) {
       console.error('Error adding product:', error);
       toast.error('Failed to add product');
+    }
+  };
+
+  const handleAddTeam = async (teamData: any) => {
+    try {
+      await addTeam(teamData);
+      toast.success('Team added successfully');
+    } catch (error) {
+      console.error('Error adding team:', error);
+      toast.error('Failed to add team');
+    }
+  };
+
+  const handleUpdateTeam = async (id: string, updates: any) => {
+    try {
+      await updateTeam(id, updates);
+      toast.success('Team updated successfully');
+    } catch (error) {
+      console.error('Error updating team:', error);
+      toast.error('Failed to update team');
     }
   };
 
@@ -224,6 +246,8 @@ export default function RoadmapApp() {
               onUpdateTeamMember={handleUpdateTeamMember}
               onAddProduct={handleAddProduct}
               onUpdateProduct={updateProduct}
+              onAddTeam={handleAddTeam}
+              onUpdateTeam={handleUpdateTeam}
             />
           </TabsContent>
         </Tabs>

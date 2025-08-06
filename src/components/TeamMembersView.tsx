@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Plus, User } from 'lucide-react';
+import { Plus, User, Edit2, Users } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -22,6 +22,8 @@ interface TeamMembersViewProps {
   onUpdateTeamMember: (id: string, updates: Partial<TeamMember>) => void;
   onAddProduct: (product: Omit<Product, 'id' | 'created_at' | 'updated_at'>) => void;
   onUpdateProduct: (id: string, updates: Partial<Product>) => void;
+  onAddTeam: (team: Omit<Team, 'id' | 'created_at' | 'updated_at'>) => void;
+  onUpdateTeam: (id: string, updates: Partial<Team>) => void;
 }
 
 const teamMemberSchema = z.object({
@@ -37,6 +39,13 @@ const productSchema = z.object({
   color: z.string().optional(),
 });
 
+const teamSchema = z.object({
+  name: z.string().min(1, "Team name is required"),
+  description: z.string().optional(),
+  color: z.string().optional(),
+  product_id: z.string().optional(),
+});
+
 export function TeamMembersView({ 
   teamMembers, 
   teams, 
@@ -44,10 +53,14 @@ export function TeamMembersView({
   onAddTeamMember, 
   onUpdateTeamMember, 
   onAddProduct, 
-  onUpdateProduct 
+  onUpdateProduct,
+  onAddTeam,
+  onUpdateTeam
 }: TeamMembersViewProps) {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isAddProductDialogOpen, setIsAddProductDialogOpen] = useState(false);
+  const [isAddTeamDialogOpen, setIsAddTeamDialogOpen] = useState(false);
+  const [editingTeam, setEditingTeam] = useState<Team | null>(null);
 
   const form = useForm<z.infer<typeof teamMemberSchema>>({
     resolver: zodResolver(teamMemberSchema),
@@ -85,13 +98,33 @@ export function TeamMembersView({
     },
   });
 
-  // Group team members by team
-  const groupedMembers = useMemo(() => {
-    return teams.map(team => ({
+  const teamForm = useForm<z.infer<typeof teamSchema>>({
+    resolver: zodResolver(teamSchema),
+    defaultValues: {
+      name: "",
+      description: "",
+      color: "#3B82F6",
+      product_id: "",
+    },
+  });
+
+  // Group teams by product, then team members by team
+  const groupedData = useMemo(() => {
+    const productsWithTeams = products.map(product => ({
+      product,
+      teams: teams.filter(team => team.product_id === product.id).map(team => ({
+        team,
+        members: teamMembers.filter(member => member.team_id === team.id)
+      })).filter(group => group.members.length > 0)
+    })).filter(group => group.teams.length > 0);
+
+    const teamsWithoutProduct = teams.filter(team => !team.product_id).map(team => ({
       team,
       members: teamMembers.filter(member => member.team_id === team.id)
     })).filter(group => group.members.length > 0);
-  }, [teams, teamMembers]);
+
+    return { productsWithTeams, teamsWithoutProduct };
+  }, [teams, teamMembers, products]);
 
   // Calculate member involvement (placeholder - could be enhanced with actual project data)
   const getMemberInvolvement = (member: TeamMember, monthDate: Date) => {
@@ -115,6 +148,28 @@ export function TeamMembersView({
     setIsAddProductDialogOpen(false);
   };
 
+  const onTeamSubmit = (values: z.infer<typeof teamSchema>) => {
+    if (editingTeam) {
+      onUpdateTeam(editingTeam.id, values);
+      setEditingTeam(null);
+    } else {
+      onAddTeam(values as Omit<Team, 'id' | 'created_at' | 'updated_at'>);
+    }
+    teamForm.reset();
+    setIsAddTeamDialogOpen(false);
+  };
+
+  const handleEditTeam = (team: Team) => {
+    setEditingTeam(team);
+    teamForm.reset({
+      name: team.name,
+      description: team.description || "",
+      color: team.color || "#3B82F6",
+      product_id: team.product_id || "",
+    });
+    setIsAddTeamDialogOpen(true);
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -123,6 +178,107 @@ export function TeamMembersView({
           <p className="text-muted-foreground">Manage your team members and their involvement over time</p>
         </div>
         <div className="flex gap-2">
+          <Dialog open={isAddTeamDialogOpen} onOpenChange={(open) => {
+            setIsAddTeamDialogOpen(open);
+            if (!open) {
+              setEditingTeam(null);
+              teamForm.reset();
+            }
+          }}>
+            <DialogTrigger asChild>
+              <Button variant="outline">
+                <Plus className="w-4 h-4 mr-2" />
+                Add Team
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-md">
+              <DialogHeader>
+                <DialogTitle>{editingTeam ? 'Edit Team' : 'Add New Team'}</DialogTitle>
+                <DialogDescription>
+                  {editingTeam ? 'Update the team details.' : 'Create a new team for your organization.'}
+                </DialogDescription>
+              </DialogHeader>
+              <Form {...teamForm}>
+                <form onSubmit={teamForm.handleSubmit(onTeamSubmit)} className="space-y-4">
+                  <FormField
+                    control={teamForm.control}
+                    name="name"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Team Name</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Enter team name" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={teamForm.control}
+                    name="description"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Description (Optional)</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Enter team description" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={teamForm.control}
+                    name="product_id"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Product (Optional)</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select a product" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="">No Product</SelectItem>
+                            {products.map((product) => (
+                              <SelectItem key={product.id} value={product.id}>
+                                {product.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={teamForm.control}
+                    name="color"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Color</FormLabel>
+                        <FormControl>
+                          <Input type="color" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <div className="flex justify-end space-x-2">
+                    <Button type="button" variant="outline" onClick={() => {
+                      setIsAddTeamDialogOpen(false);
+                      setEditingTeam(null);
+                      teamForm.reset();
+                    }}>
+                      Cancel
+                    </Button>
+                    <Button type="submit">{editingTeam ? 'Update Team' : 'Add Team'}</Button>
+                  </div>
+                </form>
+              </Form>
+            </DialogContent>
+          </Dialog>
+
           <Dialog open={isAddProductDialogOpen} onOpenChange={setIsAddProductDialogOpen}>
             <DialogTrigger asChild>
               <Button variant="outline">
@@ -318,69 +474,203 @@ export function TeamMembersView({
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {groupedMembers.map(({ team, members }) => (
-                    <Fragment key={team.id}>
-                      {/* Team header row */}
-                      <TableRow className="bg-muted/50">
+                  {/* Teams grouped by products */}
+                  {groupedData.productsWithTeams.map(({ product, teams: productTeams }) => (
+                    <Fragment key={product.id}>
+                      {/* Product header row */}
+                      <TableRow className="bg-accent">
                         <TableCell 
                           colSpan={4 + timelineMonths.length}
-                          className="font-semibold"
+                          className="font-bold text-lg"
                           style={{ 
-                            borderLeftColor: team.color || 'hsl(var(--primary))',
-                            borderLeftWidth: '4px'
+                            borderLeftColor: product.color || 'hsl(var(--primary))',
+                            borderLeftWidth: '6px'
                           }}
                         >
-                          {team.name}
-                          <Badge variant="outline" className="ml-2">
-                            {members.length} member{members.length !== 1 ? 's' : ''}
-                          </Badge>
+                          <div className="flex items-center gap-2">
+                            <Users className="w-5 h-5" />
+                            {product.name}
+                            <Badge variant="secondary">
+                              {productTeams.reduce((sum, { members }) => sum + members.length, 0)} member{productTeams.reduce((sum, { members }) => sum + members.length, 0) !== 1 ? 's' : ''}
+                            </Badge>
+                          </div>
                         </TableCell>
                       </TableRow>
                       
-                      {/* Team member rows */}
-                      {members.map((member) => (
-                        <TableRow key={member.id}>
-                          <TableCell className="font-medium">{member.name}</TableCell>
-                          <TableCell>
-                            <Badge 
-                              variant="outline"
+                      {/* Teams within this product */}
+                      {productTeams.map(({ team, members }) => (
+                        <Fragment key={team.id}>
+                          {/* Team header row */}
+                          <TableRow className="bg-muted/50">
+                            <TableCell 
+                              colSpan={4 + timelineMonths.length}
+                              className="font-semibold pl-8"
                               style={{ 
-                                borderColor: team.color || 'hsl(var(--primary))',
-                                color: team.color || 'hsl(var(--primary))'
+                                borderLeftColor: team.color || 'hsl(var(--primary))',
+                                borderLeftWidth: '4px'
                               }}
                             >
-                              {team.name}
-                            </Badge>
-                          </TableCell>
-                          <TableCell className="text-muted-foreground">{member.role}</TableCell>
-                          <TableCell>{format(new Date(member.start_date), 'MMM d, yyyy')}</TableCell>
-                          {timelineMonths.map((month) => {
-                            const involvement = getMemberInvolvement(member, month.date);
-                            return (
-                              <TableCell key={month.label} className="text-center">
-                                <div 
-                                  className="w-8 h-8 mx-auto rounded flex items-center justify-center text-xs font-medium"
-                                  style={{
-                                    backgroundColor: involvement > 0 
-                                      ? (team.color || 'hsl(var(--primary))') + '20'
-                                      : 'transparent',
-                                    color: involvement > 0 
-                                      ? (team.color || 'hsl(var(--primary))')
-                                      : 'hsl(var(--muted-foreground))',
-                                    border: involvement > 0 
-                                      ? `1px solid ${team.color || 'hsl(var(--primary))'}`
-                                      : '1px solid hsl(var(--border))'
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                  {team.name}
+                                  <Badge variant="outline" className="ml-2">
+                                    {members.length} member{members.length !== 1 ? 's' : ''}
+                                  </Badge>
+                                </div>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handleEditTeam(team)}
+                                  className="h-6 w-6 p-0"
+                                >
+                                  <Edit2 className="w-3 h-3" />
+                                </Button>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                          
+                          {/* Team member rows */}
+                          {members.map((member) => (
+                            <TableRow key={member.id}>
+                              <TableCell className="font-medium pl-12">{member.name}</TableCell>
+                              <TableCell>
+                                <Badge 
+                                  variant="outline"
+                                  style={{ 
+                                    borderColor: team.color || 'hsl(var(--primary))',
+                                    color: team.color || 'hsl(var(--primary))'
                                   }}
                                 >
-                                  {involvement > 0 ? involvement : ''}
-                                </div>
+                                  {team.name}
+                                </Badge>
                               </TableCell>
-                            );
-                          })}
-                        </TableRow>
+                              <TableCell className="text-muted-foreground">{member.role}</TableCell>
+                              <TableCell>{format(new Date(member.start_date), 'MMM d, yyyy')}</TableCell>
+                              {timelineMonths.map((month) => {
+                                const involvement = getMemberInvolvement(member, month.date);
+                                return (
+                                  <TableCell key={month.label} className="text-center">
+                                    <div 
+                                      className="w-8 h-8 mx-auto rounded flex items-center justify-center text-xs font-medium"
+                                      style={{
+                                        backgroundColor: involvement > 0 
+                                          ? (team.color || 'hsl(var(--primary))') + '20'
+                                          : 'transparent',
+                                        color: involvement > 0 
+                                          ? (team.color || 'hsl(var(--primary))')
+                                          : 'hsl(var(--muted-foreground))',
+                                        border: involvement > 0 
+                                          ? `1px solid ${team.color || 'hsl(var(--primary))'}`
+                                          : '1px solid hsl(var(--border))'
+                                      }}
+                                    >
+                                      {involvement > 0 ? involvement : ''}
+                                    </div>
+                                  </TableCell>
+                                );
+                              })}
+                            </TableRow>
+                          ))}
+                        </Fragment>
                       ))}
                     </Fragment>
                   ))}
+
+                  {/* Teams without products */}
+                  {groupedData.teamsWithoutProduct.length > 0 && (
+                    <Fragment>
+                      <TableRow className="bg-accent">
+                        <TableCell 
+                          colSpan={4 + timelineMonths.length}
+                          className="font-bold text-lg"
+                        >
+                          <div className="flex items-center gap-2">
+                            <Users className="w-5 h-5" />
+                            Unassigned Teams
+                            <Badge variant="secondary">
+                              {groupedData.teamsWithoutProduct.reduce((sum, { members }) => sum + members.length, 0)} member{groupedData.teamsWithoutProduct.reduce((sum, { members }) => sum + members.length, 0) !== 1 ? 's' : ''}
+                            </Badge>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                      
+                      {groupedData.teamsWithoutProduct.map(({ team, members }) => (
+                        <Fragment key={team.id}>
+                          {/* Team header row */}
+                          <TableRow className="bg-muted/50">
+                            <TableCell 
+                              colSpan={4 + timelineMonths.length}
+                              className="font-semibold pl-8"
+                              style={{ 
+                                borderLeftColor: team.color || 'hsl(var(--primary))',
+                                borderLeftWidth: '4px'
+                              }}
+                            >
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                  {team.name}
+                                  <Badge variant="outline" className="ml-2">
+                                    {members.length} member{members.length !== 1 ? 's' : ''}
+                                  </Badge>
+                                </div>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handleEditTeam(team)}
+                                  className="h-6 w-6 p-0"
+                                >
+                                  <Edit2 className="w-3 h-3" />
+                                </Button>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                          
+                          {/* Team member rows */}
+                          {members.map((member) => (
+                            <TableRow key={member.id}>
+                              <TableCell className="font-medium pl-12">{member.name}</TableCell>
+                              <TableCell>
+                                <Badge 
+                                  variant="outline"
+                                  style={{ 
+                                    borderColor: team.color || 'hsl(var(--primary))',
+                                    color: team.color || 'hsl(var(--primary))'
+                                  }}
+                                >
+                                  {team.name}
+                                </Badge>
+                              </TableCell>
+                              <TableCell className="text-muted-foreground">{member.role}</TableCell>
+                              <TableCell>{format(new Date(member.start_date), 'MMM d, yyyy')}</TableCell>
+                              {timelineMonths.map((month) => {
+                                const involvement = getMemberInvolvement(member, month.date);
+                                return (
+                                  <TableCell key={month.label} className="text-center">
+                                    <div 
+                                      className="w-8 h-8 mx-auto rounded flex items-center justify-center text-xs font-medium"
+                                      style={{
+                                        backgroundColor: involvement > 0 
+                                          ? (team.color || 'hsl(var(--primary))') + '20'
+                                          : 'transparent',
+                                        color: involvement > 0 
+                                          ? (team.color || 'hsl(var(--primary))')
+                                          : 'hsl(var(--muted-foreground))',
+                                        border: involvement > 0 
+                                          ? `1px solid ${team.color || 'hsl(var(--primary))'}`
+                                          : '1px solid hsl(var(--border))'
+                                      }}
+                                    >
+                                      {involvement > 0 ? involvement : ''}
+                                    </div>
+                                  </TableCell>
+                                );
+                              })}
+                            </TableRow>
+                          ))}
+                        </Fragment>
+                      ))}
+                    </Fragment>
+                  )}
                 </TableBody>
               </Table>
             </div>
