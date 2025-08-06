@@ -63,11 +63,13 @@ export default function RoadmapApp() {
   // Event handlers for data manipulation
   const handleAddProject = async (projectData: any) => {
     try {
-      await addProject(projectData);
+      const newProject = await addProject(projectData);
       toast.success('Project added successfully');
+      return newProject; // Return the created project for further processing
     } catch (error) {
       console.error('Error adding project:', error);
       toast.error('Failed to add project');
+      throw error;
     }
   };
 
@@ -220,8 +222,10 @@ export default function RoadmapApp() {
             <ProjectList 
               projects={filteredProjects} 
               teams={teams}
+              products={products}
               onAddProject={handleAddProject} 
               onUpdateProject={handleUpdateProject}
+              onUpdateProjectProducts={updateProjectProducts}
             />
           </TabsContent>
 
@@ -230,6 +234,7 @@ export default function RoadmapApp() {
               projects={filteredProjects} 
               teamMembers={filteredTeamMembers} 
               teams={teams}
+              products={products}
               onUpdateProject={handleUpdateProject}
               onUpdateProjectAssignees={async (projectId: string, assigneeIds: string[]) => {
                 await updateProjectAssignees(projectId, assigneeIds);

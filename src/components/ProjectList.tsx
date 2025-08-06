@@ -13,13 +13,15 @@ import { Plus, Edit, Save, X, ChevronUp, ChevronDown } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { Project, Team, SortField, SortDirection } from "@/types/roadmap";
+import { Project, Team, Product, SortField, SortDirection } from "@/types/roadmap";
 
 interface ProjectListProps {
   projects: Project[];
   teams: Team[];
-  onAddProject: (project: Omit<Project, 'id' | 'created_at' | 'updated_at'>) => void;
+  products: Product[];
+  onAddProject: (project: Omit<Project, 'id' | 'created_at' | 'updated_at'>) => Promise<Project>;
   onUpdateProject: (id: string, project: Partial<Project>) => void;
+  onUpdateProjectProducts: (projectId: string, productIds: string[]) => void;
 }
 
 const projectSchema = z.object({
@@ -30,9 +32,10 @@ const projectSchema = z.object({
   value_score: z.number().min(1).max(10),
   is_rd: z.boolean(),
   description: z.string().optional(),
+  product_ids: z.array(z.string()).optional(),
 });
 
-export function ProjectList({ projects, teams, onAddProject, onUpdateProject }: ProjectListProps) {
+export function ProjectList({ projects, teams, products, onAddProject, onUpdateProject, onUpdateProjectProducts }: ProjectListProps) {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [editingProject, setEditingProject] = useState<Project | null>(null);
   const [sortField, setSortField] = useState<SortField>('start_date');
@@ -48,6 +51,7 @@ export function ProjectList({ projects, teams, onAddProject, onUpdateProject }: 
       value_score: 5,
       is_rd: false,
       description: "",
+      product_ids: [],
     },
   });
 
@@ -125,10 +129,21 @@ export function ProjectList({ projects, teams, onAddProject, onUpdateProject }: 
     setEditingProject(null);
   };
 
-  const onSubmit = (values: z.infer<typeof projectSchema>) => {
-    onAddProject(values as Omit<Project, 'id' | 'created_at' | 'updated_at'>);
-    form.reset();
-    setIsAddDialogOpen(false);
+  const onSubmit = async (values: z.infer<typeof projectSchema>) => {
+    try {
+      const { product_ids, ...projectData } = values;
+      const project = await onAddProject(projectData as Omit<Project, 'id' | 'created_at' | 'updated_at'>);
+      
+      // If products were selected, update the project-product relationships
+      if (product_ids && product_ids.length > 0 && project && project.id) {
+        await onUpdateProjectProducts(project.id, product_ids);
+      }
+      
+      form.reset();
+      setIsAddDialogOpen(false);
+    } catch (error) {
+      console.error('Error creating project:', error);
+    }
   };
 
   const onEditSubmit = (values: z.infer<typeof projectSchema>) => {
@@ -279,6 +294,38 @@ export function ProjectList({ projects, teams, onAddProject, onUpdateProject }: 
                     </FormItem>
                   )}
                 />
+                <FormField
+                  control={form.control}
+                  name="product_ids"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Products (Optional)</FormLabel>
+                      <FormControl>
+                        <div className="grid grid-cols-2 gap-2 max-h-32 overflow-y-auto border rounded-md p-2">
+                          {products.map((product) => (
+                            <label key={product.id} className="flex items-center space-x-2 cursor-pointer">
+                              <input
+                                type="checkbox"
+                                className="rounded"
+                                checked={field.value?.includes(product.id) || false}
+                                onChange={(e) => {
+                                  const currentIds = field.value || [];
+                                  if (e.target.checked) {
+                                    field.onChange([...currentIds, product.id]);
+                                  } else {
+                                    field.onChange(currentIds.filter(id => id !== product.id));
+                                  }
+                                }}
+                              />
+                              <span className="text-sm">{product.name}</span>
+                            </label>
+                          ))}
+                        </div>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
                 <div className="flex justify-end space-x-2">
                   <Button type="button" variant="outline" onClick={() => setIsAddDialogOpen(false)}>
                     Cancel
@@ -365,6 +412,7 @@ export function ProjectList({ projects, teams, onAddProject, onUpdateProject }: 
                       {getSortIcon('is_rd')}
                     </div>
                   </TableHead>
+                  <TableHead>Products</TableHead>
                   <TableHead>Assignees</TableHead>
                   <TableHead>Actions</TableHead>
                 </TableRow>
@@ -374,7 +422,7 @@ export function ProjectList({ projects, teams, onAddProject, onUpdateProject }: 
                   <TableRow key={project.id}>
                     {editingProject?.id === project.id ? (
                       <>
-                        <TableCell colSpan={8}>
+                        <TableCell colSpan={9}>
                           <Form {...editForm}>
                             <form onSubmit={editForm.handleSubmit(onEditSubmit)} className="space-y-4">
                               <div className="grid grid-cols-2 gap-4">
@@ -524,6 +572,19 @@ export function ProjectList({ projects, teams, onAddProject, onUpdateProject }: 
                           ) : (
                             <span className="text-muted-foreground">—</span>
                           )}
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex flex-wrap gap-1">
+                            {project.products && project.products.length > 0 ? (
+                              project.products.map((product) => (
+                                <Badge key={product.id} variant="outline" style={{ borderColor: product.color, color: product.color }}>
+                                  {product.name}
+                                </Badge>
+                              ))
+                            ) : (
+                              <span className="text-muted-foreground text-sm">No products</span>
+                            )}
+                          </div>
                         </TableCell>
                         <TableCell>
                           <div className="flex flex-wrap gap-1">
