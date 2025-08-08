@@ -698,25 +698,22 @@ export function RoadmapView({
 
     <DragOverlay>
       {activeDrag && (() => {
-        // Find the project being dragged
         const draggedProject = projects.find(p => p.id === activeDrag.projectId);
         if (!draggedProject) return null;
 
-        // Find the team for color
         const projectTeam = teams.find(t => t.id === draggedProject.team_id);
-        
-        // Calculate reasonable preview dimensions
-        const previewWidth = Math.min(Math.max(120, draggedProject.name.length * 8), 280);
-        const previewHeight = 32;
+
+        const overlayWidth = activeDrag.originalWidth;
+        const overlayHeight = activeDrag.originalHeight;
 
         return (
-          <div className="opacity-90 pointer-events-none transform scale-105">
+          <div className="opacity-90 pointer-events-none">
             <DraggableProject
               project={draggedProject}
               team={projectTeam || teams[0]}
               style={{
-                width: `${previewWidth}px`,
-                height: `${previewHeight}px`,
+                width: overlayWidth ? `${overlayWidth}px` : undefined,
+                height: overlayHeight ? `${overlayHeight}px` : undefined,
                 position: 'static',
               }}
               memberId={activeDrag.originalMemberId}
