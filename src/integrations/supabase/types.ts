@@ -207,6 +207,84 @@ export type Database = {
           },
         ]
       }
+      team_memberships: {
+        Row: {
+          created_at: string
+          end_month: string | null
+          id: string
+          start_month: string
+          team_id: string
+          team_member_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          end_month?: string | null
+          id?: string
+          start_month: string
+          team_id: string
+          team_member_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          end_month?: string | null
+          id?: string
+          start_month?: string
+          team_id?: string
+          team_member_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "team_memberships_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "team_memberships_team_member_id_fkey"
+            columns: ["team_member_id"]
+            isOneToOne: false
+            referencedRelation: "team_members"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      team_memberships_history: {
+        Row: {
+          changed_at: string
+          end_month: string | null
+          id: string
+          membership_id: string
+          operation: string
+          start_month: string | null
+          team_id: string
+          team_member_id: string
+        }
+        Insert: {
+          changed_at?: string
+          end_month?: string | null
+          id?: string
+          membership_id: string
+          operation: string
+          start_month?: string | null
+          team_id: string
+          team_member_id: string
+        }
+        Update: {
+          changed_at?: string
+          end_month?: string | null
+          id?: string
+          membership_id?: string
+          operation?: string
+          start_month?: string | null
+          team_id?: string
+          team_member_id?: string
+        }
+        Relationships: []
+      }
       teams: {
         Row: {
           color: string | null
