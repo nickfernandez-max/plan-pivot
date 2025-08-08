@@ -697,25 +697,34 @@ export function RoadmapView({
     />
 
     <DragOverlay>
-      {activeDrag && (
-        <div className="opacity-80 pointer-events-none">
-          <div
-            className="rounded-md shadow-lg border-2 border-primary"
-            style={{
-              width: '200px',
-              height: '28px',
-              backgroundColor: 'hsl(var(--primary))',
-              borderColor: 'hsl(var(--primary))',
-            }}
-          >
-            <div className="h-full flex items-center px-2 overflow-hidden">
-              <div className="text-white text-xs font-medium">
-                Dragging project...
-              </div>
-            </div>
+      {activeDrag && (() => {
+        // Find the project being dragged
+        const draggedProject = projects.find(p => p.id === activeDrag.projectId);
+        if (!draggedProject) return null;
+
+        // Find the team for color
+        const projectTeam = teams.find(t => t.id === draggedProject.team_id);
+        
+        // Calculate reasonable preview dimensions
+        const previewWidth = Math.min(Math.max(120, draggedProject.name.length * 8), 280);
+        const previewHeight = 32;
+
+        return (
+          <div className="opacity-90 pointer-events-none transform scale-105">
+            <DraggableProject
+              project={draggedProject}
+              team={projectTeam || teams[0]}
+              style={{
+                width: `${previewWidth}px`,
+                height: `${previewHeight}px`,
+                position: 'static',
+              }}
+              memberId={activeDrag.originalMemberId}
+              isPreview={true}
+            />
           </div>
-        </div>
-      )}
+        );
+      })()}
     </DragOverlay>
   </DndContext>
   );
