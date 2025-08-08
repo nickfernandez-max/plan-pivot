@@ -25,63 +25,56 @@ interface RoadmapViewProps {
 interface ProjectWithPosition extends Project {
   left: number;
   width: number;
-  lane: number;
+  slot: number;
+  allocation: number;
+  slotHeight: number;
 }
 
 interface MemberRow {
   member: TeamMember;
   team: Team;
   projects: ProjectWithPosition[];
-  laneCount: number;
+  allocatedPercentage: number;
   rowHeight: number;
 }
 
-// Function to detect overlapping date ranges
-const projectsOverlap = (p1: Project, p2: Project): boolean => {
-  const start1 = new Date(p1.start_date);
-  const end1 = new Date(p1.end_date);
-  const start2 = new Date(p2.start_date);
-  const end2 = new Date(p2.end_date);
-  
-  return start1 <= end2 && start2 <= end1;
-};
-
-// Function to assign lanes to projects to avoid overlaps
-const assignLanes = (projects: Array<Project & { left: number; width: number }>): ProjectWithPosition[] => {
+// Function to assign allocation slots to projects based on their percentage
+const assignAllocationSlots = (
+  projects: Array<Project & { left: number; width: number }>,
+  assignments: ProjectAssignment[],
+  memberId: string
+): ProjectWithPosition[] => {
   if (projects.length === 0) return [];
-  
-  // Sort projects by start date
-  const sortedProjects = [...projects].sort((a, b) => 
-    new Date(a.start_date).getTime() - new Date(b.start_date).getTime()
-  );
-  
-  const lanes: ProjectWithPosition[][] = [];
-  
-  sortedProjects.forEach(project => {
-    // Find the first lane where this project doesn't overlap with existing projects
-    let assignedLane = -1;
+
+  const SLOTS_PER_MEMBER = 4;
+  const SLOT_PERCENTAGE = 25;
+  const BASE_SLOT_HEIGHT = 32;
+
+  return projects.map(project => {
+    // Find the assignment for this project and member
+    const assignment = assignments.find(a => 
+      a.project_id === project.id && a.team_member_id === memberId
+    );
     
-    for (let laneIndex = 0; laneIndex < lanes.length; laneIndex++) {
-      const lane = lanes[laneIndex];
-      const hasOverlap = lane.some(existingProject => projectsOverlap(project, existingProject));
-      
-      if (!hasOverlap) {
-        assignedLane = laneIndex;
-        break;
-      }
-    }
+    const allocation = assignment?.percent_allocation || 25; // Default to 25% if no assignment found
     
-    // If no existing lane works, create a new one
-    if (assignedLane === -1) {
-      assignedLane = lanes.length;
-      lanes.push([]);
-    }
+    // Calculate which slot this project should be in (0-3)
+    // For now, we'll use a simple approach - projects are stacked by start date
+    // In a more sophisticated version, this could be optimized to minimize overlaps
+    const slotIndex = Math.floor((allocation - 1) / SLOT_PERCENTAGE);
+    const clampedSlot = Math.max(0, Math.min(SLOTS_PER_MEMBER - 1, slotIndex));
     
-    const projectWithLane: ProjectWithPosition = { ...project, lane: assignedLane };
-    lanes[assignedLane].push(projectWithLane);
+    // Calculate height based on allocation percentage
+    const slotsNeeded = Math.ceil(allocation / SLOT_PERCENTAGE);
+    const slotHeight = BASE_SLOT_HEIGHT * slotsNeeded;
+
+    return {
+      ...project,
+      slot: clampedSlot,
+      allocation,
+      slotHeight
+    };
   });
-  
-  return lanes.flat();
 };
 
 export function RoadmapView({ 
@@ -129,8 +122,10 @@ export function RoadmapView({
   } = useDragAndDrop({
     timelineBounds,
     totalDays,
+    assignments,
     onUpdateProject,
     onUpdateProjectAssignees,
+    onUpdateProjectAssignments,
   });
 
   // Generate month headers
@@ -157,11 +152,10 @@ export function RoadmapView({
     return months;
   }, [timelineBounds, totalDays]);
 
-  // Group teams by product and calculate member rows with dynamic heights
+  // Group teams by product and calculate member rows with allocation slots
   const productGroups = useMemo(() => {
-    const BASE_ROW_HEIGHT = 60;
-    const LANE_HEIGHT = 36;
-    const MIN_LANES = 1;
+    const FIXED_ROW_HEIGHT = 140; // Height for 4 allocation slots (4 * 32px + padding)
+    const ALLOCATION_SLOTS = 4;
     
     // Group teams by product
     const productsWithTeams = products.map(product => ({
@@ -196,17 +190,18 @@ export function RoadmapView({
               };
             });
 
-          // Assign lanes to avoid overlaps
-          const projectsWithLanes = assignLanes(memberProjects);
-          const laneCount = Math.max(MIN_LANES, Math.max(0, ...projectsWithLanes.map(p => p.lane + 1)));
-          const rowHeight = BASE_ROW_HEIGHT + (Math.max(0, laneCount - 1) * LANE_HEIGHT);
+          // Assign allocation slots based on percentage
+          const projectsWithSlots = assignAllocationSlots(memberProjects, assignments, member.id);
+          
+          // Calculate total allocated percentage for this member
+          const allocatedPercentage = projectsWithSlots.reduce((sum, p) => sum + p.allocation, 0);
 
           memberRows.push({
             member,
             team,
-            projects: projectsWithLanes,
-            laneCount,
-            rowHeight
+            projects: projectsWithSlots,
+            allocatedPercentage,
+            rowHeight: FIXED_ROW_HEIGHT
           });
         });
 
@@ -322,8 +317,8 @@ export function RoadmapView({
                         <span className="truncate">{team.name}</span>
                       </div>
                       
-                      {/* Team members with dynamic heights */}
-                      {teamMemberRows.map(({ member, rowHeight }) => (
+                      {/* Team members with allocation display */}
+                      {teamMemberRows.map(({ member, rowHeight, allocatedPercentage }) => (
                         <div
                           key={member.id}
                           className="flex items-center px-8 py-2 text-sm border-b border-border/50 bg-background"
@@ -332,6 +327,12 @@ export function RoadmapView({
                           <div className="flex-1 min-w-0">
                             <div className="font-medium truncate">{member.name}</div>
                             <div className="text-xs text-muted-foreground truncate">{member.role}</div>
+                            <div className="text-xs text-muted-foreground mt-1">
+                              Allocated: {allocatedPercentage}%
+                              {allocatedPercentage > 100 && (
+                                <span className="text-destructive ml-1">⚠️ Over-allocated</span>
+                              )}
+                            </div>
                           </div>
                         </div>
                       ))}
@@ -372,8 +373,8 @@ export function RoadmapView({
                         <span className="truncate">{team.name}</span>
                       </div>
                       
-                      {/* Team members with dynamic heights */}
-                      {teamMemberRows.map(({ member, rowHeight }) => (
+                      {/* Team members with allocation display */}
+                      {teamMemberRows.map(({ member, rowHeight, allocatedPercentage }) => (
                         <div
                           key={member.id}
                           className="flex items-center px-8 py-2 text-sm border-b border-border/50 bg-background"
@@ -382,6 +383,12 @@ export function RoadmapView({
                           <div className="flex-1 min-w-0">
                             <div className="font-medium truncate">{member.name}</div>
                             <div className="text-xs text-muted-foreground truncate">{member.role}</div>
+                            <div className="text-xs text-muted-foreground mt-1">
+                              Allocated: {allocatedPercentage}%
+                              {allocatedPercentage > 100 && (
+                                <span className="text-destructive ml-1">⚠️ Over-allocated</span>
+                              )}
+                            </div>
                           </div>
                         </div>
                       ))}
@@ -479,12 +486,12 @@ export function RoadmapView({
                   teamGroups.forEach(({ team, memberRows: teamMemberRows }) => {
                     memberTopOffset += TEAM_HEADER_HEIGHT; // Skip team header
                     
-                    teamMemberRows.forEach(({ member, projects, rowHeight, laneCount }) => {
+                    teamMemberRows.forEach(({ member, projects, rowHeight }) => {
                       const currentMemberTop = memberTopOffset;
                       memberTopOffset += rowHeight;
                       
-                      const LANE_HEIGHT = 36;
-                      const LANE_PADDING = 4;
+                      const SLOT_HEIGHT = 32;
+                      const SLOT_PADDING = 2;
                       
                       const isDropTarget = dragOverData.memberId === member.id;
                       
@@ -496,10 +503,24 @@ export function RoadmapView({
                           top={currentMemberTop}
                           isOver={isDropTarget}
                         >
-                          {/* Projects in their assigned lanes */}
+                          {/* Allocation slot guides */}
+                          {[0, 1, 2, 3].map(slotIndex => (
+                            <div
+                              key={`slot-${slotIndex}`}
+                              className="absolute border-t border-border/30"
+                              style={{
+                                left: '0',
+                                right: '0',
+                                top: `${slotIndex * SLOT_HEIGHT + SLOT_PADDING}px`,
+                                height: `${SLOT_HEIGHT - SLOT_PADDING * 2}px`,
+                              }}
+                            />
+                          ))}
+                          
+                          {/* Projects in their assigned slots */}
                           {projects.map(project => {
-                            const laneTop = currentMemberTop + LANE_PADDING + (project.lane * LANE_HEIGHT);
-                            const projectHeight = LANE_HEIGHT - (LANE_PADDING * 2);
+                            const slotTop = project.slot * SLOT_HEIGHT + SLOT_PADDING;
+                            const projectHeight = project.slotHeight - (SLOT_PADDING * 2);
                             
                             return (
                               <DraggableProject
@@ -511,7 +532,7 @@ export function RoadmapView({
                                 style={{
                                   left: `${project.left}%`,
                                   width: `${project.width}%`,
-                                  top: `${laneTop - currentMemberTop}px`,
+                                  top: `${slotTop}px`,
                                   height: `${projectHeight}px`,
                                 }}
                               />
@@ -530,12 +551,12 @@ export function RoadmapView({
                   productGroups.unassignedTeamGroups.forEach(({ team, memberRows: teamMemberRows }) => {
                     memberTopOffset += TEAM_HEADER_HEIGHT; // Skip team header
                     
-                    teamMemberRows.forEach(({ member, projects, rowHeight, laneCount }) => {
+                    teamMemberRows.forEach(({ member, projects, rowHeight }) => {
                       const currentMemberTop = memberTopOffset;
                       memberTopOffset += rowHeight;
                       
-                      const LANE_HEIGHT = 36;
-                      const LANE_PADDING = 4;
+                      const SLOT_HEIGHT = 32;
+                      const SLOT_PADDING = 2;
                       
                       const isDropTarget = dragOverData.memberId === member.id;
                       
@@ -547,10 +568,24 @@ export function RoadmapView({
                           top={currentMemberTop}
                           isOver={isDropTarget}
                         >
-                          {/* Projects in their assigned lanes */}
+                          {/* Allocation slot guides */}
+                          {[0, 1, 2, 3].map(slotIndex => (
+                            <div
+                              key={`slot-${slotIndex}`}
+                              className="absolute border-t border-border/30"
+                              style={{
+                                left: '0',
+                                right: '0',
+                                top: `${slotIndex * SLOT_HEIGHT + SLOT_PADDING}px`,
+                                height: `${SLOT_HEIGHT - SLOT_PADDING * 2}px`,
+                              }}
+                            />
+                          ))}
+                          
+                          {/* Projects in their assigned slots */}
                           {projects.map(project => {
-                            const laneTop = currentMemberTop + LANE_PADDING + (project.lane * LANE_HEIGHT);
-                            const projectHeight = LANE_HEIGHT - (LANE_PADDING * 2);
+                            const slotTop = project.slot * SLOT_HEIGHT + SLOT_PADDING;
+                            const projectHeight = project.slotHeight - (SLOT_PADDING * 2);
                             
                              return (
                                <DraggableProject
@@ -562,7 +597,7 @@ export function RoadmapView({
                                  style={{
                                    left: `${project.left}%`,
                                    width: `${project.width}%`,
-                                   top: `${laneTop - currentMemberTop}px`,
+                                   top: `${slotTop}px`,
                                    height: `${projectHeight}px`,
                                  }}
                                />

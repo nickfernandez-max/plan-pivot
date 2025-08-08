@@ -1,13 +1,14 @@
 import { useState, useCallback } from 'react';
 import { DragEndEvent, DragStartEvent, DragOverEvent } from '@dnd-kit/core';
 import { differenceInDays, addDays } from 'date-fns';
-import { Project, TeamMember } from '@/types/roadmap';
+import { Project, TeamMember, ProjectAssignment } from '@/types/roadmap';
 
 interface DragData {
   projectId: string;
   originalMemberId: string;
   originalStartDate: string;
   originalEndDate: string;
+  originalAllocation: number;
 }
 
 interface TimelineBounds {
@@ -18,33 +19,45 @@ interface TimelineBounds {
 interface UseDragAndDropProps {
   timelineBounds: TimelineBounds;
   totalDays: number;
+  assignments: ProjectAssignment[];
   onUpdateProject: (id: string, updates: Partial<Project>) => Promise<void>;
   onUpdateProjectAssignees: (projectId: string, assigneeIds: string[]) => Promise<void>;
+  onUpdateProjectAssignments: (projectId: string, assignments: { teamMemberId: string; percentAllocation: number }[]) => Promise<void>;
 }
 
 export function useDragAndDrop({
   timelineBounds,
   totalDays,
+  assignments,
   onUpdateProject,
-  onUpdateProjectAssignees
+  onUpdateProjectAssignees,
+  onUpdateProjectAssignments
 }: UseDragAndDropProps) {
   const [activeDrag, setActiveDrag] = useState<DragData | null>(null);
   const [dragOverData, setDragOverData] = useState<{
     memberId: string | null;
     newStartDate: Date | null;
-  }>({ memberId: null, newStartDate: null });
+    targetSlot: number | null;
+  }>({ memberId: null, newStartDate: null, targetSlot: null });
 
   const handleDragStart = useCallback((event: DragStartEvent) => {
     const { active } = event;
     if (active.data.current) {
+      // Find the current allocation for this project and member
+      const assignment = assignments.find(a => 
+        a.project_id === active.data.current.projectId && 
+        a.team_member_id === active.data.current.memberId
+      );
+      
       setActiveDrag({
         projectId: active.data.current.projectId,
         originalMemberId: active.data.current.memberId,
         originalStartDate: active.data.current.startDate,
         originalEndDate: active.data.current.endDate,
+        originalAllocation: assignment?.percent_allocation || 25,
       });
     }
-  }, []);
+  }, [assignments]);
 
   const handleDragOver = useCallback((event: DragOverEvent) => {
     const { over, delta } = event;
@@ -54,9 +67,17 @@ export function useDragAndDrop({
     // Calculate new position based on drag offset
     let newMemberId: string | null = null;
     let newStartDate: Date | null = null;
+    let targetSlot: number | null = null;
 
     if (over.data.current?.type === 'member-row') {
       newMemberId = over.data.current.memberId;
+      
+      // Calculate target slot based on vertical position
+      const SLOT_HEIGHT = 32;
+      if (delta.y !== 0) {
+        const slotIndex = Math.floor(Math.abs(delta.y) / SLOT_HEIGHT);
+        targetSlot = Math.max(0, Math.min(3, slotIndex)); // Clamp to 0-3 slots
+      }
     }
 
     // Calculate horizontal position change
@@ -76,7 +97,7 @@ export function useDragAndDrop({
       }
     }
 
-    setDragOverData({ memberId: newMemberId, newStartDate });
+    setDragOverData({ memberId: newMemberId, newStartDate, targetSlot });
   }, [activeDrag, totalDays, timelineBounds]);
 
   const handleDragEnd = useCallback(async (event: DragEndEvent) => {
@@ -84,7 +105,7 @@ export function useDragAndDrop({
     
     if (!over || !activeDrag) {
       setActiveDrag(null);
-      setDragOverData({ memberId: null, newStartDate: null });
+      setDragOverData({ memberId: null, newStartDate: null, targetSlot: null });
       return;
     }
 
@@ -132,17 +153,29 @@ export function useDragAndDrop({
         });
       }
 
-      // Update project assignees if member changed
+      // Update project assignees and allocations if member changed
       if (newMemberId !== activeDrag.originalMemberId) {
-        await onUpdateProjectAssignees(activeDrag.projectId, [newMemberId]);
+        // Check if target member has capacity for this allocation
+        const targetMemberAssignments = assignments.filter(a => a.team_member_id === newMemberId);
+        const targetMemberTotalAllocation = targetMemberAssignments.reduce((sum, a) => sum + a.percent_allocation, 0);
+        
+        if (targetMemberTotalAllocation + activeDrag.originalAllocation <= 100) {
+          // Remove from original member and add to new member
+          await onUpdateProjectAssignments(activeDrag.projectId, [
+            { teamMemberId: newMemberId, percentAllocation: activeDrag.originalAllocation }
+          ]);
+        } else {
+          console.warn('Cannot assign project: target member would be over-allocated');
+          // Could show a toast notification here
+        }
       }
     } catch (error) {
       console.error('Error updating project:', error);
     }
 
     setActiveDrag(null);
-    setDragOverData({ memberId: null, newStartDate: null });
-  }, [activeDrag, totalDays, timelineBounds, onUpdateProject, onUpdateProjectAssignees]);
+    setDragOverData({ memberId: null, newStartDate: null, targetSlot: null });
+  }, [activeDrag, totalDays, timelineBounds, assignments, onUpdateProject, onUpdateProjectAssignees, onUpdateProjectAssignments]);
 
   const calculatePreviewPosition = useCallback((project: Project, delta: { x: number; y: number }) => {
     if (!activeDrag || project.id !== activeDrag.projectId) return null;

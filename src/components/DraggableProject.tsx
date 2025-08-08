@@ -5,7 +5,7 @@ import { Edit } from 'lucide-react';
 import { Project, Team } from '@/types/roadmap';
 
 interface DraggableProjectProps {
-  project: Project;
+  project: Project & { allocation?: number };
   team: Team;
   style: React.CSSProperties;
   memberId: string;
@@ -100,6 +100,11 @@ export function DraggableProject({
         <div className="text-xs mt-1">
           Value Score: {project.value_score}
         </div>
+        {project.allocation && (
+          <div className="text-xs mt-1">
+            Allocation: {project.allocation}%
+          </div>
+        )}
       </div>
     </div>
   );
