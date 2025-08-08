@@ -38,7 +38,7 @@ interface MemberRow {
   rowHeight: number;
 }
 
-// Function to assign allocation slots to projects based on their percentage
+// Function to assign allocation slots to projects based on temporal scheduling and percentage
 const assignAllocationSlots = (
   projects: Array<Project & { left: number; width: number }>,
   assignments: ProjectAssignment[],
@@ -50,31 +50,96 @@ const assignAllocationSlots = (
   const SLOT_PERCENTAGE = 25;
   const BASE_SLOT_HEIGHT = 32;
 
-  return projects.map(project => {
-    // Find the assignment for this project and member
+  // Prepare projects with temporal and allocation data
+  const projectsWithData = projects.map(project => {
     const assignment = assignments.find(a => 
       a.project_id === project.id && a.team_member_id === memberId
     );
     
-    const allocation = assignment?.percent_allocation || 25; // Default to 25% if no assignment found
+    const allocation = assignment?.percent_allocation || 25;
+    const startDate = new Date(project.start_date);
+    const endDate = new Date(project.end_date);
     
-    // Calculate which slot this project should be in (0-3)
-    // For now, we'll use a simple approach - projects are stacked by start date
-    // In a more sophisticated version, this could be optimized to minimize overlaps
-    const slotIndex = Math.floor((allocation - 1) / SLOT_PERCENTAGE);
-    const clampedSlot = Math.max(0, Math.min(SLOTS_PER_MEMBER - 1, slotIndex));
-    
-    // Calculate height based on allocation percentage
-    const slotsNeeded = Math.ceil(allocation / SLOT_PERCENTAGE);
-    const slotHeight = BASE_SLOT_HEIGHT * slotsNeeded;
-
     return {
       ...project,
-      slot: clampedSlot,
       allocation,
-      slotHeight
+      startDate,
+      endDate,
+      slotsNeeded: Math.ceil(allocation / SLOT_PERCENTAGE),
+      assigned: false,
+      slot: -1,
+      slotHeight: BASE_SLOT_HEIGHT * Math.ceil(allocation / SLOT_PERCENTAGE)
     };
   });
+
+  // Sort projects by start date, then by allocation (higher allocation first)
+  projectsWithData.sort((a, b) => {
+    const dateCompare = a.startDate.getTime() - b.startDate.getTime();
+    if (dateCompare !== 0) return dateCompare;
+    return b.allocation - a.allocation; // Higher allocation gets priority
+  });
+
+  // Track slot occupancy with time intervals
+  const slotOccupancy: Array<Array<{ startDate: Date; endDate: Date; projectId: string }>> = 
+    Array.from({ length: SLOTS_PER_MEMBER }, () => []);
+
+  // Function to check if a project can fit in a slot during its time period
+  const canFitInSlot = (slotIndex: number, slotsNeeded: number, startDate: Date, endDate: Date): boolean => {
+    // Check if we have enough consecutive slots available
+    if (slotIndex + slotsNeeded > SLOTS_PER_MEMBER) return false;
+    
+    // Check temporal overlap for all required slots
+    for (let i = 0; i < slotsNeeded; i++) {
+      const currentSlot = slotIndex + i;
+      const overlaps = slotOccupancy[currentSlot].some(occupation => 
+        !(endDate <= occupation.startDate || startDate >= occupation.endDate)
+      );
+      if (overlaps) return false;
+    }
+    
+    return true;
+  };
+
+  // Function to reserve slots for a project
+  const reserveSlots = (slotIndex: number, slotsNeeded: number, startDate: Date, endDate: Date, projectId: string) => {
+    for (let i = 0; i < slotsNeeded; i++) {
+      const currentSlot = slotIndex + i;
+      slotOccupancy[currentSlot].push({ startDate, endDate, projectId });
+    }
+  };
+
+  // Assign slots using a scheduling algorithm
+  for (const project of projectsWithData) {
+    let assigned = false;
+    
+    // Try to find the best slot for this project
+    for (let slot = 0; slot <= SLOTS_PER_MEMBER - project.slotsNeeded; slot++) {
+      if (canFitInSlot(slot, project.slotsNeeded, project.startDate, project.endDate)) {
+        project.slot = slot;
+        project.assigned = true;
+        reserveSlots(slot, project.slotsNeeded, project.startDate, project.endDate, project.id);
+        assigned = true;
+        break;
+      }
+    }
+    
+    // If no slot found, assign to the last available slot (overflow handling)
+    if (!assigned) {
+      const lastSlot = Math.max(0, SLOTS_PER_MEMBER - project.slotsNeeded);
+      project.slot = lastSlot;
+      project.assigned = true;
+      // Still reserve the slot to track the overflow
+      reserveSlots(lastSlot, project.slotsNeeded, project.startDate, project.endDate, project.id);
+    }
+  }
+
+  // Return the projects with their assigned slots
+  return projectsWithData.map(project => ({
+    ...project,
+    slot: project.slot,
+    allocation: project.allocation,
+    slotHeight: project.slotHeight
+  }));
 };
 
 export function RoadmapView({ 
