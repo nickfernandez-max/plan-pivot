@@ -258,12 +258,16 @@ export default function RoadmapApp() {
               teamMembers={filteredTeamMembers} 
               teams={teams}
               products={products}
+              memberships={memberships}
               onAddTeamMember={handleAddTeamMember} 
               onUpdateTeamMember={handleUpdateTeamMember}
               onAddProduct={handleAddProduct}
               onUpdateProduct={updateProduct}
               onAddTeam={handleAddTeam}
               onUpdateTeam={handleUpdateTeam}
+              onAddMembership={addTeamMembership}
+              onUpdateMembership={updateTeamMembership}
+              onDeleteMembership={deleteTeamMembership}
             />
           </TabsContent>
         </Tabs>

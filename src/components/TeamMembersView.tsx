@@ -20,12 +20,16 @@ interface TeamMembersViewProps {
   teamMembers: TeamMember[];
   teams: Team[];
   products: Product[];
+  memberships: TeamMembership[];
   onAddTeamMember: (member: Omit<TeamMember, 'id' | 'created_at' | 'updated_at'>) => void;
   onUpdateTeamMember: (id: string, updates: Partial<TeamMember>) => void;
   onAddProduct: (product: Omit<Product, 'id' | 'created_at' | 'updated_at'>) => void;
   onUpdateProduct: (id: string, updates: Partial<Product>) => void;
   onAddTeam: (team: Omit<Team, 'id' | 'created_at' | 'updated_at'>) => void;
   onUpdateTeam: (id: string, updates: Partial<Team>) => void;
+  onAddMembership: (membership: Omit<TeamMembership, 'id' | 'created_at' | 'updated_at'>) => Promise<any>;
+  onUpdateMembership: (id: string, updates: Partial<TeamMembership>) => Promise<any>;
+  onDeleteMembership: (id: string) => Promise<any> | void;
 }
 
 const teamMemberSchema = z.object({
@@ -52,17 +56,22 @@ export function TeamMembersView({
   teamMembers, 
   teams, 
   products, 
+  memberships,
   onAddTeamMember, 
   onUpdateTeamMember, 
   onAddProduct, 
   onUpdateProduct,
   onAddTeam,
-  onUpdateTeam
+  onUpdateTeam,
+  onAddMembership,
+  onUpdateMembership,
+  onDeleteMembership,
 }: TeamMembersViewProps) {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isAddProductDialogOpen, setIsAddProductDialogOpen] = useState(false);
   const [isAddTeamDialogOpen, setIsAddTeamDialogOpen] = useState(false);
   const [editingTeam, setEditingTeam] = useState<Team | null>(null);
+  const [editingMember, setEditingMember] = useState<TeamMember | null>(null);
 
   const form = useForm<z.infer<typeof teamMemberSchema>>({
     resolver: zodResolver(teamMemberSchema),
@@ -540,7 +549,20 @@ export function TeamMembersView({
                           {/* Team member rows */}
                           {members.map((member) => (
                             <TableRow key={member.id}>
-                              <TableCell className="font-medium pl-12">{member.name}</TableCell>
+                              <TableCell className="font-medium pl-12">
+                                <div className="flex items-center justify-between gap-2">
+                                  <span className="truncate">{member.name}</span>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="h-6 w-6 p-0"
+                                    onClick={() => setEditingMember(member)}
+                                    title="Edit memberships"
+                                  >
+                                    <Edit2 className="w-3 h-3" />
+                                  </Button>
+                                </div>
+                              </TableCell>
                               <TableCell>
                                 <Badge 
                                   variant="outline"
@@ -685,6 +707,17 @@ export function TeamMembersView({
           )}
         </CardContent>
       </Card>
+
+      <EditTeamMemberDialog
+        member={editingMember}
+        teams={teams}
+        memberships={memberships}
+        isOpen={!!editingMember}
+        onClose={() => setEditingMember(null)}
+        onAddMembership={onAddMembership}
+        onUpdateMembership={onUpdateMembership}
+        onDeleteMembership={onDeleteMembership}
+      />
     </div>
   );
 }
