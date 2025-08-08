@@ -32,6 +32,8 @@ const projectSchema = z.object({
   value_score: z.number().min(1).max(10),
   is_rd: z.boolean(),
   description: z.string().optional(),
+  link: z.string().optional(),
+  color: z.string().optional(),
   product_ids: z.array(z.string()).optional(),
 });
 
@@ -51,6 +53,8 @@ export function ProjectList({ projects, teams, products, onAddProject, onUpdateP
       value_score: 5,
       is_rd: false,
       description: "",
+      link: "",
+      color: "",
       product_ids: [],
     },
   });
@@ -115,6 +119,8 @@ export function ProjectList({ projects, teams, products, onAddProject, onUpdateP
       value_score: project.value_score,
       is_rd: project.is_rd,
       description: project.description || "",
+      link: project.link || "",
+      color: project.color || "",
     });
   };
 
@@ -296,6 +302,38 @@ export function ProjectList({ projects, teams, products, onAddProject, onUpdateP
                 />
                 <FormField
                   control={form.control}
+                  name="link"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Link (Optional)</FormLabel>
+                      <FormControl>
+                        <Input 
+                          placeholder="Enter project link or URL"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="color"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Color (Optional)</FormLabel>
+                      <FormControl>
+                        <Input 
+                          type="color"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
                   name="product_ids"
                   render={({ field }) => (
                     <FormItem>
@@ -412,6 +450,7 @@ export function ProjectList({ projects, teams, products, onAddProject, onUpdateP
                       {getSortIcon('is_rd')}
                     </div>
                   </TableHead>
+                  <TableHead>Link</TableHead>
                   <TableHead>Products</TableHead>
                   <TableHead>Assignees</TableHead>
                   <TableHead>Actions</TableHead>
@@ -422,7 +461,7 @@ export function ProjectList({ projects, teams, products, onAddProject, onUpdateP
                   <TableRow key={project.id}>
                     {editingProject?.id === project.id ? (
                       <>
-                        <TableCell colSpan={9}>
+                        <TableCell colSpan={10}>
                           <Form {...editForm}>
                             <form onSubmit={editForm.handleSubmit(onEditSubmit)} className="space-y-4">
                               <div className="grid grid-cols-2 gap-4">
@@ -537,6 +576,34 @@ export function ProjectList({ projects, teams, products, onAddProject, onUpdateP
                                   </FormItem>
                                 )}
                               />
+                              <div className="grid grid-cols-2 gap-4">
+                                <FormField
+                                  control={editForm.control}
+                                  name="link"
+                                  render={({ field }) => (
+                                    <FormItem>
+                                      <FormLabel>Link</FormLabel>
+                                      <FormControl>
+                                        <Input {...field} />
+                                      </FormControl>
+                                      <FormMessage />
+                                    </FormItem>
+                                  )}
+                                />
+                                <FormField
+                                  control={editForm.control}
+                                  name="color"
+                                  render={({ field }) => (
+                                    <FormItem>
+                                      <FormLabel>Color</FormLabel>
+                                      <FormControl>
+                                        <Input type="color" {...field} />
+                                      </FormControl>
+                                      <FormMessage />
+                                    </FormItem>
+                                  )}
+                                />
+                              </div>
                               <div className="flex justify-end space-x-2">
                                 <Button type="button" variant="outline" onClick={handleCancelEdit}>
                                   <X className="w-4 h-4 mr-2" />
@@ -569,6 +636,20 @@ export function ProjectList({ projects, teams, products, onAddProject, onUpdateP
                         <TableCell>
                           {project.is_rd ? (
                             <Badge variant="default">R&D</Badge>
+                          ) : (
+                            <span className="text-muted-foreground">—</span>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          {project.link ? (
+                            <a 
+                              href={project.link} 
+                              target="_blank" 
+                              rel="noopener noreferrer"
+                              className="text-primary hover:underline"
+                            >
+                              View Link
+                            </a>
                           ) : (
                             <span className="text-muted-foreground">—</span>
                           )}

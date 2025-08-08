@@ -28,6 +28,7 @@ export interface Project {
   is_rd: boolean;
   color?: string;
   description?: string;
+  link?: string;
   created_at?: string;
   updated_at?: string;
   team?: Team;

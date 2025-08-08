@@ -124,6 +124,7 @@ export type Database = {
           end_date: string
           id: string
           is_rd: boolean
+          link: string | null
           name: string
           start_date: string
           team_id: string
@@ -137,6 +138,7 @@ export type Database = {
           end_date: string
           id?: string
           is_rd?: boolean
+          link?: string | null
           name: string
           start_date: string
           team_id: string
@@ -150,6 +152,7 @@ export type Database = {
           end_date?: string
           id?: string
           is_rd?: boolean
+          link?: string | null
           name?: string
           start_date?: string
           team_id?: string
