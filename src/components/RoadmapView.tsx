@@ -288,7 +288,7 @@ export function RoadmapView({
             <div className="w-48 flex-shrink-0">
               {/* Products with teams */}
               {productGroups.processedProductGroups.map(({ product, teamGroups }) => (
-                <Fragment key={product.id}>
+                <div key={product.id}>
                   {/* Product header */}
                   <div 
                     className="flex items-center px-4 py-3 font-bold text-base border-b-2 border-border"
@@ -337,12 +337,12 @@ export function RoadmapView({
                       ))}
                     </div>
                   ))}
-                </Fragment>
+                </div>
               ))}
 
               {/* Teams without products */}
               {productGroups.unassignedTeamGroups.length > 0 && (
-                <Fragment>
+                <div>
                   <div 
                     className="flex items-center px-4 py-3 font-bold text-base border-b-2 border-border"
                     style={{ 
@@ -387,7 +387,7 @@ export function RoadmapView({
                       ))}
                     </div>
                   ))}
-                </Fragment>
+                </div>
               )}
             </div>
 
@@ -552,20 +552,21 @@ export function RoadmapView({
                             const laneTop = currentMemberTop + LANE_PADDING + (project.lane * LANE_HEIGHT);
                             const projectHeight = LANE_HEIGHT - (LANE_PADDING * 2);
                             
-                            return (
-                              <DraggableProject
-                                key={`${member.id}-${project.id}`}
-                                project={project}
-                                team={team}
-                                memberId={member.id}
-                                style={{
-                                  left: `${project.left}%`,
-                                  width: `${project.width}%`,
-                                  top: `${laneTop - currentMemberTop}px`,
-                                  height: `${projectHeight}px`,
-                                }}
-                              />
-                            );
+                             return (
+                               <DraggableProject
+                                 key={`${member.id}-${project.id}`}
+                                 project={project}
+                                 team={team}
+                                 memberId={member.id}
+                                 onEdit={() => setEditingProject(project)}
+                                 style={{
+                                   left: `${project.left}%`,
+                                   width: `${project.width}%`,
+                                   top: `${laneTop - currentMemberTop}px`,
+                                   height: `${projectHeight}px`,
+                                 }}
+                               />
+                             );
                           })}
                         </DroppableMemberRow>
                       );
