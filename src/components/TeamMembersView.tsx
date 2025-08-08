@@ -12,7 +12,9 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { format, addMonths, startOfMonth, differenceInMonths } from 'date-fns';
-import { TeamMember, Team, Product } from '@/types/roadmap';
+import { TeamMember, Team, Product, TeamMembership } from '@/types/roadmap';
+import { EditTeamMemberDialog } from '@/components/EditTeamMemberDialog';
+
 
 interface TeamMembersViewProps {
   teamMembers: TeamMember[];

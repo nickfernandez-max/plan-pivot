@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { Project, TeamMember, Team, Product, ProjectAssignment } from '@/types/roadmap';
+import { Project, TeamMember, Team, Product, ProjectAssignment, TeamMembership } from '@/types/roadmap';
 
 export function useSupabaseData() {
   const [projects, setProjects] = useState<Project[]>([]);
@@ -8,6 +8,7 @@ export function useSupabaseData() {
   const [teams, setTeams] = useState<Team[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [assignments, setAssignments] = useState<ProjectAssignment[]>([]);
+  const [memberships, setMemberships] = useState<TeamMembership[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -93,6 +94,18 @@ export function useSupabaseData() {
       }
       console.log('Assignments fetched:', assignmentsData?.length || 0);
 
+      // Fetch team memberships
+      console.log('Fetching team memberships...');
+      const { data: membershipsData, error: membershipsError } = await supabase
+        .from('team_memberships')
+        .select('*')
+        .order('start_month');
+      if (membershipsError) {
+        console.error('Team memberships error:', membershipsError);
+        throw membershipsError;
+      }
+      console.log('Team memberships fetched:', membershipsData?.length || 0);
+
       // Transform the data to match our interface
       const transformedProjects = projectsData?.map(project => ({
         ...project,
@@ -105,6 +118,7 @@ export function useSupabaseData() {
       setTeamMembers(teamMembersData || []);
       setProjects(transformedProjects);
       setAssignments(assignmentsData || []);
+      setMemberships(membershipsData || []);
       console.log('Data fetch completed successfully');
     } catch (err) {
       console.error('Error fetching data:', err);
@@ -432,6 +446,49 @@ export function useSupabaseData() {
     }
   };
 
+  // Team memberships CRUD
+  const addTeamMembership = async (membership: Omit<TeamMembership, 'id' | 'created_at' | 'updated_at'>) => {
+    // Ensure month truncation client-side
+    const payload = {
+      ...membership,
+      start_month: new Date(membership.start_month).toISOString().split('T')[0],
+      end_month: membership.end_month ? new Date(membership.end_month).toISOString().split('T')[0] : null,
+    };
+    const { data, error } = await supabase
+      .from('team_memberships')
+      .insert(payload)
+      .select('*')
+      .single();
+    if (error) throw error;
+    setMemberships(prev => [...prev, data]);
+    return data;
+  };
+
+  const updateTeamMembership = async (id: string, updates: Partial<TeamMembership>) => {
+    const payload: any = { ...updates };
+    if (payload.start_month) payload.start_month = new Date(payload.start_month).toISOString().split('T')[0];
+    if (payload.end_month !== undefined) payload.end_month = payload.end_month ? new Date(payload.end_month).toISOString().split('T')[0] : null;
+
+    const { data, error } = await supabase
+      .from('team_memberships')
+      .update(payload)
+      .eq('id', id)
+      .select('*')
+      .single();
+    if (error) throw error;
+    setMemberships(prev => prev.map(m => m.id === id ? data : m));
+    return data;
+  };
+
+  const deleteTeamMembership = async (id: string) => {
+    const { error } = await supabase
+      .from('team_memberships')
+      .delete()
+      .eq('id', id);
+    if (error) throw error;
+    setMemberships(prev => prev.filter(m => m.id !== id));
+  };
+
   useEffect(() => {
     fetchData();
 
@@ -457,10 +514,18 @@ export function useSupabaseData() {
       })
       .subscribe();
 
+    const membershipsSubscription = supabase
+      .channel('team-memberships-changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'team_memberships' }, () => {
+        fetchData();
+      })
+      .subscribe();
+
     return () => {
       supabase.removeChannel(projectsSubscription);
       supabase.removeChannel(teamMembersSubscription);
       supabase.removeChannel(assigneesSubscription);
+      supabase.removeChannel(membershipsSubscription);
     };
   }, []);
 
@@ -470,6 +535,7 @@ export function useSupabaseData() {
     teams,
     products,
     assignments,
+    memberships,
     loading,
     error,
     addProject,
@@ -483,6 +549,9 @@ export function useSupabaseData() {
     addProduct,
     updateProduct,
     updateProjectProducts,
+    addTeamMembership,
+    updateTeamMembership,
+    deleteTeamMembership,
     refetch: fetchData,
   };
-}
+};

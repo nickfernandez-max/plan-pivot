@@ -17,6 +17,7 @@ export default function RoadmapApp() {
     teams, 
     products,
     assignments,
+    memberships,
     loading, 
     error, 
     addProject, 
@@ -29,7 +30,10 @@ export default function RoadmapApp() {
     updateProjectAssignments,
     addProduct,
     updateProduct,
-    updateProjectProducts
+    updateProjectProducts,
+    addTeamMembership,
+    updateTeamMembership,
+    deleteTeamMembership,
   } = useSupabaseData();
 
   // Generate filter options

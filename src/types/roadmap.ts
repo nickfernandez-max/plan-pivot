@@ -55,5 +55,15 @@ export interface ProjectAssignment {
   created_at?: string;
 }
 
+export interface TeamMembership {
+  id: string;
+  team_member_id: string;
+  team_id: string;
+  start_month: string; // YYYY-MM-01
+  end_month?: string | null; // YYYY-MM-01 or null for ongoing
+  created_at?: string;
+  updated_at?: string;
+}
+
 export type SortField = keyof Omit<Project, 'id' | 'assignees' | 'color' | 'created_at' | 'updated_at' | 'description'> | 'team';
 export type SortDirection = 'asc' | 'desc';
