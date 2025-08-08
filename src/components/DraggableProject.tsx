@@ -48,9 +48,7 @@ export function DraggableProject({
   return (
     <div
       ref={setNodeRef}
-      {...listeners}
-      {...attributes}
-      className="absolute rounded-md shadow-sm border transition-all hover:shadow-md cursor-grab active:cursor-grabbing group animate-fade-in"
+      className="absolute rounded-md shadow-sm border transition-all hover:shadow-md group animate-fade-in"
       style={{
         ...style,
         ...dragStyle,
@@ -58,22 +56,31 @@ export function DraggableProject({
         borderColor: project.team?.color || project.color || team.color || 'hsl(var(--primary))',
       }}
     >
-      <div className="h-full flex items-center px-2 overflow-hidden">
-        <div className="flex-1 min-w-0">
-          <div className="text-white text-xs font-medium truncate">
-            {project.name}
+      <div className="h-full flex items-center overflow-hidden">
+        {/* Drag handle area */}
+        <div 
+          {...listeners}
+          {...attributes}
+          className="flex-1 min-w-0 h-full flex items-center px-2 cursor-grab active:cursor-grabbing"
+        >
+          <div className="flex-1 min-w-0">
+            <div className="text-white text-xs font-medium truncate">
+              {project.name}
+            </div>
+            {project.is_rd && (
+              <div className="text-white/80 text-xs">R&D</div>
+            )}
           </div>
-          {project.is_rd && (
-            <div className="text-white/80 text-xs">R&D</div>
-          )}
         </div>
+        
+        {/* Edit button - separate from drag handle */}
         {onEdit && !isPreview && (
           <button
             onClick={(e) => {
               e.stopPropagation();
               onEdit();
             }}
-            className="ml-1 p-1 rounded hover:bg-white/20 transition-colors opacity-0 group-hover:opacity-100"
+            className="mr-2 p-1 rounded hover:bg-white/20 transition-colors opacity-0 group-hover:opacity-100"
             title="Edit project"
           >
             <Edit className="h-3 w-3 text-white" />
