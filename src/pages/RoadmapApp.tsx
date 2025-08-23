@@ -2,6 +2,8 @@ import { useState, useMemo } from 'react';
 import { useSupabaseData } from '@/hooks/useSupabaseData';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Button } from '@/components/ui/button';
+import { Plus } from 'lucide-react';
 import { ProjectList } from '@/components/ProjectList';
 import { RoadmapView } from '@/components/RoadmapView';
 import { TeamMembersView } from '@/components/TeamMembersView';
@@ -10,6 +12,7 @@ import { toast } from 'sonner';
 export default function RoadmapApp() {
   const [selectedTeam, setSelectedTeam] = useState<string>('all');
   const [selectedProduct, setSelectedProduct] = useState<string>('all');
+  const [isAddMemberDialogOpen, setIsAddMemberDialogOpen] = useState(false);
   
   const { 
     projects, 
@@ -170,59 +173,54 @@ export default function RoadmapApp() {
   return (
     <div className="min-h-screen bg-background">
       <div className="container mx-auto p-6">
-        <div className="mb-8">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
           <h1 className="text-4xl font-bold bg-gradient-to-r from-primary to-primary-glow bg-clip-text text-transparent">
             Project Roadmap
           </h1>
-          <p className="text-muted-foreground mt-2">
-            Plan, track, and visualize your team's projects
-          </p>
+          
+          <div className="flex gap-4">
+            <Select value={selectedTeam} onValueChange={setSelectedTeam}>
+              <SelectTrigger className="w-48">
+                <SelectValue placeholder="Filter by team" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Teams</SelectItem>
+                {teamNames.map((teamName) => (
+                  <SelectItem key={teamName} value={teamName}>
+                    {teamName}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            
+            <Select value={selectedProduct} onValueChange={setSelectedProduct}>
+              <SelectTrigger className="w-48">
+                <SelectValue placeholder="Filter by product" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Products</SelectItem>
+                {productNames.map((productName) => (
+                  <SelectItem key={productName} value={productName}>
+                    {productName}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            </div>
         </div>
 
         <Tabs defaultValue="projects" className="space-y-6">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <TabsList className="grid w-full grid-cols-3 max-w-lg">
-              <TabsTrigger value="projects" className="text-sm font-medium">
-                Projects
-              </TabsTrigger>
-              <TabsTrigger value="roadmap" className="text-sm font-medium">
-                Roadmap
-              </TabsTrigger>
-              <TabsTrigger value="members" className="text-sm font-medium">
-                Team Members
-              </TabsTrigger>
-            </TabsList>
-            
-            <div className="flex gap-4">
-              <Select value={selectedTeam} onValueChange={setSelectedTeam}>
-                <SelectTrigger className="w-48">
-                  <SelectValue placeholder="Filter by team" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Teams</SelectItem>
-                  {teamNames.map((teamName) => (
-                    <SelectItem key={teamName} value={teamName}>
-                      {teamName}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              
-              <Select value={selectedProduct} onValueChange={setSelectedProduct}>
-                <SelectTrigger className="w-48">
-                  <SelectValue placeholder="Filter by product" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Products</SelectItem>
-                  {productNames.map((productName) => (
-                    <SelectItem key={productName} value={productName}>
-                      {productName}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
+          <TabsList className="grid w-full grid-cols-3 max-w-lg">
+            <TabsTrigger value="projects" className="text-sm font-medium">
+              Projects
+            </TabsTrigger>
+            <TabsTrigger value="roadmap" className="text-sm font-medium">
+              Roadmap
+            </TabsTrigger>
+            <TabsTrigger value="members" className="text-sm font-medium">
+              Team Members
+            </TabsTrigger>
+          </TabsList>
 
           <TabsContent value="projects">
             <ProjectList 
@@ -254,6 +252,21 @@ export default function RoadmapApp() {
           </TabsContent>
 
           <TabsContent value="members">
+            <div className="flex gap-2 mb-6">
+              <Button variant="outline" onClick={handleAddTeam}>
+                <Plus className="w-4 h-4 mr-2" />
+                Add Team
+              </Button>
+              <Button variant="outline" onClick={handleAddProduct}>
+                <Plus className="w-4 h-4 mr-2" />
+                Add Product
+              </Button>
+              <Button onClick={() => setIsAddMemberDialogOpen(true)}>
+                <Plus className="w-4 h-4 mr-2" />
+                Add Person
+              </Button>
+            </div>
+            
             <TeamMembersView 
               teamMembers={filteredTeamMembers} 
               teams={teams}

@@ -68,10 +68,6 @@ export function TeamMembersView({
   onUpdateMembership,
   onDeleteMembership,
 }: TeamMembersViewProps) {
-  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
-  const [isAddProductDialogOpen, setIsAddProductDialogOpen] = useState(false);
-  const [isAddTeamDialogOpen, setIsAddTeamDialogOpen] = useState(false);
-  const [editingTeam, setEditingTeam] = useState<Team | null>(null);
   const [editingMember, setEditingMember] = useState<TeamMember | null>(null);
 
   const form = useForm<z.infer<typeof teamMemberSchema>>({
@@ -100,26 +96,6 @@ export function TeamMembersView({
     
     return months;
   }, []);
-
-  const productForm = useForm<z.infer<typeof productSchema>>({
-    resolver: zodResolver(productSchema),
-    defaultValues: {
-      name: "",
-      description: "",
-      color: "#6366F1",
-    },
-  });
-
-  const teamForm = useForm<z.infer<typeof teamSchema>>({
-    resolver: zodResolver(teamSchema),
-    defaultValues: {
-      name: "",
-      description: "",
-      color: "#3B82F6",
-      product_id: "none",
-      ideal_size: 1,
-    },
-  });
 
   // Group teams by product, then team members by team
   const groupedData = useMemo(() => {
@@ -175,349 +151,14 @@ export function TeamMembersView({
     return 0;
   };
 
-  const onSubmit = (values: z.infer<typeof teamMemberSchema>) => {
-    onAddTeamMember(values as Omit<TeamMember, 'id' | 'created_at' | 'updated_at'>);
-    form.reset();
-    setIsAddDialogOpen(false);
-  };
-
-  const onProductSubmit = (values: z.infer<typeof productSchema>) => {
-    onAddProduct(values as Omit<Product, 'id' | 'created_at' | 'updated_at'>);
-    productForm.reset();
-    setIsAddProductDialogOpen(false);
-  };
-
-  const onTeamSubmit = (values: z.infer<typeof teamSchema>) => {
-    // Convert "none" back to empty string for database
-    const submitValues = {
-      ...values,
-      product_id: values.product_id === "none" ? undefined : values.product_id
-    };
-    
-    if (editingTeam) {
-      onUpdateTeam(editingTeam.id, submitValues);
-      setEditingTeam(null);
-    } else {
-      onAddTeam(submitValues as Omit<Team, 'id' | 'created_at' | 'updated_at'>);
-    }
-    teamForm.reset();
-    setIsAddTeamDialogOpen(false);
-  };
-
-  const handleEditTeam = (team: Team) => {
-    setEditingTeam(team);
-    teamForm.reset({
-      name: team.name,
-      description: team.description || "",
-      color: team.color || "#3B82F6",
-      product_id: team.product_id || "none",
-      ideal_size: team.ideal_size || 1,
-    });
-    setIsAddTeamDialogOpen(true);
-  };
-
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <h2 className="text-2xl font-bold">Team Members</h2>
-          <p className="text-muted-foreground">Manage your team members and their involvement over time</p>
-        </div>
-        <div className="flex gap-2">
-          <Dialog open={isAddTeamDialogOpen} onOpenChange={(open) => {
-            setIsAddTeamDialogOpen(open);
-            if (!open) {
-              setEditingTeam(null);
-              teamForm.reset();
-            }
-          }}>
-            <DialogTrigger asChild>
-              <Button variant="outline">
-                <Plus className="w-4 h-4 mr-2" />
-                Add Team
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-md">
-              <DialogHeader>
-                <DialogTitle>{editingTeam ? 'Edit Team' : 'Add New Team'}</DialogTitle>
-                <DialogDescription>
-                  {editingTeam ? 'Update the team details.' : 'Create a new team for your organization.'}
-                </DialogDescription>
-              </DialogHeader>
-              <Form {...teamForm}>
-                <form onSubmit={teamForm.handleSubmit(onTeamSubmit)} className="space-y-4">
-                  <FormField
-                    control={teamForm.control}
-                    name="name"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Team Name</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Enter team name" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={teamForm.control}
-                    name="description"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Description (Optional)</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Enter team description" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={teamForm.control}
-                    name="product_id"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Product (Optional)</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value}>
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select a product" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            <SelectItem value="none">No Product</SelectItem>
-                            {products.map((product) => (
-                              <SelectItem key={product.id} value={product.id}>
-                                {product.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={teamForm.control}
-                    name="color"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Color</FormLabel>
-                        <FormControl>
-                          <Input type="color" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={teamForm.control}
-                    name="ideal_size"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Ideal Team Size</FormLabel>
-                        <FormControl>
-                          <Input 
-                            type="number" 
-                            min="1" 
-                            placeholder="Enter ideal team size" 
-                            {...field}
-                            onChange={(e) => field.onChange(e.target.value ? parseInt(e.target.value) : 1)}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <div className="flex justify-end space-x-2">
-                    <Button type="button" variant="outline" onClick={() => {
-                      setIsAddTeamDialogOpen(false);
-                      setEditingTeam(null);
-                      teamForm.reset();
-                    }}>
-                      Cancel
-                    </Button>
-                    <Button type="submit">{editingTeam ? 'Update Team' : 'Add Team'}</Button>
-                  </div>
-                </form>
-              </Form>
-            </DialogContent>
-          </Dialog>
-
-          <Dialog open={isAddProductDialogOpen} onOpenChange={setIsAddProductDialogOpen}>
-            <DialogTrigger asChild>
-              <Button variant="outline">
-                <Plus className="w-4 h-4 mr-2" />
-                Add Product
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-md">
-              <DialogHeader>
-                <DialogTitle>Add New Product</DialogTitle>
-                <DialogDescription>
-                  Create a new product that teams can be assigned to.
-                </DialogDescription>
-              </DialogHeader>
-              <Form {...productForm}>
-                <form onSubmit={productForm.handleSubmit(onProductSubmit)} className="space-y-4">
-                  <FormField
-                    control={productForm.control}
-                    name="name"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Product Name</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Enter product name" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={productForm.control}
-                    name="description"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Description (Optional)</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Enter product description" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={productForm.control}
-                    name="color"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Color</FormLabel>
-                        <FormControl>
-                          <Input type="color" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <div className="flex justify-end space-x-2">
-                    <Button type="button" variant="outline" onClick={() => setIsAddProductDialogOpen(false)}>
-                      Cancel
-                    </Button>
-                    <Button type="submit">Add Product</Button>
-                  </div>
-                </form>
-              </Form>
-            </DialogContent>
-          </Dialog>
-
-          <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-            <DialogTrigger asChild>
-              <Button>
-                <Plus className="w-4 h-4 mr-2" />
-                Add Person
-              </Button>
-            </DialogTrigger>
-          <DialogContent className="sm:max-w-md">
-            <DialogHeader>
-              <DialogTitle>Add New Team Member</DialogTitle>
-              <DialogDescription>
-                Add a new person to your team.
-              </DialogDescription>
-            </DialogHeader>
-            <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                <FormField
-                  control={form.control}
-                  name="name"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Full Name</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Enter full name" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="role"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Role</FormLabel>
-                      <FormControl>
-                        <Input placeholder="e.g. Software Engineer, Product Manager" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="team_id"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Team</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select a team" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {teams.map((team) => (
-                            <SelectItem key={team.id} value={team.id}>
-                              {team.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="start_date"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Start Date</FormLabel>
-                      <FormControl>
-                        <Input type="date" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <div className="flex justify-end space-x-2">
-                  <Button type="button" variant="outline" onClick={() => setIsAddDialogOpen(false)}>
-                    Cancel
-                  </Button>
-                  <Button type="submit">Add Member</Button>
-                </div>
-              </form>
-            </Form>
-          </DialogContent>
-        </Dialog>
-        </div>
-      </div>
-
       <Card>
-        <CardHeader>
-          <CardTitle>Team Member Overview</CardTitle>
-          <CardDescription>
-            {teamMembers.length} team member{teamMembers.length !== 1 ? 's' : ''} across {teams.length} team{teams.length !== 1 ? 's' : ''}
-          </CardDescription>
-        </CardHeader>
         <CardContent>
           {teamMembers.length === 0 ? (
             <div className="text-center py-8">
               <User className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
               <p className="text-muted-foreground mb-4">No team members found</p>
-              <Button onClick={() => setIsAddDialogOpen(true)}>
-                <Plus className="w-4 h-4 mr-2" />
-                Add Your First Team Member
-              </Button>
             </div>
           ) : (
             <div className="overflow-x-auto">
@@ -573,20 +214,12 @@ export function TeamMembersView({
                                  borderLeftWidth: '4px'
                                }}
                              >
-                               <div className="flex items-center gap-3">
-                                 <span>{team.name}</span>
-                                 <Badge variant="secondary" className="text-xs">
-                                   Ideal: {team.ideal_size || 1}
-                                 </Badge>
-                                 <Button
-                                   variant="ghost"
-                                   size="sm"
-                                   onClick={() => handleEditTeam(team)}
-                                   className="h-6 w-6 p-0 ml-auto"
-                                 >
-                                   <Edit2 className="w-3 h-3" />
-                                 </Button>
-                               </div>
+                                <div className="flex items-center gap-3">
+                                  <span>{team.name}</span>
+                                  <Badge variant="secondary" className="text-xs">
+                                    Ideal: {team.ideal_size || 1}
+                                  </Badge>
+                                </div>
                              </TableCell>
                              <TableCell className="font-semibold text-muted-foreground">
                                <span className="text-xs">Actual →</span>
@@ -686,20 +319,12 @@ export function TeamMembersView({
                                  borderLeftWidth: '4px'
                                }}
                              >
-                               <div className="flex items-center gap-3">
-                                 <span>{team.name}</span>
-                                 <Badge variant="secondary" className="text-xs">
-                                   Ideal: {team.ideal_size || 1}
-                                 </Badge>
-                                 <Button
-                                   variant="ghost"
-                                   size="sm"
-                                   onClick={() => handleEditTeam(team)}
-                                   className="h-6 w-6 p-0 ml-auto"
-                                 >
-                                   <Edit2 className="w-3 h-3" />
-                                 </Button>
-                               </div>
+                                <div className="flex items-center gap-3">
+                                  <span>{team.name}</span>
+                                  <Badge variant="secondary" className="text-xs">
+                                    Ideal: {team.ideal_size || 1}
+                                  </Badge>
+                                </div>
                              </TableCell>
                              <TableCell className="font-semibold text-muted-foreground">
                                <span className="text-xs">Actual →</span>
