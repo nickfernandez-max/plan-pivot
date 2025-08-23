@@ -564,50 +564,49 @@ export function TeamMembersView({
                       {/* Teams within this product */}
                       {productTeams.map(({ team, members }) => (
                         <Fragment key={team.id}>
-                          {/* Team header row */}
-                          <TableRow className="bg-muted/50">
+                           {/* Team header row */}
+                           <TableRow className="bg-muted/50">
                              <TableCell 
-                               colSpan={3 + timelineMonths.length}
                                className="font-semibold pl-8"
                                style={{ 
                                  borderLeftColor: team.color || 'hsl(var(--primary))',
                                  borderLeftWidth: '4px'
                                }}
                              >
-                              <div className="flex items-center justify-between">
                                <div className="flex items-center gap-3">
                                  <span>{team.name}</span>
                                  <Badge variant="secondary" className="text-xs">
                                    Ideal: {team.ideal_size || 1}
                                  </Badge>
-                                 <div className="flex items-center gap-1">
-                                   <span className="text-xs text-muted-foreground">Actual:</span>
-                                   {timelineMonths.map((month) => {
-                                     const actualCount = getActualMemberCount(team.id, month.date);
-                                     const idealCount = team.ideal_size || 1;
-                                     return (
-                                       <Badge 
-                                         key={month.label}
-                                         variant="outline" 
-                                         className={`text-xs px-1 py-0 min-w-[20px] justify-center ${getStaffingColorClass(actualCount, idealCount)}`}
-                                       >
-                                         {actualCount}
-                                       </Badge>
-                                     );
-                                   })}
-                                 </div>
+                                 <Button
+                                   variant="ghost"
+                                   size="sm"
+                                   onClick={() => handleEditTeam(team)}
+                                   className="h-6 w-6 p-0 ml-auto"
+                                 >
+                                   <Edit2 className="w-3 h-3" />
+                                 </Button>
                                </div>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => handleEditTeam(team)}
-                                  className="h-6 w-6 p-0"
-                                >
-                                  <Edit2 className="w-3 h-3" />
-                                </Button>
-                              </div>
-                            </TableCell>
-                          </TableRow>
+                             </TableCell>
+                             <TableCell className="font-semibold text-muted-foreground">
+                               <span className="text-xs">Actual →</span>
+                             </TableCell>
+                             <TableCell></TableCell>
+                             {timelineMonths.map((month) => {
+                               const actualCount = getActualMemberCount(team.id, month.date);
+                               const idealCount = team.ideal_size || 1;
+                               return (
+                                 <TableCell key={month.label} className="text-center">
+                                   <Badge 
+                                     variant="outline" 
+                                     className={`text-xs px-1 py-0 min-w-[20px] justify-center ${getStaffingColorClass(actualCount, idealCount)}`}
+                                   >
+                                     {actualCount}
+                                   </Badge>
+                                 </TableCell>
+                               );
+                             })}
+                           </TableRow>
                           
                           {/* Team member rows */}
                           {members.map((member) => (
@@ -678,50 +677,49 @@ export function TeamMembersView({
                       
                       {groupedData.teamsWithoutProduct.map(({ team, members }) => (
                         <Fragment key={team.id}>
-                          {/* Team header row */}
-                          <TableRow className="bg-muted/50">
+                           {/* Team header row */}
+                           <TableRow className="bg-muted/50">
                              <TableCell 
-                               colSpan={3 + timelineMonths.length}
                                className="font-semibold pl-8"
                                style={{ 
                                  borderLeftColor: team.color || 'hsl(var(--primary))',
                                  borderLeftWidth: '4px'
                                }}
                              >
-                              <div className="flex items-center justify-between">
                                <div className="flex items-center gap-3">
                                  <span>{team.name}</span>
                                  <Badge variant="secondary" className="text-xs">
                                    Ideal: {team.ideal_size || 1}
                                  </Badge>
-                                 <div className="flex items-center gap-1">
-                                   <span className="text-xs text-muted-foreground">Actual:</span>
-                                   {timelineMonths.map((month) => {
-                                     const actualCount = getActualMemberCount(team.id, month.date);
-                                     const idealCount = team.ideal_size || 1;
-                                     return (
-                                       <Badge 
-                                         key={month.label}
-                                         variant="outline" 
-                                         className={`text-xs px-1 py-0 min-w-[20px] justify-center ${getStaffingColorClass(actualCount, idealCount)}`}
-                                       >
-                                         {actualCount}
-                                       </Badge>
-                                     );
-                                   })}
-                                 </div>
+                                 <Button
+                                   variant="ghost"
+                                   size="sm"
+                                   onClick={() => handleEditTeam(team)}
+                                   className="h-6 w-6 p-0 ml-auto"
+                                 >
+                                   <Edit2 className="w-3 h-3" />
+                                 </Button>
                                </div>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => handleEditTeam(team)}
-                                  className="h-6 w-6 p-0"
-                                >
-                                  <Edit2 className="w-3 h-3" />
-                                </Button>
-                              </div>
-                            </TableCell>
-                          </TableRow>
+                             </TableCell>
+                             <TableCell className="font-semibold text-muted-foreground">
+                               <span className="text-xs">Actual →</span>
+                             </TableCell>
+                             <TableCell></TableCell>
+                             {timelineMonths.map((month) => {
+                               const actualCount = getActualMemberCount(team.id, month.date);
+                               const idealCount = team.ideal_size || 1;
+                               return (
+                                 <TableCell key={month.label} className="text-center">
+                                   <Badge 
+                                     variant="outline" 
+                                     className={`text-xs px-1 py-0 min-w-[20px] justify-center ${getStaffingColorClass(actualCount, idealCount)}`}
+                                   >
+                                     {actualCount}
+                                   </Badge>
+                                 </TableCell>
+                               );
+                             })}
+                           </TableRow>
                           
                           {/* Team member rows */}
                           {members.map((member) => (
