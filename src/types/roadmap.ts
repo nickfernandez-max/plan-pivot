@@ -13,6 +13,7 @@ export interface Team {
   description?: string;
   color?: string;
   product_id?: string;
+  ideal_size?: number;
   created_at?: string;
   updated_at?: string;
   product?: Product;

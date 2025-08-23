@@ -50,6 +50,7 @@ const teamSchema = z.object({
   description: z.string().optional(),
   color: z.string().optional(),
   product_id: z.string().optional(),
+  ideal_size: z.number().min(1, "Ideal team size must be at least 1").optional(),
 });
 
 export function TeamMembersView({ 
@@ -116,6 +117,7 @@ export function TeamMembersView({
       description: "",
       color: "#3B82F6",
       product_id: "none",
+      ideal_size: 1,
     },
   });
 
@@ -136,6 +138,32 @@ export function TeamMembersView({
 
     return { productsWithTeams, teamsWithoutProduct };
   }, [teams, teamMembers, products]);
+
+  // Calculate actual member count for a team in a specific month using memberships data
+  const getActualMemberCount = (teamId: string, monthDate: Date) => {
+    const monthKey = format(monthDate, 'yyyy-MM-01');
+    return memberships?.filter(membership => {
+      const member = teamMembers.find(tm => tm.id === membership.team_member_id);
+      if (!member) return false;
+      
+      // Find which team the member belongs to via their memberships
+      const membershipForMonth = memberships.find(m => 
+        m.team_member_id === membership.team_member_id &&
+        m.team_id === teamId &&
+        m.start_month <= monthKey &&
+        (!m.end_month || m.end_month >= monthKey)
+      );
+      
+      return !!membershipForMonth;
+    }).length || 0;
+  };
+
+  // Get color class based on staffing level
+  const getStaffingColorClass = (actual: number, ideal: number) => {
+    if (actual < ideal) return "text-destructive"; // Red for understaffed
+    if (actual > ideal) return "text-green-600"; // Green for overstaffed
+    return "text-foreground"; // Neutral for perfectly staffed
+  };
 
   // Calculate member involvement (placeholder - could be enhanced with actual project data)
   const getMemberInvolvement = (member: TeamMember, monthDate: Date) => {
@@ -183,6 +211,7 @@ export function TeamMembersView({
       description: team.description || "",
       color: team.color || "#3B82F6",
       product_id: team.product_id || "none",
+      ideal_size: team.ideal_size || 1,
     });
     setIsAddTeamDialogOpen(true);
   };
@@ -276,6 +305,25 @@ export function TeamMembersView({
                         <FormLabel>Color</FormLabel>
                         <FormControl>
                           <Input type="color" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={teamForm.control}
+                    name="ideal_size"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Ideal Team Size</FormLabel>
+                        <FormControl>
+                          <Input 
+                            type="number" 
+                            min="1" 
+                            placeholder="Enter ideal team size" 
+                            {...field}
+                            onChange={(e) => field.onChange(e.target.value ? parseInt(e.target.value) : 1)}
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -474,36 +522,35 @@ export function TeamMembersView({
           ) : (
             <div className="overflow-x-auto">
               <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-48">Name</TableHead>
-                    <TableHead className="w-32">Team</TableHead>
-                    <TableHead className="w-40">Role</TableHead>
-                    <TableHead className="w-32">Start Date</TableHead>
-                    {timelineMonths.map((month) => (
-                      <TableHead key={month.label} className="text-center w-20">
-                        <div className="text-xs">
-                          <div>{month.shortLabel}</div>
-                          <div className="text-muted-foreground">{format(month.date, 'yyyy')}</div>
-                        </div>
-                      </TableHead>
-                    ))}
-                  </TableRow>
-                </TableHeader>
+                 <TableHeader>
+                   <TableRow>
+                     <TableHead className="w-48">Name</TableHead>
+                     <TableHead className="w-40">Role</TableHead>
+                     <TableHead className="w-32">Start Date</TableHead>
+                     {timelineMonths.map((month) => (
+                       <TableHead key={month.label} className="text-center w-20">
+                         <div className="text-xs">
+                           <div>{month.shortLabel}</div>
+                           <div className="text-muted-foreground">{format(month.date, 'yyyy')}</div>
+                         </div>
+                       </TableHead>
+                     ))}
+                   </TableRow>
+                 </TableHeader>
                 <TableBody>
                   {/* Teams grouped by products */}
                   {groupedData.productsWithTeams.map(({ product, teams: productTeams }) => (
                     <Fragment key={product.id}>
                       {/* Product header row */}
                       <TableRow className="bg-accent">
-                        <TableCell 
-                          colSpan={4 + timelineMonths.length}
-                          className="font-bold text-lg"
-                          style={{ 
-                            borderLeftColor: product.color || 'hsl(var(--primary))',
-                            borderLeftWidth: '6px'
-                          }}
-                        >
+                         <TableCell 
+                           colSpan={3 + timelineMonths.length}
+                           className="font-bold text-lg"
+                           style={{ 
+                             borderLeftColor: product.color || 'hsl(var(--primary))',
+                             borderLeftWidth: '6px'
+                           }}
+                         >
                           <div className="flex items-center gap-2">
                             <Users className="w-5 h-5" />
                             {product.name}
@@ -519,21 +566,37 @@ export function TeamMembersView({
                         <Fragment key={team.id}>
                           {/* Team header row */}
                           <TableRow className="bg-muted/50">
-                            <TableCell 
-                              colSpan={4 + timelineMonths.length}
-                              className="font-semibold pl-8"
-                              style={{ 
-                                borderLeftColor: team.color || 'hsl(var(--primary))',
-                                borderLeftWidth: '4px'
-                              }}
-                            >
+                             <TableCell 
+                               colSpan={3 + timelineMonths.length}
+                               className="font-semibold pl-8"
+                               style={{ 
+                                 borderLeftColor: team.color || 'hsl(var(--primary))',
+                                 borderLeftWidth: '4px'
+                               }}
+                             >
                               <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-2">
-                                  {team.name}
-                                  <Badge variant="outline" className="ml-2">
-                                    {members.length} member{members.length !== 1 ? 's' : ''}
-                                  </Badge>
-                                </div>
+                               <div className="flex items-center gap-3">
+                                 <span>{team.name}</span>
+                                 <Badge variant="secondary" className="text-xs">
+                                   Ideal: {team.ideal_size || 1}
+                                 </Badge>
+                                 <div className="flex items-center gap-1">
+                                   <span className="text-xs text-muted-foreground">Actual:</span>
+                                   {timelineMonths.map((month) => {
+                                     const actualCount = getActualMemberCount(team.id, month.date);
+                                     const idealCount = team.ideal_size || 1;
+                                     return (
+                                       <Badge 
+                                         key={month.label}
+                                         variant="outline" 
+                                         className={`text-xs px-1 py-0 min-w-[20px] justify-center ${getStaffingColorClass(actualCount, idealCount)}`}
+                                       >
+                                         {actualCount}
+                                       </Badge>
+                                     );
+                                   })}
+                                 </div>
+                               </div>
                                 <Button
                                   variant="ghost"
                                   size="sm"
@@ -549,32 +612,21 @@ export function TeamMembersView({
                           {/* Team member rows */}
                           {members.map((member) => (
                             <TableRow key={member.id}>
-                              <TableCell className="font-medium pl-12">
-                                <div className="flex items-center justify-between gap-2">
-                                  <span className="truncate">{member.name}</span>
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    className="h-6 w-6 p-0"
-                                    onClick={() => setEditingMember(member)}
-                                    title="Edit memberships"
-                                  >
-                                    <Edit2 className="w-3 h-3" />
-                                  </Button>
-                                </div>
-                              </TableCell>
-                              <TableCell>
-                                <Badge 
-                                  variant="outline"
-                                  style={{ 
-                                    borderColor: team.color || 'hsl(var(--primary))',
-                                    color: team.color || 'hsl(var(--primary))'
-                                  }}
-                                >
-                                  {team.name}
-                                </Badge>
-                              </TableCell>
-                              <TableCell className="text-muted-foreground">{member.role}</TableCell>
+                               <TableCell className="font-medium pl-12">
+                                 <div className="flex items-center justify-between gap-2">
+                                   <span className="truncate">{member.name}</span>
+                                   <Button
+                                     variant="ghost"
+                                     size="sm"
+                                     className="h-6 w-6 p-0"
+                                     onClick={() => setEditingMember(member)}
+                                     title="Edit memberships"
+                                   >
+                                     <Edit2 className="w-3 h-3" />
+                                   </Button>
+                                 </div>
+                               </TableCell>
+                               <TableCell className="text-muted-foreground">{member.role}</TableCell>
                               <TableCell>{format(new Date(member.start_date), 'MMM d, yyyy')}</TableCell>
                               {timelineMonths.map((month) => {
                                 const involvement = getMemberInvolvement(member, month.date);
@@ -610,10 +662,10 @@ export function TeamMembersView({
                   {groupedData.teamsWithoutProduct.length > 0 && (
                     <Fragment>
                       <TableRow className="bg-accent">
-                        <TableCell 
-                          colSpan={4 + timelineMonths.length}
-                          className="font-bold text-lg"
-                        >
+                         <TableCell 
+                           colSpan={3 + timelineMonths.length}
+                           className="font-bold text-lg"
+                         >
                           <div className="flex items-center gap-2">
                             <Users className="w-5 h-5" />
                             Unassigned Teams
@@ -628,21 +680,37 @@ export function TeamMembersView({
                         <Fragment key={team.id}>
                           {/* Team header row */}
                           <TableRow className="bg-muted/50">
-                            <TableCell 
-                              colSpan={4 + timelineMonths.length}
-                              className="font-semibold pl-8"
-                              style={{ 
-                                borderLeftColor: team.color || 'hsl(var(--primary))',
-                                borderLeftWidth: '4px'
-                              }}
-                            >
+                             <TableCell 
+                               colSpan={3 + timelineMonths.length}
+                               className="font-semibold pl-8"
+                               style={{ 
+                                 borderLeftColor: team.color || 'hsl(var(--primary))',
+                                 borderLeftWidth: '4px'
+                               }}
+                             >
                               <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-2">
-                                  {team.name}
-                                  <Badge variant="outline" className="ml-2">
-                                    {members.length} member{members.length !== 1 ? 's' : ''}
-                                  </Badge>
-                                </div>
+                               <div className="flex items-center gap-3">
+                                 <span>{team.name}</span>
+                                 <Badge variant="secondary" className="text-xs">
+                                   Ideal: {team.ideal_size || 1}
+                                 </Badge>
+                                 <div className="flex items-center gap-1">
+                                   <span className="text-xs text-muted-foreground">Actual:</span>
+                                   {timelineMonths.map((month) => {
+                                     const actualCount = getActualMemberCount(team.id, month.date);
+                                     const idealCount = team.ideal_size || 1;
+                                     return (
+                                       <Badge 
+                                         key={month.label}
+                                         variant="outline" 
+                                         className={`text-xs px-1 py-0 min-w-[20px] justify-center ${getStaffingColorClass(actualCount, idealCount)}`}
+                                       >
+                                         {actualCount}
+                                       </Badge>
+                                     );
+                                   })}
+                                 </div>
+                               </div>
                                 <Button
                                   variant="ghost"
                                   size="sm"
@@ -657,20 +725,22 @@ export function TeamMembersView({
                           
                           {/* Team member rows */}
                           {members.map((member) => (
-                            <TableRow key={member.id}>
-                              <TableCell className="font-medium pl-12">{member.name}</TableCell>
-                              <TableCell>
-                                <Badge 
-                                  variant="outline"
-                                  style={{ 
-                                    borderColor: team.color || 'hsl(var(--primary))',
-                                    color: team.color || 'hsl(var(--primary))'
-                                  }}
-                                >
-                                  {team.name}
-                                </Badge>
-                              </TableCell>
-                              <TableCell className="text-muted-foreground">{member.role}</TableCell>
+                             <TableRow key={member.id}>
+                               <TableCell className="font-medium pl-12">
+                                 <div className="flex items-center justify-between gap-2">
+                                   <span className="truncate">{member.name}</span>
+                                   <Button
+                                     variant="ghost"
+                                     size="sm"
+                                     className="h-6 w-6 p-0"
+                                     onClick={() => setEditingMember(member)}
+                                     title="Edit memberships"
+                                   >
+                                     <Edit2 className="w-3 h-3" />
+                                   </Button>
+                                 </div>
+                               </TableCell>
+                               <TableCell className="text-muted-foreground">{member.role}</TableCell>
                               <TableCell>{format(new Date(member.start_date), 'MMM d, yyyy')}</TableCell>
                               {timelineMonths.map((month) => {
                                 const involvement = getMemberInvolvement(member, month.date);
