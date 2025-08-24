@@ -145,7 +145,7 @@ export function EditProjectDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-2xl max-h-[80vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-4xl max-h-[80vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Edit Project</DialogTitle>
           <DialogDescription>
@@ -155,22 +155,26 @@ export function EditProjectDialog({
         
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            {/* Project Name Header */}
+            {/* Project Name as editable header */}
             <FormField
               control={form.control}
               name="name"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="text-xl font-semibold">Project Name</FormLabel>
+                  <FormLabel className="text-lg font-semibold">Project Name</FormLabel>
                   <FormControl>
-                    <Input placeholder="Enter project name" {...field} />
+                    <Input 
+                      placeholder="Enter project name" 
+                      className="text-xl font-bold border-0 bg-transparent px-0 focus-visible:ring-0 shadow-none"
+                      {...field} 
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
 
-            {/* Three fields per row */}
+            {/* First row: Team, Start Date, End Date */}
             <div className="grid grid-cols-3 gap-4">
               <FormField
                 control={form.control}
