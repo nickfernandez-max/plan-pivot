@@ -392,12 +392,6 @@ export function RoadmapView({
                           <div className="flex-1 min-w-0">
                             <div className="font-medium truncate">{member.name}</div>
                             <div className="text-xs text-muted-foreground truncate">{member.role}</div>
-                            <div className="text-xs text-muted-foreground mt-1">
-                              Allocated: {allocatedPercentage}%
-                              {allocatedPercentage > 100 && (
-                                <span className="text-destructive ml-1">⚠️ Over-allocated</span>
-                              )}
-                            </div>
                           </div>
                         </div>
                       ))}
@@ -448,12 +442,6 @@ export function RoadmapView({
                           <div className="flex-1 min-w-0">
                             <div className="font-medium truncate">{member.name}</div>
                             <div className="text-xs text-muted-foreground truncate">{member.role}</div>
-                            <div className="text-xs text-muted-foreground mt-1">
-                              Allocated: {allocatedPercentage}%
-                              {allocatedPercentage > 100 && (
-                                <span className="text-destructive ml-1">⚠️ Over-allocated</span>
-                              )}
-                            </div>
                           </div>
                         </div>
                       ))}
