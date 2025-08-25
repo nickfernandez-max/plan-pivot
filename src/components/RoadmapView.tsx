@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Project, TeamMember, Team, Product, ProjectAssignment } from '@/types/roadmap';
-import { format, differenceInDays, addDays, startOfMonth, endOfMonth, addMonths, subMonths } from 'date-fns';
+import { format, differenceInDays, addDays, startOfMonth, endOfMonth, addMonths, subMonths, startOfWeek, addWeeks, differenceInWeeks } from 'date-fns';
 import { useDragAndDrop } from '@/hooks/useDragAndDrop';
 import { DraggableProject } from '@/components/DraggableProject';
 import { DroppableMemberRow } from '@/components/DroppableMemberRow';
@@ -296,6 +296,31 @@ export function RoadmapView({
     return months;
   }, [timelineBounds, totalDays]);
 
+  // Generate weekly grid lines
+  const weeklyGridLines = useMemo(() => {
+    const weeks = [];
+    // Start from the beginning of the week that contains timeline start
+    let current = startOfWeek(timelineBounds.start, { weekStartsOn: 1 }); // Monday as start of week
+    
+    while (current <= timelineBounds.end) {
+      const daysFromStart = differenceInDays(current, timelineBounds.start);
+      const leftPosition = (daysFromStart / totalDays) * 100;
+      
+      // Only add if the week line is within our visible timeline
+      if (leftPosition >= 0 && leftPosition <= 100) {
+        weeks.push({
+          date: current,
+          left: leftPosition,
+          label: format(current, 'MMM d')
+        });
+      }
+      
+      current = addWeeks(current, 1);
+    }
+    
+    return weeks;
+  }, [timelineBounds, totalDays]);
+
   // Group teams by product and calculate member rows with allocation slots
   const productGroups = useMemo(() => {
     const FIXED_ROW_HEIGHT = 100; // Reduced from 140px for more compact view
@@ -482,6 +507,21 @@ export function RoadmapView({
             ))}
           </div>
 
+          {/* Weekly grid lines */}
+          <div className="relative h-4 mb-2 ml-48">
+            {weeklyGridLines.map((week, index) => (
+              <div
+                key={index}
+                className="absolute border-l border-border/30"
+                style={{
+                  left: `${week.left}%`,
+                  height: '100%'
+                }}
+                title={week.label}
+              />
+            ))}
+          </div>
+
           {/* Team sections and member rows grouped by product */}
           <div className="flex">
             {/* Left sidebar with names */}
@@ -663,6 +703,22 @@ export function RoadmapView({
                     currentTop += TEAM_HEADER_HEIGHT + totalHeight;
                   });
                 }
+
+                // Add weekly grid lines that span the full height
+                const totalHeight = currentTop;
+                weeklyGridLines.forEach((week, index) => {
+                  elements.push(
+                    <div
+                      key={`week-line-${index}`}
+                      className="absolute border-l border-border/20 pointer-events-none"
+                      style={{
+                        left: `${week.left}%`,
+                        top: '0px',
+                        height: `${totalHeight}px`
+                      }}
+                    />
+                  );
+                });
 
                 return elements;
               })()}
