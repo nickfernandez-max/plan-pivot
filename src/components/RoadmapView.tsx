@@ -8,6 +8,7 @@ import { useDragAndDrop } from '@/hooks/useDragAndDrop';
 import { DraggableProject } from '@/components/DraggableProject';
 import { DroppableMemberRow } from '@/components/DroppableMemberRow';
 import { EditProjectDialog } from '@/components/EditProjectDialog';
+import { CompactDragOverlay } from '@/components/CompactDragOverlay';
 import { Users } from 'lucide-react';
 
 interface RoadmapViewProps {
@@ -689,25 +690,8 @@ export function RoadmapView({
         const draggedProject = projects.find(p => p.id === activeDrag.projectId);
         if (!draggedProject) return null;
 
-        const projectTeam = teams.find(t => t.id === draggedProject.team_id);
-
-        const overlayWidth = activeDrag.originalWidth;
-        const overlayHeight = activeDrag.originalHeight;
-
         return (
-          <div className="opacity-90 pointer-events-none">
-            <DraggableProject
-              project={draggedProject}
-              team={projectTeam || teams[0]}
-              style={{
-                width: overlayWidth ? `${overlayWidth}px` : undefined,
-                height: overlayHeight ? `${overlayHeight}px` : undefined,
-                position: 'static',
-              }}
-              memberId={activeDrag.originalMemberId}
-              isPreview={true}
-            />
-          </div>
+          <CompactDragOverlay project={draggedProject} />
         );
       })()}
     </DragOverlay>

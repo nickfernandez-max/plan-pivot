@@ -3,7 +3,6 @@ import { CSS } from '@dnd-kit/utilities';
 import { format } from 'date-fns';
 import { Edit } from 'lucide-react';
 import { Project, Team } from '@/types/roadmap';
-import { useCallback, useLayoutEffect, useRef, useState } from 'react';
 
 interface DraggableProjectProps {
   project: Project & { allocation?: number };
@@ -22,10 +21,6 @@ export function DraggableProject({
   isPreview = false,
   onEdit
 }: DraggableProjectProps) {
-  // Measure original rendered size to keep overlay dimensions consistent
-  const [measuredSize, setMeasuredSize] = useState<{ width: number; height: number } | null>(null);
-  const nodeRef = useRef<HTMLDivElement | null>(null);
-
   const {
     attributes,
     listeners,
@@ -40,33 +35,20 @@ export function DraggableProject({
       memberId,
       startDate: project.start_date,
       endDate: project.end_date,
-      width: measuredSize?.width,
-      height: measuredSize?.height,
     },
     disabled: isPreview,
   });
 
-  const handleRef = useCallback((node: HTMLDivElement | null) => {
-    setNodeRef(node);
-    nodeRef.current = node;
-  }, [setNodeRef]);
-
-  useLayoutEffect(() => {
-    if (!nodeRef.current) return;
-    const rect = nodeRef.current.getBoundingClientRect();
-    setMeasuredSize({ width: rect.width, height: rect.height });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [project.id, style.width, style.height]);
-
   const dragStyle = {
     transform: CSS.Transform.toString(transform),
-    opacity: isDragging ? 0.5 : 1,
+    opacity: isDragging ? 0.2 : 1,
     zIndex: isDragging ? 1000 : 1,
+    cursor: isDragging ? 'grabbing' : 'grab',
   };
 
   return (
     <div
-      ref={handleRef}
+      ref={setNodeRef}
       className="absolute rounded-md shadow-sm border transition-all hover:shadow-md group animate-fade-in"
       style={{
         ...style,
@@ -80,7 +62,7 @@ export function DraggableProject({
         <div 
           {...listeners}
           {...attributes}
-          className="flex-1 min-w-0 h-full flex items-center px-2 cursor-grab active:cursor-grabbing"
+          className="flex-1 min-w-0 h-full flex items-center px-2 cursor-grab active:cursor-grabbing touch-none"
         >
           <div className="flex-1 min-w-0">
             <div className="text-white text-xs font-medium truncate">

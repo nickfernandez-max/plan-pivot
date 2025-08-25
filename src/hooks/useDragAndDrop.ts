@@ -9,8 +9,6 @@ interface DragData {
   originalStartDate: string;
   originalEndDate: string;
   originalAllocation: number;
-  originalWidth?: number;
-  originalHeight?: number;
 }
 
 interface TimelineBounds {
@@ -57,8 +55,6 @@ export function useDragAndDrop({
         originalStartDate: active.data.current.startDate,
         originalEndDate: active.data.current.endDate,
         originalAllocation: assignment?.percent_allocation || 25,
-        originalWidth: active.data.current.width,
-        originalHeight: active.data.current.height,
       });
     }
   }, [assignments]);

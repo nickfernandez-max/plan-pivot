@@ -27,8 +27,8 @@ export function DroppableMemberRow({
   return (
     <div
       ref={setNodeRef}
-      className={`absolute w-full border-b border-border/50 transition-all ${
-        isOver ? 'bg-primary/10 border-primary/30' : ''
+      className={`absolute w-full border-b border-border/50 transition-all duration-200 ${
+        isOver ? 'bg-primary/15 border-primary/50 shadow-lg' : ''
       }`}
       style={{
         top: `${top}px`,
@@ -37,7 +37,7 @@ export function DroppableMemberRow({
     >
       {children}
       {isOver && (
-        <div className="absolute inset-0 bg-primary/5 border-2 border-dashed border-primary/30 rounded-md pointer-events-none" />
+        <div className="absolute inset-0 bg-primary/10 border-2 border-dashed border-primary/50 rounded-md pointer-events-none animate-pulse" />
       )}
     </div>
   );
