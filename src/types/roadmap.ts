@@ -53,6 +53,8 @@ export interface ProjectAssignment {
   project_id: string;
   team_member_id: string;
   percent_allocation: number;
+  start_date?: string;
+  end_date?: string;
   created_at?: string;
 }
 

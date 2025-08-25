@@ -22,7 +22,7 @@ interface RoadmapViewProps {
   onUpdateProject: (id: string, updates: Partial<Project>) => Promise<void>;
   onUpdateProjectAssignees: (projectId: string, assigneeIds: string[]) => Promise<void>;
   onUpdateProjectProducts: (projectId: string, productIds: string[]) => Promise<void>;
-  onUpdateProjectAssignments: (projectId: string, assignments: { teamMemberId: string; percentAllocation: number }[]) => Promise<void>;
+  onUpdateProjectAssignments: (projectId: string, assignments: { teamMemberId: string; percentAllocation: number; startDate?: string; endDate?: string }[]) => Promise<void>;
 }
 
 interface ProjectWithPosition extends Project {
@@ -60,8 +60,9 @@ const assignAllocationSlots = (
     );
     
     const allocation = assignment?.percent_allocation || 25;
-    const startDate = new Date(project.start_date);
-    const endDate = new Date(project.end_date);
+    // Use assignment dates if available, otherwise fall back to project dates
+    const startDate = assignment?.start_date ? new Date(assignment.start_date) : new Date(project.start_date);
+    const endDate = assignment?.end_date ? new Date(assignment.end_date) : new Date(project.end_date);
     
     return {
       ...project,
@@ -347,8 +348,14 @@ export function RoadmapView({
           const memberProjects = visibleProjects
             .filter(project => project.assignees?.some(assignee => assignee.id === member.id))
             .map(project => {
-              const startDate = new Date(project.start_date);
-              const endDate = new Date(project.end_date);
+              // Get the assignment for this specific member to use their dates
+              const assignment = assignments.find(a => 
+                a.project_id === project.id && a.team_member_id === member.id
+              );
+              
+              // Use assignment dates if available, otherwise fall back to project dates
+              const startDate = assignment?.start_date ? new Date(assignment.start_date) : new Date(project.start_date);
+              const endDate = assignment?.end_date ? new Date(assignment.end_date) : new Date(project.end_date);
               
               // Clamp dates to visible timeline bounds
               const clampedStart = startDate < timelineBounds.start ? timelineBounds.start : startDate;

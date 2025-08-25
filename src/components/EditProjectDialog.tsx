@@ -23,7 +23,7 @@ interface EditProjectDialogProps {
   onClose: () => void;
   onUpdateProject: (id: string, updates: Partial<Project>) => Promise<void>;
   onUpdateProjectProducts: (projectId: string, productIds: string[]) => Promise<void>;
-  onUpdateProjectAssignments: (projectId: string, assignments: { teamMemberId: string; percentAllocation: number }[]) => Promise<void>;
+  onUpdateProjectAssignments: (projectId: string, assignments: { teamMemberId: string; percentAllocation: number; startDate?: string; endDate?: string }[]) => Promise<void>;
 }
 
 const projectSchema = z.object({
@@ -37,7 +37,9 @@ const projectSchema = z.object({
   product_ids: z.array(z.string()).optional(),
   assignments: z.array(z.object({
     teamMemberId: z.string(),
-    percentAllocation: z.number().min(0).max(100)
+    percentAllocation: z.number().min(0).max(100),
+    startDate: z.string().optional(),
+    endDate: z.string().optional()
   })).optional(),
 });
 
@@ -68,7 +70,9 @@ export function EditProjectDialog({
         .filter(a => a.project_id === project.id)
         .map(a => ({
           teamMemberId: a.team_member_id,
-          percentAllocation: a.percent_allocation
+          percentAllocation: a.percent_allocation,
+          startDate: a.start_date || project.start_date,
+          endDate: a.end_date || project.end_date
         }));
 
       const projectProducts = project.products?.map(p => p.id) || [];
@@ -103,9 +107,15 @@ export function EditProjectDialog({
   const addAssignment = (memberId: string) => {
     const currentAssignments = form.getValues("assignments") || [];
     if (!currentAssignments.some(a => a.teamMemberId === memberId)) {
+      const projectDates = form.getValues();
       form.setValue("assignments", [
         ...currentAssignments,
-        { teamMemberId: memberId, percentAllocation: 100 }
+        { 
+          teamMemberId: memberId, 
+          percentAllocation: 100,
+          startDate: projectDates.start_date,
+          endDate: projectDates.end_date
+        }
       ]);
     }
   };
@@ -119,6 +129,13 @@ export function EditProjectDialog({
     const currentAssignments = form.getValues("assignments") || [];
     form.setValue("assignments", currentAssignments.map(a => 
       a.teamMemberId === memberId ? { ...a, percentAllocation: allocation } : a
+    ));
+  };
+
+  const updateAssignmentDates = (memberId: string, startDate: string, endDate: string) => {
+    const currentAssignments = form.getValues("assignments") || [];
+    form.setValue("assignments", currentAssignments.map(a => 
+      a.teamMemberId === memberId ? { ...a, startDate, endDate } : a
     ));
   };
 
@@ -136,9 +153,9 @@ export function EditProjectDialog({
         await onUpdateProjectProducts(project.id, product_ids);
       }
       
-      // Update assignments with allocations
+      // Update assignments with allocations and dates
       if (projectAssignments) {
-        const validAssignments = projectAssignments.filter((a): a is { teamMemberId: string; percentAllocation: number } => 
+        const validAssignments = projectAssignments.filter((a): a is { teamMemberId: string; percentAllocation: number; startDate?: string; endDate?: string } => 
           Boolean(a.teamMemberId) && typeof a.percentAllocation === 'number'
         );
         await onUpdateProjectAssignments(project.id, validAssignments);
@@ -383,17 +400,43 @@ export function EditProjectDialog({
                         </div>
                         
                         {isAssigned && (
-                          <div className="flex items-center space-x-2">
-                            <span className="text-sm">Allocation:</span>
-                            <Input
-                              type="number"
-                              min="0"
-                              max="100"
-                              value={assignment.percentAllocation}
-                              onChange={(e) => updateAssignmentAllocation(member.id, parseInt(e.target.value) || 0)}
-                              className="w-20"
-                            />
-                            <span className="text-sm">%</span>
+                          <div className="space-y-2">
+                            <div className="flex items-center space-x-2">
+                              <span className="text-sm">Allocation:</span>
+                              <Input
+                                type="number"
+                                min="0"
+                                max="100"
+                                value={assignment.percentAllocation}
+                                onChange={(e) => updateAssignmentAllocation(member.id, parseInt(e.target.value) || 0)}
+                                className="w-20"
+                              />
+                              <span className="text-sm">%</span>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <span className="text-sm">From:</span>
+                              <Input
+                                type="date"
+                                value={assignment.startDate || form.getValues().start_date}
+                                onChange={(e) => updateAssignmentDates(
+                                  member.id, 
+                                  e.target.value, 
+                                  assignment.endDate || form.getValues().end_date
+                                )}
+                                className="w-36"
+                              />
+                              <span className="text-sm">To:</span>
+                              <Input
+                                type="date"
+                                value={assignment.endDate || form.getValues().end_date}
+                                onChange={(e) => updateAssignmentDates(
+                                  member.id, 
+                                  assignment.startDate || form.getValues().start_date,
+                                  e.target.value
+                                )}
+                                className="w-36"
+                              />
+                            </div>
                           </div>
                         )}
                       </div>

@@ -23,7 +23,7 @@ interface UseDragAndDropProps {
   assignments: ProjectAssignment[];
   onUpdateProject: (id: string, updates: Partial<Project>) => Promise<void>;
   onUpdateProjectAssignees: (projectId: string, assigneeIds: string[]) => Promise<void>;
-  onUpdateProjectAssignments: (projectId: string, assignments: { teamMemberId: string; percentAllocation: number }[]) => Promise<void>;
+  onUpdateProjectAssignments: (projectId: string, assignments: { teamMemberId: string; percentAllocation: number; startDate?: string; endDate?: string }[]) => Promise<void>;
 }
 
 export function useDragAndDrop({
@@ -199,7 +199,12 @@ export function useDragAndDrop({
         ];
         
         console.log('New assignment structure:', updatedAssignments);
-        await onUpdateProjectAssignments(activeDrag.projectId, updatedAssignments);
+        await onUpdateProjectAssignments(activeDrag.projectId, updatedAssignments.map(a => ({
+          teamMemberId: a.teamMemberId,
+          percentAllocation: a.percentAllocation,
+          startDate: newStartDate.toISOString().split('T')[0],
+          endDate: newEndDate.toISOString().split('T')[0]
+        })));
         console.log('Project reassignment completed successfully');
         toast.success(`Project reassigned successfully!`);
       }

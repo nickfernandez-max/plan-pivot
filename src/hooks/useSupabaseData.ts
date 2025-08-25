@@ -407,7 +407,7 @@ export function useSupabaseData() {
     }
   };
 
-  const updateProjectAssignments = async (projectId: string, assignments: { teamMemberId: string; percentAllocation: number }[]) => {
+  const updateProjectAssignments = async (projectId: string, assignments: { teamMemberId: string; percentAllocation: number; startDate?: string; endDate?: string }[]) => {
     try {
       // Delete existing assignments for this project
       const { error: deleteError } = await supabase
@@ -420,7 +420,7 @@ export function useSupabaseData() {
         throw deleteError;
       }
 
-      // Insert new assignments with allocations
+      // Insert new assignments with allocations and dates
       if (assignments.length > 0) {
         const { error: insertError } = await supabase
           .from('project_assignees')
@@ -429,6 +429,8 @@ export function useSupabaseData() {
               project_id: projectId,
               team_member_id: assignment.teamMemberId,
               percent_allocation: assignment.percentAllocation,
+              start_date: assignment.startDate,
+              end_date: assignment.endDate,
             }))
           );
 
