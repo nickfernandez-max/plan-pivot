@@ -160,44 +160,52 @@ export function useDragAndDrop({
         newEndDate.toISOString().split('T')[0] !== activeDrag.originalEndDate;
 
       if (datesChanged) {
+        console.log('Updating project dates:', {
+          projectId: activeDrag.projectId,
+          oldStart: activeDrag.originalStartDate,
+          newStart: newStartDate.toISOString().split('T')[0],
+          oldEnd: activeDrag.originalEndDate,
+          newEnd: newEndDate.toISOString().split('T')[0]
+        });
         await onUpdateProject(activeDrag.projectId, {
           start_date: newStartDate.toISOString().split('T')[0],
           end_date: newEndDate.toISOString().split('T')[0],
         });
+        console.log('Project dates updated successfully');
       }
 
       // Update project assignees and allocations if member changed
       if (newMemberId !== activeDrag.originalMemberId) {
+        console.log('Reassigning project:', {
+          projectId: activeDrag.projectId,
+          fromMember: activeDrag.originalMemberId,
+          toMember: newMemberId,
+          allocation: activeDrag.originalAllocation
+        });
+        
         // Get all current assignments for this project
         const currentProjectAssignments = assignments.filter(a => a.project_id === activeDrag.projectId);
         
-        // Check if target member has capacity for this allocation
-        const targetMemberAssignments = assignments.filter(a => a.team_member_id === newMemberId);
-        const targetMemberTotalAllocation = targetMemberAssignments.reduce((sum, a) => sum + a.percent_allocation, 0);
+        // Create new assignments list:
+        // 1. Keep all assignments except the one being moved
+        // 2. Add the assignment to the new member
+        const updatedAssignments = [
+          // Keep other members' assignments
+          ...currentProjectAssignments
+            .filter(a => a.team_member_id !== activeDrag.originalMemberId)
+            .map(a => ({ teamMemberId: a.team_member_id, percentAllocation: a.percent_allocation })),
+          // Add assignment to new member
+          { teamMemberId: newMemberId, percentAllocation: activeDrag.originalAllocation }
+        ];
         
-        if (targetMemberTotalAllocation + activeDrag.originalAllocation <= 100) {
-          // Create new assignments list:
-          // 1. Keep all assignments except the one being moved
-          // 2. Add the assignment to the new member
-          const updatedAssignments = [
-            // Keep other members' assignments
-            ...currentProjectAssignments
-              .filter(a => a.team_member_id !== activeDrag.originalMemberId)
-              .map(a => ({ teamMemberId: a.team_member_id, percentAllocation: a.percent_allocation })),
-            // Add assignment to new member
-            { teamMemberId: newMemberId, percentAllocation: activeDrag.originalAllocation }
-          ];
-          
-          await onUpdateProjectAssignments(activeDrag.projectId, updatedAssignments);
-          toast.success(`Project reassigned successfully!`);
-        } else {
-          const overAllocation = targetMemberTotalAllocation + activeDrag.originalAllocation;
-          console.warn(`Cannot assign project: target member would be over-allocated (${overAllocation}%)`);
-          toast.error(`Cannot assign project: target member would be over-allocated (${overAllocation}%)`);
-        }
+        console.log('New assignment structure:', updatedAssignments);
+        await onUpdateProjectAssignments(activeDrag.projectId, updatedAssignments);
+        console.log('Project reassignment completed successfully');
+        toast.success(`Project reassigned successfully!`);
       }
     } catch (error) {
-      console.error('Error updating project:', error);
+      console.error('Error during drag and drop:', error);
+      toast.error('Failed to update project assignment');
     }
 
     setActiveDrag(null);
