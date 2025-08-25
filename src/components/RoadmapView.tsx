@@ -482,13 +482,13 @@ export function RoadmapView({
             </div>
           </div>
           <p className="text-sm text-muted-foreground">
-            Use two-finger scroll or shift+scroll to navigate the timeline horizontally
+            Use two-finger scroll or shift+scroll to navigate the timeline horizontally. Drag projects between team members to reassign them.
           </p>
         </CardHeader>
         <CardContent>
           <div 
             ref={timelineRef}
-            className="relative timeline-container"
+            className="relative timeline-container select-none"
             onWheel={handleWheel}
           >
           {/* Month headers */}

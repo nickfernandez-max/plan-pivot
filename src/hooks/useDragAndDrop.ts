@@ -2,6 +2,7 @@ import { useState, useCallback } from 'react';
 import { DragEndEvent, DragStartEvent, DragOverEvent } from '@dnd-kit/core';
 import { differenceInDays, addDays, startOfWeek, addWeeks, differenceInWeeks } from 'date-fns';
 import { Project, TeamMember, ProjectAssignment } from '@/types/roadmap';
+import { toast } from 'sonner';
 
 interface DragData {
   projectId: string;
@@ -167,18 +168,32 @@ export function useDragAndDrop({
 
       // Update project assignees and allocations if member changed
       if (newMemberId !== activeDrag.originalMemberId) {
+        // Get all current assignments for this project
+        const currentProjectAssignments = assignments.filter(a => a.project_id === activeDrag.projectId);
+        
         // Check if target member has capacity for this allocation
         const targetMemberAssignments = assignments.filter(a => a.team_member_id === newMemberId);
         const targetMemberTotalAllocation = targetMemberAssignments.reduce((sum, a) => sum + a.percent_allocation, 0);
         
         if (targetMemberTotalAllocation + activeDrag.originalAllocation <= 100) {
-          // Remove from original member and add to new member
-          await onUpdateProjectAssignments(activeDrag.projectId, [
+          // Create new assignments list:
+          // 1. Keep all assignments except the one being moved
+          // 2. Add the assignment to the new member
+          const updatedAssignments = [
+            // Keep other members' assignments
+            ...currentProjectAssignments
+              .filter(a => a.team_member_id !== activeDrag.originalMemberId)
+              .map(a => ({ teamMemberId: a.team_member_id, percentAllocation: a.percent_allocation })),
+            // Add assignment to new member
             { teamMemberId: newMemberId, percentAllocation: activeDrag.originalAllocation }
-          ]);
+          ];
+          
+          await onUpdateProjectAssignments(activeDrag.projectId, updatedAssignments);
+          toast.success(`Project reassigned successfully!`);
         } else {
-          console.warn('Cannot assign project: target member would be over-allocated');
-          // Could show a toast notification here
+          const overAllocation = targetMemberTotalAllocation + activeDrag.originalAllocation;
+          console.warn(`Cannot assign project: target member would be over-allocated (${overAllocation}%)`);
+          toast.error(`Cannot assign project: target member would be over-allocated (${overAllocation}%)`);
         }
       }
     } catch (error) {
