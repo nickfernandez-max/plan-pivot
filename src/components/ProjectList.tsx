@@ -635,7 +635,7 @@ export function ProjectList({ projects, teams, products, onAddProject, onUpdateP
                         </TableCell>
                         <TableCell>
                           {project.is_rd ? (
-                            <Badge variant="default">R&D</Badge>
+                            <Badge variant="outline">R&D</Badge>
                           ) : (
                             <span className="text-muted-foreground">—</span>
                           )}
