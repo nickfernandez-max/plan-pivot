@@ -41,9 +41,9 @@ export function DraggableProject({
 
   const dragStyle = {
     transform: CSS.Transform.toString(transform),
-    opacity: isDragging ? 0.2 : 1,
+    opacity: isDragging ? 0 : 1,
     zIndex: isDragging ? 1000 : 1,
-    cursor: isDragging ? 'grabbing' : 'grab',
+    cursor: 'grab',
   };
 
   return (
