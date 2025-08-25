@@ -13,6 +13,7 @@ export default function RoadmapApp() {
   const [selectedTeam, setSelectedTeam] = useState<string>('all');
   const [selectedProduct, setSelectedProduct] = useState<string>('all');
   const [isAddMemberDialogOpen, setIsAddMemberDialogOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<string>('projects');
   
   const { 
     projects, 
@@ -209,7 +210,7 @@ export default function RoadmapApp() {
             </div>
         </div>
 
-        <Tabs defaultValue="projects" className="space-y-6">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
           <TabsList className="grid w-full grid-cols-3 max-w-lg">
             <TabsTrigger value="projects" className="text-sm font-medium">
               Projects
