@@ -1,8 +1,9 @@
-import { useMemo, Fragment, useState } from 'react';
+import { useMemo, Fragment, useState, useCallback, useRef } from 'react';
 import { DndContext, DragOverlay } from '@dnd-kit/core';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Project, TeamMember, Team, Product, ProjectAssignment } from '@/types/roadmap';
 import { format, differenceInDays, addDays, startOfMonth, endOfMonth, addMonths, subMonths } from 'date-fns';
 import { useDragAndDrop } from '@/hooks/useDragAndDrop';
@@ -10,7 +11,7 @@ import { DraggableProject } from '@/components/DraggableProject';
 import { DroppableMemberRow } from '@/components/DroppableMemberRow';
 import { EditProjectDialog } from '@/components/EditProjectDialog';
 import { ProportionalDragOverlay } from '@/components/ProportionalDragOverlay';
-import { Users, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Users, ChevronLeft, ChevronRight, Calendar } from 'lucide-react';
 
 interface RoadmapViewProps {
   projects: Project[];
@@ -157,6 +158,9 @@ export function RoadmapView({
 }: RoadmapViewProps) {
   const [editingProject, setEditingProject] = useState<Project | null>(null);
   
+  // State for number of months to display
+  const [monthsToShow, setMonthsToShow] = useState<number>(9);
+  
   // Calculate the full timeline bounds to determine navigation limits
   const fullTimelineBounds = useMemo(() => {
     if (projects.length === 0) {
@@ -177,16 +181,16 @@ export function RoadmapView({
     };
   }, [projects]);
 
-  // State for current viewport (which 9 months to show)
+  // State for current viewport
   const [viewportStart, setViewportStart] = useState<Date>(() => fullTimelineBounds.start);
 
-  // Calculate visible timeline bounds (9 months)
+  // Calculate visible timeline bounds based on selected months
   const timelineBounds = useMemo(() => {
     const start = startOfMonth(viewportStart);
-    const end = endOfMonth(addMonths(start, 8)); // 9 months total (0-8)
+    const end = endOfMonth(addMonths(start, monthsToShow - 1));
     
     return { start, end };
-  }, [viewportStart]);
+  }, [viewportStart, monthsToShow]);
 
   const totalDays = differenceInDays(timelineBounds.end, timelineBounds.start);
 
@@ -196,19 +200,21 @@ export function RoadmapView({
   }, [viewportStart, fullTimelineBounds.start]);
 
   const canNavigateRight = useMemo(() => {
-    const viewportEnd = endOfMonth(addMonths(viewportStart, 8));
+    const viewportEnd = endOfMonth(addMonths(viewportStart, monthsToShow - 1));
     return viewportEnd < fullTimelineBounds.end;
-  }, [viewportStart, fullTimelineBounds.end]);
+  }, [viewportStart, monthsToShow, fullTimelineBounds.end]);
 
   const navigateLeft = () => {
     if (canNavigateLeft) {
-      setViewportStart(prev => startOfMonth(subMonths(prev, 3))); // Move 3 months left
+      const moveAmount = Math.min(3, monthsToShow); // Move by 3 months or the display width, whichever is smaller
+      setViewportStart(prev => startOfMonth(subMonths(prev, moveAmount)));
     }
   };
 
   const navigateRight = () => {
     if (canNavigateRight) {
-      setViewportStart(prev => startOfMonth(addMonths(prev, 3))); // Move 3 months right
+      const moveAmount = Math.min(3, monthsToShow);
+      setViewportStart(prev => startOfMonth(addMonths(prev, moveAmount)));
     }
   };
 
@@ -222,6 +228,32 @@ export function RoadmapView({
       return projectStart <= timelineBounds.end && projectEnd >= timelineBounds.start;
     });
   }, [projects, timelineBounds]);
+
+  // Ref for timeline container to handle scrolling
+  const timelineRef = useRef<HTMLDivElement>(null);
+
+  // Handle wheel events for horizontal scrolling
+  const handleWheel = useCallback((e: React.WheelEvent) => {
+    // Only handle horizontal scroll or when holding shift
+    if (Math.abs(e.deltaX) > Math.abs(e.deltaY) || e.shiftKey) {
+      e.preventDefault();
+      
+      const scrollSensitivity = 0.5; // Adjust scroll sensitivity
+      const monthsToMove = Math.max(1, Math.round(Math.abs(e.deltaX) * scrollSensitivity / 100));
+      
+      if (e.deltaX > 0) {
+        // Scroll right
+        if (canNavigateRight) {
+          setViewportStart(prev => startOfMonth(addMonths(prev, monthsToMove)));
+        }
+      } else {
+        // Scroll left
+        if (canNavigateLeft) {
+          setViewportStart(prev => startOfMonth(subMonths(prev, monthsToMove)));
+        }
+      }
+    }
+  }, [canNavigateLeft, canNavigateRight]);
 
   // Initialize drag and drop functionality
   const {
@@ -375,34 +407,65 @@ export function RoadmapView({
       <Card>
         <CardHeader className="pb-4">
           <div className="flex items-center justify-between">
-            <CardTitle>Team Roadmap Timeline</CardTitle>
-            <div className="flex items-center gap-2">
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={navigateLeft}
-                disabled={!canNavigateLeft}
-              >
-                <ChevronLeft className="h-4 w-4" />
-                Previous
-              </Button>
-              <span className="text-sm text-muted-foreground px-2">
-                {format(timelineBounds.start, 'MMM yyyy')} - {format(timelineBounds.end, 'MMM yyyy')}
-              </span>
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={navigateRight}
-                disabled={!canNavigateRight}
-              >
-                Next
-                <ChevronRight className="h-4 w-4" />
-              </Button>
+            <CardTitle className="flex items-center gap-2">
+              <Calendar className="h-5 w-5" />
+              Team Roadmap Timeline
+            </CardTitle>
+            <div className="flex items-center gap-4">
+              {/* Month selector */}
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-muted-foreground">Show:</span>
+                <Select value={monthsToShow.toString()} onValueChange={(value) => setMonthsToShow(parseInt(value))}>
+                  <SelectTrigger className="w-32">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="3">3 months</SelectItem>
+                    <SelectItem value="6">6 months</SelectItem>
+                    <SelectItem value="9">9 months</SelectItem>
+                    <SelectItem value="12">12 months</SelectItem>
+                    <SelectItem value="18">18 months</SelectItem>
+                    <SelectItem value="24">24 months</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              {/* Navigation controls */}
+              <div className="flex items-center gap-2">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={navigateLeft}
+                  disabled={!canNavigateLeft}
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                  Previous
+                </Button>
+                <span className="text-sm text-muted-foreground px-2 min-w-fit">
+                  {format(timelineBounds.start, 'MMM yyyy')} - {format(timelineBounds.end, 'MMM yyyy')}
+                </span>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={navigateRight}
+                  disabled={!canNavigateRight}
+                >
+                  Next
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
           </div>
+          <p className="text-sm text-muted-foreground">
+            Use two-finger scroll or shift+scroll to navigate the timeline horizontally
+          </p>
         </CardHeader>
         <CardContent>
-          <div className="relative timeline-container">
+          <div 
+            ref={timelineRef}
+            className="relative timeline-container"
+            onWheel={handleWheel}
+          >
           {/* Month headers */}
           <div className="relative h-8 mb-4 border-b border-border ml-48">
             {monthHeaders.map((month, index) => (
