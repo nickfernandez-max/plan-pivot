@@ -409,6 +409,11 @@ export function useSupabaseData() {
 
   const updateProjectAssignments = async (projectId: string, assignments: { teamMemberId: string; percentAllocation: number; startDate?: string; endDate?: string }[]) => {
     try {
+      // Get project dates for fallback
+      const project = projects.find(p => p.id === projectId);
+      const fallbackStartDate = project?.start_date;
+      const fallbackEndDate = project?.end_date;
+      
       // Delete existing assignments for this project
       const { error: deleteError } = await supabase
         .from('project_assignees')
@@ -420,7 +425,7 @@ export function useSupabaseData() {
         throw deleteError;
       }
 
-      // Insert new assignments with allocations and dates
+      // Insert new assignments with allocations and dates (with fallbacks)
       if (assignments.length > 0) {
         const { error: insertError } = await supabase
           .from('project_assignees')
@@ -429,8 +434,8 @@ export function useSupabaseData() {
               project_id: projectId,
               team_member_id: assignment.teamMemberId,
               percent_allocation: assignment.percentAllocation,
-              start_date: assignment.startDate,
-              end_date: assignment.endDate,
+              start_date: assignment.startDate || fallbackStartDate,
+              end_date: assignment.endDate || fallbackEndDate,
             }))
           );
 

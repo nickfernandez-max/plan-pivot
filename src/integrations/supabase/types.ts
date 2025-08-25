@@ -44,23 +44,29 @@ export type Database = {
       project_assignees: {
         Row: {
           created_at: string
+          end_date: string | null
           id: string
           percent_allocation: number | null
           project_id: string
+          start_date: string | null
           team_member_id: string
         }
         Insert: {
           created_at?: string
+          end_date?: string | null
           id?: string
           percent_allocation?: number | null
           project_id: string
+          start_date?: string | null
           team_member_id: string
         }
         Update: {
           created_at?: string
+          end_date?: string | null
           id?: string
           percent_allocation?: number | null
           project_id?: string
+          start_date?: string | null
           team_member_id?: string
         }
         Relationships: [
