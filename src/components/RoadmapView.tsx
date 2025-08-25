@@ -2,14 +2,15 @@ import { useMemo, Fragment, useState } from 'react';
 import { DndContext, DragOverlay } from '@dnd-kit/core';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Project, TeamMember, Team, Product, ProjectAssignment } from '@/types/roadmap';
-import { format, differenceInDays, addDays, startOfMonth, endOfMonth } from 'date-fns';
+import { format, differenceInDays, addDays, startOfMonth, endOfMonth, addMonths, subMonths } from 'date-fns';
 import { useDragAndDrop } from '@/hooks/useDragAndDrop';
 import { DraggableProject } from '@/components/DraggableProject';
 import { DroppableMemberRow } from '@/components/DroppableMemberRow';
 import { EditProjectDialog } from '@/components/EditProjectDialog';
 import { ProportionalDragOverlay } from '@/components/ProportionalDragOverlay';
-import { Users } from 'lucide-react';
+import { Users, ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface RoadmapViewProps {
   projects: Project[];
@@ -155,8 +156,9 @@ export function RoadmapView({
   onUpdateProjectAssignments
 }: RoadmapViewProps) {
   const [editingProject, setEditingProject] = useState<Project | null>(null);
-  // Calculate timeline bounds
-  const timelineBounds = useMemo(() => {
+  
+  // Calculate the full timeline bounds to determine navigation limits
+  const fullTimelineBounds = useMemo(() => {
     if (projects.length === 0) {
       const now = new Date();
       return {
@@ -175,7 +177,51 @@ export function RoadmapView({
     };
   }, [projects]);
 
+  // State for current viewport (which 9 months to show)
+  const [viewportStart, setViewportStart] = useState<Date>(() => fullTimelineBounds.start);
+
+  // Calculate visible timeline bounds (9 months)
+  const timelineBounds = useMemo(() => {
+    const start = startOfMonth(viewportStart);
+    const end = endOfMonth(addMonths(start, 8)); // 9 months total (0-8)
+    
+    return { start, end };
+  }, [viewportStart]);
+
   const totalDays = differenceInDays(timelineBounds.end, timelineBounds.start);
+
+  // Navigation functions
+  const canNavigateLeft = useMemo(() => {
+    return viewportStart > fullTimelineBounds.start;
+  }, [viewportStart, fullTimelineBounds.start]);
+
+  const canNavigateRight = useMemo(() => {
+    const viewportEnd = endOfMonth(addMonths(viewportStart, 8));
+    return viewportEnd < fullTimelineBounds.end;
+  }, [viewportStart, fullTimelineBounds.end]);
+
+  const navigateLeft = () => {
+    if (canNavigateLeft) {
+      setViewportStart(prev => startOfMonth(subMonths(prev, 3))); // Move 3 months left
+    }
+  };
+
+  const navigateRight = () => {
+    if (canNavigateRight) {
+      setViewportStart(prev => startOfMonth(addMonths(prev, 3))); // Move 3 months right
+    }
+  };
+
+  // Filter projects to only include those that intersect with the visible timeline
+  const visibleProjects = useMemo(() => {
+    return projects.filter(project => {
+      const projectStart = new Date(project.start_date);
+      const projectEnd = new Date(project.end_date);
+      
+      // Project intersects if it starts before timeline ends and ends after timeline starts
+      return projectStart <= timelineBounds.end && projectEnd >= timelineBounds.start;
+    });
+  }, [projects, timelineBounds]);
 
   // Initialize drag and drop functionality
   const {
@@ -240,14 +286,19 @@ export function RoadmapView({
         const memberRows: MemberRow[] = [];
         
         membersInTeam.forEach(member => {
-          // Find projects assigned to this member
-          const memberProjects = projects
+          // Find visible projects assigned to this member
+          const memberProjects = visibleProjects
             .filter(project => project.assignees?.some(assignee => assignee.id === member.id))
             .map(project => {
               const startDate = new Date(project.start_date);
               const endDate = new Date(project.end_date);
-              const daysFromStart = differenceInDays(startDate, timelineBounds.start);
-              const duration = differenceInDays(endDate, startDate) + 1;
+              
+              // Clamp dates to visible timeline bounds
+              const clampedStart = startDate < timelineBounds.start ? timelineBounds.start : startDate;
+              const clampedEnd = endDate > timelineBounds.end ? timelineBounds.end : endDate;
+              
+              const daysFromStart = differenceInDays(clampedStart, timelineBounds.start);
+              const duration = differenceInDays(clampedEnd, clampedStart) + 1;
               
               return {
                 ...project,
@@ -292,7 +343,7 @@ export function RoadmapView({
     const unassignedTeamGroups = calculateTeamRows(teamsWithoutProduct);
 
     return { processedProductGroups, unassignedTeamGroups };
-  }, [teams, teamMembers, projects, products, timelineBounds, totalDays]);
+  }, [teams, teamMembers, visibleProjects, products, timelineBounds, totalDays]);
 
   const allTeamGroups = useMemo(() => {
     const allGroups = [
@@ -322,8 +373,33 @@ export function RoadmapView({
       onDragEnd={handleDragEnd}
     >
       <Card>
-        <CardHeader>
-          <CardTitle>Team Roadmap Timeline</CardTitle>
+        <CardHeader className="pb-4">
+          <div className="flex items-center justify-between">
+            <CardTitle>Team Roadmap Timeline</CardTitle>
+            <div className="flex items-center gap-2">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={navigateLeft}
+                disabled={!canNavigateLeft}
+              >
+                <ChevronLeft className="h-4 w-4" />
+                Previous
+              </Button>
+              <span className="text-sm text-muted-foreground px-2">
+                {format(timelineBounds.start, 'MMM yyyy')} - {format(timelineBounds.end, 'MMM yyyy')}
+              </span>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={navigateRight}
+                disabled={!canNavigateRight}
+              >
+                Next
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
         </CardHeader>
         <CardContent>
           <div className="relative timeline-container">
@@ -687,7 +763,7 @@ export function RoadmapView({
 
     <DragOverlay>
       {activeDrag && (() => {
-        const draggedProject = projects.find(p => p.id === activeDrag.projectId);
+        const draggedProject = visibleProjects.find(p => p.id === activeDrag.projectId);
         if (!draggedProject) return null;
 
         // Estimate timeline width (full container minus 192px sidebar width)
