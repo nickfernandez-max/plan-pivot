@@ -51,7 +51,7 @@ const assignAllocationSlots = (
 
   const SLOTS_PER_MEMBER = 4;
   const SLOT_PERCENTAGE = 25;
-  const BASE_SLOT_HEIGHT = 32;
+  const BASE_SLOT_HEIGHT = 22; // Reduced from 32px for more compact view
 
   // Prepare projects with temporal and allocation data
   const projectsWithData = projects.map(project => {
@@ -298,7 +298,7 @@ export function RoadmapView({
 
   // Group teams by product and calculate member rows with allocation slots
   const productGroups = useMemo(() => {
-    const FIXED_ROW_HEIGHT = 140; // Height for 4 allocation slots (4 * 32px + padding)
+    const FIXED_ROW_HEIGHT = 100; // Reduced from 140px for more compact view
     const ALLOCATION_SLOTS = 4;
     
     // Group teams by product
@@ -395,8 +395,8 @@ export function RoadmapView({
     );
   }
 
-  const TEAM_HEADER_HEIGHT = 40;
-  const PRODUCT_HEADER_HEIGHT = 50;
+  const TEAM_HEADER_HEIGHT = 32; // Reduced from 40px
+  const PRODUCT_HEADER_HEIGHT = 40; // Reduced from 50px
   
   return (
     <DndContext
@@ -683,8 +683,8 @@ export function RoadmapView({
                       const currentMemberTop = memberTopOffset;
                       memberTopOffset += rowHeight;
                       
-                      const SLOT_HEIGHT = 32;
-                      const SLOT_PADDING = 2;
+                      const SLOT_HEIGHT = 22; // Reduced from 32px for more compact view
+                      const SLOT_PADDING = 1; // Reduced padding
                       
                       const isDropTarget = dragOverData.memberId === member.id;
                       
@@ -748,8 +748,8 @@ export function RoadmapView({
                       const currentMemberTop = memberTopOffset;
                       memberTopOffset += rowHeight;
                       
-                      const SLOT_HEIGHT = 32;
-                      const SLOT_PADDING = 2;
+                      const SLOT_HEIGHT = 22; // Reduced from 32px for more compact view
+                      const SLOT_PADDING = 1; // Reduced padding
                       
                       const isDropTarget = dragOverData.memberId === member.id;
                       
