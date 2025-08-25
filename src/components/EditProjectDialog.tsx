@@ -90,6 +90,15 @@ export function EditProjectDialog({
 
   const selectedTeamMembers = teamMembers.filter(member => member.team_id === selectedTeamId);
   const currentAssignments = form.watch("assignments") || [];
+  
+  // Also include team members who are currently assigned to this project, even if they're from other teams
+  const assignedMemberIds = currentAssignments.map(a => a.teamMemberId);
+  const assignedMembersFromOtherTeams = teamMembers.filter(member => 
+    assignedMemberIds.includes(member.id) && member.team_id !== selectedTeamId
+  );
+  
+  // Combine members from selected team and assigned members from other teams
+  const allRelevantMembers = [...selectedTeamMembers, ...assignedMembersFromOtherTeams];
 
   const addAssignment = (memberId: string) => {
     const currentAssignments = form.getValues("assignments") || [];
@@ -336,11 +345,15 @@ export function EditProjectDialog({
                 Assign team members to this project with specific allocation percentages.
               </p>
 
-              {selectedTeamMembers.length > 0 ? (
+              {allRelevantMembers.length > 0 ? (
                 <div className="space-y-3">
-                  {selectedTeamMembers.map((member) => {
+                  <p className="text-sm text-muted-foreground mb-3">
+                    💡 You can assign members from any team by first selecting their team above, then checking them here.
+                  </p>
+                  {allRelevantMembers.map((member) => {
                     const assignment = currentAssignments.find(a => a.teamMemberId === member.id);
                     const isAssigned = !!assignment;
+                    const isFromOtherTeam = member.team_id !== selectedTeamId;
 
                     return (
                       <div key={member.id} className="flex items-center justify-between p-3 border rounded-lg">
@@ -358,7 +371,14 @@ export function EditProjectDialog({
                           />
                           <div>
                             <p className="font-medium">{member.name}</p>
-                            <p className="text-sm text-muted-foreground">{member.role}</p>
+                            <p className="text-sm text-muted-foreground">
+                              {member.role}
+                              {isFromOtherTeam && (
+                                <span className="ml-2 px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded">
+                                  {teams.find(t => t.id === member.team_id)?.name || 'Other Team'}
+                                </span>
+                              )}
+                            </p>
                           </div>
                         </div>
                         
