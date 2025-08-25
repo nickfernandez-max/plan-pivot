@@ -8,7 +8,7 @@ import { useDragAndDrop } from '@/hooks/useDragAndDrop';
 import { DraggableProject } from '@/components/DraggableProject';
 import { DroppableMemberRow } from '@/components/DroppableMemberRow';
 import { EditProjectDialog } from '@/components/EditProjectDialog';
-import { CompactDragOverlay } from '@/components/CompactDragOverlay';
+import { ProportionalDragOverlay } from '@/components/ProportionalDragOverlay';
 import { Users } from 'lucide-react';
 
 interface RoadmapViewProps {
@@ -690,8 +690,16 @@ export function RoadmapView({
         const draggedProject = projects.find(p => p.id === activeDrag.projectId);
         if (!draggedProject) return null;
 
+        // Estimate timeline width (full container minus 192px sidebar width)
+        const timelineWidth = Math.max(800, window.innerWidth - 240);
+
         return (
-          <CompactDragOverlay project={draggedProject} />
+          <ProportionalDragOverlay 
+            project={draggedProject} 
+            timelineBounds={timelineBounds}
+            totalDays={totalDays}
+            timelineWidth={timelineWidth}
+          />
         );
       })()}
     </DragOverlay>
