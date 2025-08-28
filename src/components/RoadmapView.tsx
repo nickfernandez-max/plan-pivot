@@ -752,8 +752,8 @@ export function RoadmapView({
                   });
                 }
 
-                // Calculate total height for week backgrounds and grid lines
-                const totalHeight = currentTop;
+                // Calculate overall container height for week backgrounds and grid lines
+                const containerHeight = currentTop;
 
                 // Add alternating week backgrounds for better visibility
                 weeklyGrid.weekBackgrounds.forEach((weekBg, index) => {
@@ -765,7 +765,7 @@ export function RoadmapView({
                         left: `${weekBg.left}%`,
                         width: `${weekBg.width}%`,
                         top: '0px',
-                        height: `${totalHeight}px`,
+                        height: `${containerHeight}px`,
                       }}
                       title={weekBg.weekLabel}
                     />
@@ -781,7 +781,7 @@ export function RoadmapView({
                       style={{
                         left: `${week.left}%`,
                         top: '0px',
-                        height: `${totalHeight}px`
+                        height: `${containerHeight}px`
                       }}
                     />
                   );
