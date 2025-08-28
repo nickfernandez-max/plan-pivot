@@ -137,20 +137,25 @@ export function TeamMembersView({
   // Calculate actual member count for a team in a specific month using memberships data
   const getActualMemberCount = (teamId: string, monthDate: Date) => {
     const monthKey = format(monthDate, 'yyyy-MM-01');
-    return memberships?.filter(membership => {
-      const member = teamMembers.find(tm => tm.id === membership.team_member_id);
-      if (!member) return false;
-      
-      // Find which team the member belongs to via their memberships
-      const membershipForMonth = memberships.find(m => 
-        m.team_member_id === membership.team_member_id &&
-        m.team_id === teamId &&
-        m.start_month <= monthKey &&
-        (!m.end_month || m.end_month >= monthKey)
-      );
-      
-      return !!membershipForMonth;
-    }).length || 0;
+    
+    // Get unique team members who have active memberships for this team in this month
+    const activeMembers = new Set();
+    
+    memberships?.forEach(membership => {
+      if (membership.team_id === teamId &&
+          membership.start_month <= monthKey &&
+          (!membership.end_month || membership.end_month >= monthKey)) {
+        
+        // Verify the member exists
+        const member = teamMembers.find(tm => tm.id === membership.team_member_id);
+        if (member) {
+          activeMembers.add(membership.team_member_id);
+        }
+      }
+    });
+    
+    console.log(`Team ${teamId} in ${monthKey}: ${activeMembers.size} active members`, Array.from(activeMembers));
+    return activeMembers.size;
   };
 
   // Get color class based on staffing level
