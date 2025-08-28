@@ -552,20 +552,20 @@ export function RoadmapView({
             ))}
           </div>
 
-          {/* Week headers with labels */}
-          <div className="relative h-8 mb-1 ml-48 border-b border-border/50">
+          {/* Week headers with date numbers only */}
+          <div className="relative h-6 mb-1 ml-48 border-b border-border/50">
             {weeklyGrid.weeks.map((week, index) => (
               <div
                 key={index}
-                className="absolute text-xs text-muted-foreground font-medium flex flex-col items-start"
+                className="absolute text-sm font-medium text-muted-foreground flex items-center justify-center"
                 style={{
                   left: `${week.left}%`,
-                  height: '100%'
+                  height: '100%',
+                  minWidth: '24px'
                 }}
-                title={week.weekLabel}
+                title={`Week of ${week.label}`}
               >
-                <div className="text-xs font-semibold">W{week.weekNumber}</div>
-                <div className="text-xs opacity-75">{week.label}</div>
+                {format(week.date, 'd')}
               </div>
             ))}
           </div>
