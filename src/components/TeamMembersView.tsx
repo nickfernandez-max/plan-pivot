@@ -141,14 +141,19 @@ export function TeamMembersView({
     return "text-foreground"; // Neutral for perfectly staffed
   };
 
-  // Calculate member involvement (placeholder - could be enhanced with actual project data)
-  const getMemberInvolvement = (member: TeamMember, monthDate: Date) => {
-    const memberStartDate = new Date(member.start_date);
-    if (monthDate >= memberStartDate) {
-      // Placeholder: return 1 if member has started, could be enhanced with actual project allocation
-      return 1;
-    }
-    return 0;
+  // Calculate member involvement based on team memberships
+  const getMemberInvolvement = (member: TeamMember, monthDate: Date, teamId: string) => {
+    const monthString = monthDate.toISOString().split('T')[0].substring(0, 7) + '-01'; // Format as YYYY-MM-01
+    
+    // Find the membership for this member and team that covers this month
+    const relevantMembership = memberships.find(m => 
+      m.team_member_id === member.id && 
+      m.team_id === teamId &&
+      m.start_month <= monthString &&
+      (!m.end_month || m.end_month >= monthString)
+    );
+    
+    return relevantMembership ? 1 : 0;
   };
 
   return (
@@ -260,9 +265,9 @@ export function TeamMembersView({
                                </TableCell>
                                <TableCell className="text-muted-foreground">{member.role}</TableCell>
                               <TableCell>{format(new Date(member.start_date), 'MMM d, yyyy')}</TableCell>
-                              {timelineMonths.map((month) => {
-                                const involvement = getMemberInvolvement(member, month.date);
-                                return (
+                               {timelineMonths.map((month) => {
+                                 const involvement = getMemberInvolvement(member, month.date, team.id);
+                                 return (
                                   <TableCell key={month.label} className="text-center">
                                     <div 
                                       className="w-8 h-8 mx-auto rounded flex items-center justify-center text-xs font-medium"
@@ -365,9 +370,9 @@ export function TeamMembersView({
                                </TableCell>
                                <TableCell className="text-muted-foreground">{member.role}</TableCell>
                               <TableCell>{format(new Date(member.start_date), 'MMM d, yyyy')}</TableCell>
-                              {timelineMonths.map((month) => {
-                                const involvement = getMemberInvolvement(member, month.date);
-                                return (
+                               {timelineMonths.map((month) => {
+                                 const involvement = getMemberInvolvement(member, month.date, team.id);
+                                 return (
                                   <TableCell key={month.label} className="text-center">
                                     <div 
                                       className="w-8 h-8 mx-auto rounded flex items-center justify-center text-xs font-medium"
