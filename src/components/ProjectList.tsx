@@ -33,7 +33,7 @@ const projectSchema = z.object({
   is_rd: z.boolean(),
   description: z.string().optional(),
   link: z.string().optional(),
-  color: z.string().optional(),
+  
   product_ids: z.array(z.string()).optional(),
 });
 
@@ -54,7 +54,7 @@ export function ProjectList({ projects, teams, products, onAddProject, onUpdateP
       is_rd: false,
       description: "",
       link: "",
-      color: "",
+      
       product_ids: [],
     },
   });
@@ -120,7 +120,6 @@ export function ProjectList({ projects, teams, products, onAddProject, onUpdateP
       is_rd: project.is_rd,
       description: project.description || "",
       link: project.link || "",
-      color: project.color || "",
     });
   };
 
@@ -170,7 +169,7 @@ export function ProjectList({ projects, teams, products, onAddProject, onUpdateP
               Add Project
             </Button>
           </DialogTrigger>
-          <DialogContent className="sm:max-w-md">
+          <DialogContent className="sm:max-w-md max-h-[85vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Add New Project</DialogTitle>
               <DialogDescription>
@@ -178,7 +177,7 @@ export function ProjectList({ projects, teams, products, onAddProject, onUpdateP
               </DialogDescription>
             </DialogHeader>
             <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-3">
                 <FormField
                   control={form.control}
                   name="name"
@@ -244,45 +243,44 @@ export function ProjectList({ projects, teams, products, onAddProject, onUpdateP
                     )}
                   />
                 </div>
-                <FormField
-                  control={form.control}
-                  name="value_score"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Value Score (1-10)</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="number"
-                          min="1"
-                          max="10"
-                          {...field}
-                          onChange={(e) => field.onChange(parseInt(e.target.value))}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="is_rd"
-                  render={({ field }) => (
-                    <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
-                      <div className="space-y-0.5">
-                        <FormLabel>R&D Project</FormLabel>
-                        <div className="text-xs text-muted-foreground">
-                          Mark this as a research and development project
+                <div className="grid grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="value_score"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Value Score (1-10)</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="number"
+                            min="1"
+                            max="10"
+                            {...field}
+                            onChange={(e) => field.onChange(parseInt(e.target.value))}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="is_rd"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-col justify-end">
+                        <div className="flex items-center justify-between rounded-lg border p-3 shadow-sm">
+                          <FormLabel className="text-sm">R&D Project</FormLabel>
+                          <FormControl>
+                            <Switch
+                              checked={field.value}
+                              onCheckedChange={field.onChange}
+                            />
+                          </FormControl>
                         </div>
-                      </div>
-                      <FormControl>
-                        <Switch
-                          checked={field.value}
-                          onCheckedChange={field.onChange}
-                        />
-                      </FormControl>
-                    </FormItem>
-                  )}
-                />
+                      </FormItem>
+                    )}
+                  />
+                </div>
                 <FormField
                   control={form.control}
                   name="description"
@@ -309,22 +307,6 @@ export function ProjectList({ projects, teams, products, onAddProject, onUpdateP
                       <FormControl>
                         <Input 
                           placeholder="Enter project link or URL"
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="color"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Color (Optional)</FormLabel>
-                      <FormControl>
-                        <Input 
-                          type="color"
                           {...field}
                         />
                       </FormControl>
@@ -576,7 +558,7 @@ export function ProjectList({ projects, teams, products, onAddProject, onUpdateP
                                   </FormItem>
                                 )}
                               />
-                              <div className="grid grid-cols-2 gap-4">
+                              <div className="grid grid-cols-1 gap-4">
                                 <FormField
                                   control={editForm.control}
                                   name="link"
@@ -585,19 +567,6 @@ export function ProjectList({ projects, teams, products, onAddProject, onUpdateP
                                       <FormLabel>Link</FormLabel>
                                       <FormControl>
                                         <Input {...field} />
-                                      </FormControl>
-                                      <FormMessage />
-                                    </FormItem>
-                                  )}
-                                />
-                                <FormField
-                                  control={editForm.control}
-                                  name="color"
-                                  render={({ field }) => (
-                                    <FormItem>
-                                      <FormLabel>Color</FormLabel>
-                                      <FormControl>
-                                        <Input type="color" {...field} />
                                       </FormControl>
                                       <FormMessage />
                                     </FormItem>
