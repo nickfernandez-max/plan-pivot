@@ -186,8 +186,8 @@ export function RoadmapView({
     };
   }, [projects]);
 
-  // State for current viewport
-  const [viewportStart, setViewportStart] = useState<Date>(() => fullTimelineBounds.start);
+  // State for current viewport - default to today
+  const [viewportStart, setViewportStart] = useState<Date>(() => startOfMonth(new Date()));
 
   // Calculate visible timeline bounds based on selected months
   const timelineBounds = useMemo(() => {
