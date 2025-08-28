@@ -19,7 +19,7 @@ export function EditTeamDialog({ team, open, onOpenChange, onUpdateTeam, product
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [color, setColor] = useState('#3B82F6');
-  const [productId, setProductId] = useState('');
+  const [productId, setProductId] = useState('none');
   const [idealSize, setIdealSize] = useState('1');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -28,7 +28,7 @@ export function EditTeamDialog({ team, open, onOpenChange, onUpdateTeam, product
       setName(team.name || '');
       setDescription(team.description || '');
       setColor(team.color || '#3B82F6');
-      setProductId(team.product_id || '');
+      setProductId(team.product_id || 'none');
       setIdealSize(String(team.ideal_size || 1));
     }
   }, [team]);
@@ -43,7 +43,7 @@ export function EditTeamDialog({ team, open, onOpenChange, onUpdateTeam, product
         name: name.trim(),
         description: description.trim() || undefined,
         color,
-        product_id: productId || undefined,
+        product_id: productId === 'none' ? undefined : productId,
         ideal_size: parseInt(idealSize) || 1,
       });
       onOpenChange(false);
@@ -93,7 +93,7 @@ export function EditTeamDialog({ team, open, onOpenChange, onUpdateTeam, product
                 <SelectValue placeholder="Select a product (optional)" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">No Product</SelectItem>
+                <SelectItem value="none">No Product</SelectItem>
                 {products.map((product) => (
                   <SelectItem key={product.id} value={product.id}>
                     {product.name}
