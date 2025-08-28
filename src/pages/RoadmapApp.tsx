@@ -11,9 +11,10 @@ import { ReportsView } from '@/components/ReportsView';
 import { AddProductDialog } from '@/components/AddProductDialog';
 import { AddTeamDialog } from '@/components/AddTeamDialog';
 import { AddPersonDialog } from '@/components/AddPersonDialog';
-import { toast } from 'sonner';
+import { useToast } from '@/hooks/use-toast';
 
 export default function RoadmapApp() {
+  const { toast } = useToast();
   const [selectedTeam, setSelectedTeam] = useState<string>('all');
   const [selectedProduct, setSelectedProduct] = useState<string>('all');
   const [isAddMemberDialogOpen, setIsAddMemberDialogOpen] = useState(false);
@@ -80,11 +81,11 @@ export default function RoadmapApp() {
   const handleAddProject = async (projectData: any) => {
     try {
       const newProject = await addProject(projectData);
-      toast.success('Project added successfully');
+      toast({ title: "Success", description: "Project added successfully" });
       return newProject; // Return the created project for further processing
     } catch (error) {
       console.error('Error adding project:', error);
-      toast.error('Failed to add project');
+      toast({ title: "Error", description: "Failed to add project", variant: "destructive" });
       throw error;
     }
   };
@@ -92,60 +93,60 @@ export default function RoadmapApp() {
   const handleUpdateProject = async (id: string, updates: any) => {
     try {
       await updateProject(id, updates);
-      toast.success('Project updated successfully');
+      toast({ title: "Success", description: "Project updated successfully" });
     } catch (error) {
       console.error('Error updating project:', error);
-      toast.error('Failed to update project');
+      toast({ title: "Error", description: "Failed to update project", variant: "destructive" });
     }
   };
 
   const handleAddTeamMember = async (memberData: any) => {
     try {
       await addTeamMember(memberData);
-      toast.success('Team member added successfully');
+      toast({ title: "Success", description: "Team member added successfully" });
     } catch (error) {
       console.error('Error adding team member:', error);
-      toast.error('Failed to add team member');
+      toast({ title: "Error", description: "Failed to add team member", variant: "destructive" });
     }
   };
 
   const handleUpdateTeamMember = async (id: string, updates: any) => {
     try {
       await updateTeamMember(id, updates);
-      toast.success('Team member updated successfully');
+      toast({ title: "Success", description: "Team member updated successfully" });
     } catch (error) {
       console.error('Error updating team member:', error);
-      toast.error('Failed to update team member');
+      toast({ title: "Error", description: "Failed to update team member", variant: "destructive" });
     }
   };
 
   const handleAddProduct = async (productData: any) => {
     try {
       await addProduct(productData);
-      toast.success('Product added successfully');
+      toast({ title: "Success", description: "Product added successfully" });
     } catch (error) {
       console.error('Error adding product:', error);
-      toast.error('Failed to add product');
+      toast({ title: "Error", description: "Failed to add product", variant: "destructive" });
     }
   };
 
   const handleAddTeam = async (teamData: any) => {
     try {
       await addTeam(teamData);
-      toast.success('Team added successfully');
+      toast({ title: "Success", description: "Team added successfully" });
     } catch (error) {
       console.error('Error adding team:', error);
-      toast.error('Failed to add team');
+      toast({ title: "Error", description: "Failed to add team", variant: "destructive" });
     }
   };
 
   const handleUpdateTeam = async (id: string, updates: any) => {
     try {
       await updateTeam(id, updates);
-      toast.success('Team updated successfully');
+      toast({ title: "Success", description: "Team updated successfully" });
     } catch (error) {
       console.error('Error updating team:', error);
-      toast.error('Failed to update team');
+      toast({ title: "Error", description: "Failed to update team", variant: "destructive" });
     }
   };
 

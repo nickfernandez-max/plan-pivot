@@ -2,7 +2,7 @@ import { useState, useCallback } from 'react';
 import { DragEndEvent, DragStartEvent, DragOverEvent } from '@dnd-kit/core';
 import { differenceInDays, addDays, startOfWeek, addWeeks, differenceInWeeks } from 'date-fns';
 import { Project, TeamMember, ProjectAssignment } from '@/types/roadmap';
-import { toast } from 'sonner';
+import { toast } from '@/hooks/use-toast';
 
 interface DragData {
   projectId: string;
@@ -206,11 +206,11 @@ export function useDragAndDrop({
           endDate: newEndDate.toISOString().split('T')[0]
         })));
         console.log('Project reassignment completed successfully');
-        toast.success(`Project reassigned successfully!`);
+        toast({ title: "Success", description: "Project reassigned successfully!" });
       }
     } catch (error) {
       console.error('Error during drag and drop:', error);
-      toast.error('Failed to update project assignment');
+      toast({ title: "Error", description: "Failed to update project assignment", variant: "destructive" });
     }
 
     setActiveDrag(null);
