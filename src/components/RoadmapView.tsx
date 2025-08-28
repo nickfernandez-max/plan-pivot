@@ -11,7 +11,8 @@ import { DraggableProject } from '@/components/DraggableProject';
 import { DroppableMemberRow } from '@/components/DroppableMemberRow';
 import { EditProjectDialog } from '@/components/EditProjectDialog';
 import { ProportionalDragOverlay } from '@/components/ProportionalDragOverlay';
-import { Users, ChevronLeft, ChevronRight, Calendar } from 'lucide-react';
+import { Users, ChevronLeft, ChevronRight, Calendar, UserPlus } from 'lucide-react';
+import { AddProjectAssignmentDialog } from '@/components/AddProjectAssignmentDialog';
 
 interface RoadmapViewProps {
   projects: Project[];
@@ -23,6 +24,7 @@ interface RoadmapViewProps {
   onUpdateProjectAssignees: (projectId: string, assigneeIds: string[]) => Promise<void>;
   onUpdateProjectProducts: (projectId: string, productIds: string[]) => Promise<void>;
   onUpdateProjectAssignments: (projectId: string, assignments: { teamMemberId: string; percentAllocation: number; startDate?: string; endDate?: string }[]) => Promise<void>;
+  onAddProject: (project: Omit<Project, 'id' | 'created_at' | 'updated_at'>) => Promise<any>;
 }
 
 interface ProjectWithPosition extends Project {
@@ -155,9 +157,11 @@ export function RoadmapView({
   onUpdateProject, 
   onUpdateProjectAssignees,
   onUpdateProjectProducts,
-  onUpdateProjectAssignments
+  onUpdateProjectAssignments,
+  onAddProject
 }: RoadmapViewProps) {
   const [editingProject, setEditingProject] = useState<Project | null>(null);
+  const [isAssignmentDialogOpen, setIsAssignmentDialogOpen] = useState(false);
   
   // State for number of months to display
   const [monthsToShow, setMonthsToShow] = useState<number>(9);
@@ -444,6 +448,16 @@ export function RoadmapView({
               Team Roadmap Timeline
             </CardTitle>
             <div className="flex items-center gap-4">
+              {/* Add Project Assignment Button */}
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => setIsAssignmentDialogOpen(true)}
+              >
+                <UserPlus className="w-4 h-4 mr-2" />
+                Add Assignment
+              </Button>
+              
               {/* Month selector */}
               <div className="flex items-center gap-2">
                 <span className="text-sm text-muted-foreground">Show:</span>
@@ -905,6 +919,18 @@ export function RoadmapView({
         );
       })()}
     </DragOverlay>
+
+    {/* Add Project Assignment Dialog */}
+    <AddProjectAssignmentDialog
+      projects={projects}
+      teamMembers={teamMembers}  
+      teams={teams}
+      products={products}
+      open={isAssignmentDialogOpen}
+      onOpenChange={setIsAssignmentDialogOpen}
+      onAddProject={onAddProject}
+      onUpdateProjectAssignments={onUpdateProjectAssignments}
+    />
   </DndContext>
   );
 }

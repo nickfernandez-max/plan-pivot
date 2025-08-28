@@ -249,6 +249,7 @@ export default function RoadmapApp() {
                 await updateProjectProducts(projectId, productIds);
               }}
               onUpdateProjectAssignments={updateProjectAssignments}
+              onAddProject={handleAddProject}
             />
           </TabsContent>
 
