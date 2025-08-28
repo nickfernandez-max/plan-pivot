@@ -181,27 +181,27 @@ export function TeamMembersView({
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-3">
       <Card>
-        <CardContent>
+        <CardContent className="p-3">
           {teamMembers.length === 0 ? (
-            <div className="text-center py-8">
-              <User className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
-              <p className="text-muted-foreground mb-4">No team members found</p>
+            <div className="text-center py-4">
+              <User className="w-8 h-8 mx-auto text-muted-foreground mb-2" />
+              <p className="text-sm text-muted-foreground mb-2">No team members found</p>
             </div>
           ) : (
             <div className="overflow-x-auto">
               <Table>
                  <TableHeader>
-                   <TableRow>
-                     <TableHead className="w-48">Name</TableHead>
-                     <TableHead className="w-40">Role</TableHead>
-                     <TableHead className="w-32">Start Date</TableHead>
+                   <TableRow className="h-8">
+                     <TableHead className="w-36 text-xs">Name</TableHead>
+                     <TableHead className="w-28 text-xs">Role</TableHead>
+                     <TableHead className="w-24 text-xs">Start Date</TableHead>
                      {timelineMonths.map((month) => (
-                       <TableHead key={month.label} className="text-center w-20">
+                       <TableHead key={month.label} className="text-center w-16 px-1">
                          <div className="text-xs">
-                           <div>{month.shortLabel}</div>
-                           <div className="text-muted-foreground">{format(month.date, 'yyyy')}</div>
+                           <div className="text-xs font-medium">{month.shortLabel}</div>
+                           <div className="text-xs text-muted-foreground">{format(month.date, 'yy')}</div>
                          </div>
                        </TableHead>
                      ))}
@@ -212,108 +212,108 @@ export function TeamMembersView({
                   {groupedData.productsWithTeams.map(({ product, teams: productTeams }) => (
                     <Fragment key={product.id}>
                       {/* Product header row */}
-                      <TableRow className="bg-accent">
-                         <TableCell 
-                           colSpan={3 + timelineMonths.length}
-                           className="font-bold text-lg"
-                           style={{ 
-                             borderLeftColor: product.color || 'hsl(var(--primary))',
-                             borderLeftWidth: '6px'
-                           }}
-                         >
-                          <div className="flex items-center gap-2">
-                            <Users className="w-5 h-5" />
-                            {product.name}
-                            <Badge variant="secondary">
-                              {productTeams.reduce((sum, { members }) => sum + members.length, 0)} member{productTeams.reduce((sum, { members }) => sum + members.length, 0) !== 1 ? 's' : ''}
-                            </Badge>
-                          </div>
-                        </TableCell>
-                      </TableRow>
+                       <TableRow className="bg-accent h-7">
+                          <TableCell 
+                            colSpan={3 + timelineMonths.length}
+                            className="font-semibold text-sm py-1"
+                            style={{ 
+                              borderLeftColor: product.color || 'hsl(var(--primary))',
+                              borderLeftWidth: '4px'
+                            }}
+                          >
+                           <div className="flex items-center gap-2">
+                             <Users className="w-3 h-3" />
+                             {product.name}
+                             <Badge variant="secondary" className="text-xs px-1 py-0">
+                               {productTeams.reduce((sum, { members }) => sum + members.length, 0)} member{productTeams.reduce((sum, { members }) => sum + members.length, 0) !== 1 ? 's' : ''}
+                             </Badge>
+                           </div>
+                         </TableCell>
+                       </TableRow>
                       
                       {/* Teams within this product */}
                       {productTeams.map(({ team, members }) => (
                         <Fragment key={team.id}>
                            {/* Team header row */}
-                           <TableRow className="bg-muted/50">
-                             <TableCell 
-                               className="font-semibold pl-8"
-                               style={{ 
-                                 borderLeftColor: team.color || 'hsl(var(--primary))',
-                                 borderLeftWidth: '4px'
-                               }}
-                             >
-                                <div className="flex items-center gap-3">
-                                  <span>{team.name}</span>
-                                  <Badge variant="secondary" className="text-xs">
-                                    Ideal: {team.ideal_size || 1}
-                                  </Badge>
-                                </div>
-                             </TableCell>
-                             <TableCell className="font-semibold text-muted-foreground">
-                               <span className="text-xs">Actual →</span>
-                             </TableCell>
-                             <TableCell></TableCell>
-                             {timelineMonths.map((month) => {
-                               const actualCount = getActualMemberCount(team.id, month.date);
-                               const idealCount = team.ideal_size || 1;
-                               return (
-                                 <TableCell key={month.label} className="text-center">
-                                   <Badge 
-                                     variant="outline" 
-                                     className={`text-xs px-1 py-0 min-w-[20px] justify-center ${getStaffingColorClass(actualCount, idealCount)}`}
-                                   >
-                                     {actualCount}
+                            <TableRow className="bg-muted/50 h-7">
+                              <TableCell 
+                                className="font-medium text-sm pl-6 py-1"
+                                style={{ 
+                                  borderLeftColor: team.color || 'hsl(var(--primary))',
+                                  borderLeftWidth: '3px'
+                                }}
+                              >
+                                 <div className="flex items-center gap-2">
+                                   <span>{team.name}</span>
+                                   <Badge variant="secondary" className="text-xs px-1 py-0">
+                                     Ideal: {team.ideal_size || 1}
                                    </Badge>
-                                 </TableCell>
-                               );
-                             })}
-                           </TableRow>
-                          
-                          {/* Team member rows */}
-                          {members.map((member) => (
-                            <TableRow key={member.id}>
-                               <TableCell className="font-medium pl-12">
-                                 <div className="flex items-center justify-between gap-2">
-                                   <span className="truncate">{member.name}</span>
-                                   <Button
-                                     variant="ghost"
-                                     size="sm"
-                                     className="h-6 w-6 p-0"
-                                     onClick={() => setEditingMember(member)}
-                                     title="Edit memberships"
-                                   >
-                                     <Edit2 className="w-3 h-3" />
-                                   </Button>
                                  </div>
-                               </TableCell>
-                               <TableCell className="text-muted-foreground">{member.role}</TableCell>
-                              <TableCell>{format(new Date(member.start_date), 'MMM d, yyyy')}</TableCell>
-                               {timelineMonths.map((month) => {
-                                 const involvement = getMemberInvolvement(member, month.date, team.id);
-                                 return (
-                                  <TableCell key={month.label} className="text-center">
-                                    <div 
-                                      className="w-8 h-8 mx-auto rounded flex items-center justify-center text-xs font-medium"
-                                      style={{
-                                        backgroundColor: involvement > 0 
-                                          ? (team.color || 'hsl(var(--primary))') + '20'
-                                          : 'transparent',
-                                        color: involvement > 0 
-                                          ? (team.color || 'hsl(var(--primary))')
-                                          : 'hsl(var(--muted-foreground))',
-                                        border: involvement > 0 
-                                          ? `1px solid ${team.color || 'hsl(var(--primary))'}`
-                                          : '1px solid hsl(var(--border))'
-                                      }}
+                              </TableCell>
+                              <TableCell className="font-medium text-muted-foreground py-1">
+                                <span className="text-xs">Actual →</span>
+                              </TableCell>
+                              <TableCell className="py-1"></TableCell>
+                              {timelineMonths.map((month) => {
+                                const actualCount = getActualMemberCount(team.id, month.date);
+                                const idealCount = team.ideal_size || 1;
+                                return (
+                                  <TableCell key={month.label} className="text-center py-1 px-1">
+                                    <Badge 
+                                      variant="outline" 
+                                      className={`text-xs px-1 py-0 min-w-[16px] justify-center h-4 ${getStaffingColorClass(actualCount, idealCount)}`}
                                     >
-                                      {involvement > 0 ? involvement : ''}
-                                    </div>
+                                      {actualCount}
+                                    </Badge>
                                   </TableCell>
                                 );
                               })}
                             </TableRow>
-                          ))}
+                          
+                          {/* Team member rows */}
+                           {members.map((member) => (
+                             <TableRow key={member.id} className="h-8">
+                                <TableCell className="font-medium text-sm pl-8 py-1">
+                                  <div className="flex items-center justify-between gap-1">
+                                    <span className="truncate text-sm">{member.name}</span>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      className="h-5 w-5 p-0"
+                                      onClick={() => setEditingMember(member)}
+                                      title="Edit memberships"
+                                    >
+                                      <Edit2 className="w-2.5 h-2.5" />
+                                    </Button>
+                                  </div>
+                                </TableCell>
+                                <TableCell className="text-muted-foreground text-sm py-1">{member.role}</TableCell>
+                               <TableCell className="text-sm py-1">{format(new Date(member.start_date), 'MMM d, yy')}</TableCell>
+                                {timelineMonths.map((month) => {
+                                  const involvement = getMemberInvolvement(member, month.date, team.id);
+                                  return (
+                                   <TableCell key={month.label} className="text-center py-1 px-1">
+                                     <div 
+                                       className="w-5 h-5 mx-auto rounded flex items-center justify-center text-xs font-medium"
+                                       style={{
+                                         backgroundColor: involvement > 0 
+                                           ? (team.color || 'hsl(var(--primary))') + '20'
+                                           : 'transparent',
+                                         color: involvement > 0 
+                                           ? (team.color || 'hsl(var(--primary))')
+                                           : 'hsl(var(--muted-foreground))',
+                                         border: involvement > 0 
+                                           ? `1px solid ${team.color || 'hsl(var(--primary))'}`
+                                           : '1px solid hsl(var(--border))'
+                                       }}
+                                     >
+                                       {involvement > 0 ? involvement : ''}
+                                     </div>
+                                   </TableCell>
+                                 );
+                               })}
+                             </TableRow>
+                           ))}
                         </Fragment>
                       ))}
                     </Fragment>
@@ -322,103 +322,103 @@ export function TeamMembersView({
                   {/* Teams without products */}
                   {groupedData.teamsWithoutProduct.length > 0 && (
                     <Fragment>
-                      <TableRow className="bg-accent">
-                         <TableCell 
-                           colSpan={3 + timelineMonths.length}
-                           className="font-bold text-lg"
-                         >
-                          <div className="flex items-center gap-2">
-                            <Users className="w-5 h-5" />
-                            Unassigned Teams
-                            <Badge variant="secondary">
-                              {groupedData.teamsWithoutProduct.reduce((sum, { members }) => sum + members.length, 0)} member{groupedData.teamsWithoutProduct.reduce((sum, { members }) => sum + members.length, 0) !== 1 ? 's' : ''}
-                            </Badge>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                      
-                      {groupedData.teamsWithoutProduct.map(({ team, members }) => (
-                        <Fragment key={team.id}>
-                           {/* Team header row */}
-                           <TableRow className="bg-muted/50">
-                             <TableCell 
-                               className="font-semibold pl-8"
-                               style={{ 
-                                 borderLeftColor: team.color || 'hsl(var(--primary))',
-                                 borderLeftWidth: '4px'
-                               }}
-                             >
-                                <div className="flex items-center gap-3">
-                                  <span>{team.name}</span>
-                                  <Badge variant="secondary" className="text-xs">
-                                    Ideal: {team.ideal_size || 1}
-                                  </Badge>
-                                </div>
-                             </TableCell>
-                             <TableCell className="font-semibold text-muted-foreground">
-                               <span className="text-xs">Actual →</span>
-                             </TableCell>
-                             <TableCell></TableCell>
-                             {timelineMonths.map((month) => {
-                               const actualCount = getActualMemberCount(team.id, month.date);
-                               const idealCount = team.ideal_size || 1;
-                               return (
-                                 <TableCell key={month.label} className="text-center">
-                                   <Badge 
-                                     variant="outline" 
-                                     className={`text-xs px-1 py-0 min-w-[20px] justify-center ${getStaffingColorClass(actualCount, idealCount)}`}
-                                   >
-                                     {actualCount}
+                       <TableRow className="bg-accent h-7">
+                          <TableCell 
+                            colSpan={3 + timelineMonths.length}
+                            className="font-semibold text-sm py-1"
+                          >
+                           <div className="flex items-center gap-2">
+                             <Users className="w-3 h-3" />
+                             Unassigned Teams
+                             <Badge variant="secondary" className="text-xs px-1 py-0">
+                               {groupedData.teamsWithoutProduct.reduce((sum, { members }) => sum + members.length, 0)} member{groupedData.teamsWithoutProduct.reduce((sum, { members }) => sum + members.length, 0) !== 1 ? 's' : ''}
+                             </Badge>
+                           </div>
+                         </TableCell>
+                       </TableRow>
+                       
+                       {groupedData.teamsWithoutProduct.map(({ team, members }) => (
+                         <Fragment key={team.id}>
+                            {/* Team header row */}
+                            <TableRow className="bg-muted/50 h-7">
+                              <TableCell 
+                                className="font-medium text-sm pl-6 py-1"
+                                style={{ 
+                                  borderLeftColor: team.color || 'hsl(var(--primary))',
+                                  borderLeftWidth: '3px'
+                                }}
+                              >
+                                 <div className="flex items-center gap-2">
+                                   <span>{team.name}</span>
+                                   <Badge variant="secondary" className="text-xs px-1 py-0">
+                                     Ideal: {team.ideal_size || 1}
                                    </Badge>
-                                 </TableCell>
-                               );
-                             })}
-                           </TableRow>
-                          
-                          {/* Team member rows */}
-                          {members.map((member) => (
-                             <TableRow key={member.id}>
-                               <TableCell className="font-medium pl-12">
-                                 <div className="flex items-center justify-between gap-2">
-                                   <span className="truncate">{member.name}</span>
-                                   <Button
-                                     variant="ghost"
-                                     size="sm"
-                                     className="h-6 w-6 p-0"
-                                     onClick={() => setEditingMember(member)}
-                                     title="Edit memberships"
-                                   >
-                                     <Edit2 className="w-3 h-3" />
-                                   </Button>
                                  </div>
-                               </TableCell>
-                               <TableCell className="text-muted-foreground">{member.role}</TableCell>
-                              <TableCell>{format(new Date(member.start_date), 'MMM d, yyyy')}</TableCell>
-                               {timelineMonths.map((month) => {
-                                 const involvement = getMemberInvolvement(member, month.date, team.id);
-                                 return (
-                                  <TableCell key={month.label} className="text-center">
-                                    <div 
-                                      className="w-8 h-8 mx-auto rounded flex items-center justify-center text-xs font-medium"
-                                      style={{
-                                        backgroundColor: involvement > 0 
-                                          ? (team.color || 'hsl(var(--primary))') + '20'
-                                          : 'transparent',
-                                        color: involvement > 0 
-                                          ? (team.color || 'hsl(var(--primary))')
-                                          : 'hsl(var(--muted-foreground))',
-                                        border: involvement > 0 
-                                          ? `1px solid ${team.color || 'hsl(var(--primary))'}`
-                                          : '1px solid hsl(var(--border))'
-                                      }}
+                              </TableCell>
+                              <TableCell className="font-medium text-muted-foreground py-1">
+                                <span className="text-xs">Actual →</span>
+                              </TableCell>
+                              <TableCell className="py-1"></TableCell>
+                              {timelineMonths.map((month) => {
+                                const actualCount = getActualMemberCount(team.id, month.date);
+                                const idealCount = team.ideal_size || 1;
+                                return (
+                                  <TableCell key={month.label} className="text-center py-1 px-1">
+                                    <Badge 
+                                      variant="outline" 
+                                      className={`text-xs px-1 py-0 min-w-[16px] justify-center h-4 ${getStaffingColorClass(actualCount, idealCount)}`}
                                     >
-                                      {involvement > 0 ? involvement : ''}
-                                    </div>
+                                      {actualCount}
+                                    </Badge>
                                   </TableCell>
                                 );
                               })}
                             </TableRow>
-                          ))}
+                           
+                           {/* Team member rows */}
+                           {members.map((member) => (
+                              <TableRow key={member.id} className="h-8">
+                                <TableCell className="font-medium text-sm pl-8 py-1">
+                                  <div className="flex items-center justify-between gap-1">
+                                    <span className="truncate text-sm">{member.name}</span>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      className="h-5 w-5 p-0"
+                                      onClick={() => setEditingMember(member)}
+                                      title="Edit memberships"
+                                    >
+                                      <Edit2 className="w-2.5 h-2.5" />
+                                    </Button>
+                                  </div>
+                                </TableCell>
+                                <TableCell className="text-muted-foreground text-sm py-1">{member.role}</TableCell>
+                               <TableCell className="text-sm py-1">{format(new Date(member.start_date), 'MMM d, yy')}</TableCell>
+                                {timelineMonths.map((month) => {
+                                  const involvement = getMemberInvolvement(member, month.date, team.id);
+                                  return (
+                                   <TableCell key={month.label} className="text-center py-1 px-1">
+                                     <div 
+                                       className="w-5 h-5 mx-auto rounded flex items-center justify-center text-xs font-medium"
+                                       style={{
+                                         backgroundColor: involvement > 0 
+                                           ? (team.color || 'hsl(var(--primary))') + '20'
+                                           : 'transparent',
+                                         color: involvement > 0 
+                                           ? (team.color || 'hsl(var(--primary))')
+                                           : 'hsl(var(--muted-foreground))',
+                                         border: involvement > 0 
+                                           ? `1px solid ${team.color || 'hsl(var(--primary))'}`
+                                           : '1px solid hsl(var(--border))'
+                                       }}
+                                     >
+                                       {involvement > 0 ? involvement : ''}
+                                     </div>
+                                   </TableCell>
+                                 );
+                               })}
+                             </TableRow>
+                           ))}
                         </Fragment>
                       ))}
                     </Fragment>
