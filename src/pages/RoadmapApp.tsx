@@ -20,7 +20,16 @@ export default function RoadmapApp() {
   const [isAddMemberDialogOpen, setIsAddMemberDialogOpen] = useState(false);
   const [isAddProductDialogOpen, setIsAddProductDialogOpen] = useState(false);
   const [isAddTeamDialogOpen, setIsAddTeamDialogOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState<string>('projects');
+  const [activeTab, setActiveTab] = useState<string>(() => {
+    // Persist active tab in sessionStorage to survive data refetches
+    return sessionStorage.getItem('roadmapActiveTab') || 'projects';
+  });
+  
+  // Update sessionStorage when tab changes
+  const handleTabChange = (value: string) => {
+    setActiveTab(value);
+    sessionStorage.setItem('roadmapActiveTab', value);
+  };
   
   const { 
     projects, 
@@ -217,7 +226,7 @@ export default function RoadmapApp() {
             </div>
         </div>
 
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+        <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-6">
           <TabsList className="grid w-full grid-cols-4 max-w-2xl">
             <TabsTrigger value="projects" className="text-sm font-medium">
               Projects
