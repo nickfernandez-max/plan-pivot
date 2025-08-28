@@ -8,12 +8,16 @@ import { ProjectList } from '@/components/ProjectList';
 import { RoadmapView } from '@/components/RoadmapView';
 import { TeamMembersView } from '@/components/TeamMembersView';
 import { ReportsView } from '@/components/ReportsView';
+import { AddProductDialog } from '@/components/AddProductDialog';
+import { AddTeamDialog } from '@/components/AddTeamDialog';
 import { toast } from 'sonner';
 
 export default function RoadmapApp() {
   const [selectedTeam, setSelectedTeam] = useState<string>('all');
   const [selectedProduct, setSelectedProduct] = useState<string>('all');
   const [isAddMemberDialogOpen, setIsAddMemberDialogOpen] = useState(false);
+  const [isAddProductDialogOpen, setIsAddProductDialogOpen] = useState(false);
+  const [isAddTeamDialogOpen, setIsAddTeamDialogOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<string>('projects');
   
   const { 
@@ -259,11 +263,11 @@ export default function RoadmapApp() {
 
           <TabsContent value="members">
             <div className="flex gap-2 mb-6">
-              <Button variant="outline" onClick={handleAddTeam}>
+              <Button variant="outline" onClick={() => setIsAddTeamDialogOpen(true)}>
                 <Plus className="w-4 h-4 mr-2" />
                 Add Team
               </Button>
-              <Button variant="outline" onClick={handleAddProduct}>
+              <Button variant="outline" onClick={() => setIsAddProductDialogOpen(true)}>
                 <Plus className="w-4 h-4 mr-2" />
                 Add Product
               </Button>
@@ -298,6 +302,19 @@ export default function RoadmapApp() {
             />
           </TabsContent>
         </Tabs>
+        
+        <AddProductDialog
+          open={isAddProductDialogOpen}
+          onOpenChange={setIsAddProductDialogOpen}
+          onAddProduct={handleAddProduct}
+        />
+        
+        <AddTeamDialog
+          open={isAddTeamDialogOpen}
+          onOpenChange={setIsAddTeamDialogOpen}
+          onAddTeam={handleAddTeam}
+          products={products}
+        />
       </div>
     </div>
   );
