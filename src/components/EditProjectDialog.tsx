@@ -8,10 +8,12 @@ import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Project, Team, Product, TeamMember, ProjectAssignment } from "@/types/roadmap";
+import { Plus, X } from "lucide-react";
 
 interface EditProjectDialogProps {
   project: Project | null;
@@ -55,7 +57,8 @@ export function EditProjectDialog({
   onUpdateProjectProducts,
   onUpdateProjectAssignments
 }: EditProjectDialogProps) {
-  const [selectedTeamId, setSelectedTeamId] = useState<string>("");
+  const [addAssignmentOpen, setAddAssignmentOpen] = useState(false);
+  const [assignmentFilterTeam, setAssignmentFilterTeam] = useState<string>("");
 
   const form = useForm<z.infer<typeof projectSchema>>({
     resolver: zodResolver(projectSchema),
@@ -88,21 +91,10 @@ export function EditProjectDialog({
         product_ids: projectProducts,
         assignments: projectAssignments,
       });
-      setSelectedTeamId(project.team_id);
     }
   }, [project, isOpen, assignments, form]);
 
-  const selectedTeamMembers = teamMembers.filter(member => member.team_id === selectedTeamId);
   const currentAssignments = form.watch("assignments") || [];
-  
-  // Also include team members who are currently assigned to this project, even if they're from other teams
-  const assignedMemberIds = currentAssignments.map(a => a.teamMemberId);
-  const assignedMembersFromOtherTeams = teamMembers.filter(member => 
-    assignedMemberIds.includes(member.id) && member.team_id !== selectedTeamId
-  );
-  
-  // Combine members from selected team and assigned members from other teams
-  const allRelevantMembers = [...selectedTeamMembers, ...assignedMembersFromOtherTeams];
 
   const addAssignment = (memberId: string) => {
     const currentAssignments = form.getValues("assignments") || [];
@@ -208,12 +200,7 @@ export function EditProjectDialog({
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel className="text-sm">Team</FormLabel>
-                    <Select onValueChange={(value) => {
-                      field.onChange(value);
-                      setSelectedTeamId(value);
-                      // Clear assignments when team changes
-                      form.setValue("assignments", []);
-                    }} value={field.value}>
+                    <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
                         <SelectTrigger className="h-9">
                           <SelectValue placeholder="Select team" />
@@ -359,86 +346,157 @@ export function EditProjectDialog({
 
             <Separator className="my-3" />
 
-            {/* Team Member Assignments - More Compact */}
+            {/* Team Member Assignments - Only show assigned members */}
             <div>
-              <FormLabel className="text-base font-semibold">Team Assignments</FormLabel>
-              <p className="text-xs text-muted-foreground mb-3">
-                Assign team members with allocation percentages and dates.
-              </p>
+              <div className="flex items-center justify-between mb-3">
+                <FormLabel className="text-base font-semibold">Team Assignments</FormLabel>
+                <Popover open={addAssignmentOpen} onOpenChange={setAddAssignmentOpen}>
+                  <PopoverTrigger asChild>
+                    <Button 
+                      type="button" 
+                      variant="outline" 
+                      size="sm"
+                      className="h-8"
+                    >
+                      <Plus className="h-4 w-4 mr-1" />
+                      Add Assignment
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-80 bg-background border shadow-lg z-50" align="end">
+                    <div className="space-y-3">
+                      <h4 className="font-medium text-sm">Add Team Member</h4>
+                      
+                      {/* Team Filter */}
+                      <div>
+                        <FormLabel className="text-xs">Filter by Team</FormLabel>
+                        <Select value={assignmentFilterTeam} onValueChange={setAssignmentFilterTeam}>
+                          <SelectTrigger className="h-8 bg-background">
+                            <SelectValue placeholder="All teams" />
+                          </SelectTrigger>
+                          <SelectContent className="bg-background border shadow-lg z-50">
+                            <SelectItem value="">All teams</SelectItem>
+                            {teams.map((team) => (
+                              <SelectItem key={team.id} value={team.id}>
+                                {team.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
 
-              {allRelevantMembers.length > 0 ? (
+                      {/* Available Members */}
+                      <div className="max-h-48 overflow-y-auto space-y-1">
+                        {teamMembers
+                          .filter(member => 
+                            !currentAssignments.some(a => a.teamMemberId === member.id) &&
+                            (assignmentFilterTeam === "" || member.team_id === assignmentFilterTeam)
+                          )
+                          .map((member) => {
+                            const memberTeam = teams.find(t => t.id === member.team_id);
+                            return (
+                              <button
+                                key={member.id}
+                                type="button"
+                                onClick={() => {
+                                  addAssignment(member.id);
+                                  setAddAssignmentOpen(false);
+                                }}
+                                className="w-full text-left p-2 text-sm hover:bg-muted rounded border"
+                              >
+                                <div className="font-medium">{member.name}</div>
+                                <div className="text-xs text-muted-foreground">
+                                  {member.role} • {memberTeam?.name}
+                                </div>
+                              </button>
+                            )
+                          })}
+                        {teamMembers
+                          .filter(member => 
+                            !currentAssignments.some(a => a.teamMemberId === member.id) &&
+                            (assignmentFilterTeam === "" || member.team_id === assignmentFilterTeam)
+                          ).length === 0 && (
+                          <p className="text-xs text-muted-foreground p-2">
+                            {assignmentFilterTeam ? "No unassigned members in this team" : "All members are already assigned"}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  </PopoverContent>
+                </Popover>
+              </div>
+
+              {/* Currently Assigned Members */}
+              {currentAssignments.length > 0 ? (
                 <div className="space-y-2 max-h-64 overflow-y-auto">
-                  {allRelevantMembers.map((member) => {
-                    const assignment = currentAssignments.find(a => a.teamMemberId === member.id);
-                    const isAssigned = !!assignment;
-                    const isFromOtherTeam = member.team_id !== selectedTeamId;
+                  {currentAssignments.map((assignment) => {
+                    const member = teamMembers.find(m => m.id === assignment.teamMemberId);
+                    if (!member) return null;
+                    
+                    const memberTeam = teams.find(t => t.id === member.team_id);
 
                     return (
                       <div key={member.id} className="flex items-center justify-between p-2 border rounded text-sm">
                         <div className="flex items-center space-x-2 flex-1">
-                          <input
-                            type="checkbox"
-                            checked={isAssigned}
-                            onChange={(e) => {
-                              if (e.target.checked) {
-                                addAssignment(member.id);
-                              } else {
-                                removeAssignment(member.id);
-                              }
-                            }}
-                          />
+                          <button
+                            type="button"
+                            onClick={() => removeAssignment(member.id)}
+                            className="text-muted-foreground hover:text-destructive"
+                          >
+                            <X className="h-4 w-4" />
+                          </button>
                           <div className="flex-1 min-w-0">
                             <p className="font-medium truncate">{member.name}</p>
                             <p className="text-xs text-muted-foreground">
                               {member.role}
-                              {isFromOtherTeam && (
+                              {memberTeam && (
                                 <Badge variant="secondary" className="ml-1 text-xs">
-                                  {teams.find(t => t.id === member.team_id)?.name}
+                                  {memberTeam.name}
                                 </Badge>
                               )}
                             </p>
                           </div>
                         </div>
                         
-                        {isAssigned && (
-                          <div className="flex items-center space-x-2 text-xs">
-                            <Input
-                              type="number"
-                              min="0"
-                              max="100"
-                              value={assignment.percentAllocation}
-                              onChange={(e) => updateAssignmentAllocation(member.id, parseInt(e.target.value) || 0)}
-                              className="w-14 h-7 text-xs"
-                            />
-                            <span>%</span>
-                            <Input
-                              type="date"
-                              value={assignment.startDate || form.getValues().start_date}
-                              onChange={(e) => updateAssignmentDates(
-                                member.id, 
-                                e.target.value, 
-                                assignment.endDate || form.getValues().end_date
-                              )}
-                              className="w-28 h-7 text-xs"
-                            />
-                            <Input
-                              type="date"
-                              value={assignment.endDate || form.getValues().end_date}
-                              onChange={(e) => updateAssignmentDates(
-                                member.id, 
-                                assignment.startDate || form.getValues().start_date,
-                                e.target.value
-                              )}
-                              className="w-28 h-7 text-xs"
-                            />
-                          </div>
-                        )}
+                        <div className="flex items-center space-x-2 text-xs">
+                          <Input
+                            type="number"
+                            min="0"
+                            max="100"
+                            value={assignment.percentAllocation}
+                            onChange={(e) => updateAssignmentAllocation(member.id, parseInt(e.target.value) || 0)}
+                            className="w-14 h-7 text-xs"
+                          />
+                          <span>%</span>
+                          <Input
+                            type="date"
+                            value={assignment.startDate || form.getValues().start_date}
+                            onChange={(e) => updateAssignmentDates(
+                              member.id, 
+                              e.target.value, 
+                              assignment.endDate || form.getValues().end_date
+                            )}
+                            className="w-28 h-7 text-xs"
+                          />
+                          <Input
+                            type="date"
+                            value={assignment.endDate || form.getValues().end_date}
+                            onChange={(e) => updateAssignmentDates(
+                              member.id, 
+                              assignment.startDate || form.getValues().start_date,
+                              e.target.value
+                            )}
+                            className="w-28 h-7 text-xs"
+                          />
+                        </div>
                       </div>
                     );
                   })}
                 </div>
               ) : (
-                <p className="text-sm text-muted-foreground">No team members available. Select a team first.</p>
+                <div className="text-center py-8 text-muted-foreground">
+                  <p className="text-sm">No team members assigned</p>
+                  <p className="text-xs">Click "Add Assignment" to assign team members</p>
+                </div>
               )}
             </div>
 
