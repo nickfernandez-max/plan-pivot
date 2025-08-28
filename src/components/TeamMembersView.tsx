@@ -85,7 +85,7 @@ export function TeamMembersView({
     const months = [];
     const startDate = startOfMonth(new Date());
     
-    for (let i = 0; i < 6; i++) {
+    for (let i = 0; i < 9; i++) {
       const monthDate = addMonths(startDate, i);
       months.push({
         date: monthDate,
@@ -197,14 +197,14 @@ export function TeamMembersView({
                      <TableHead className="w-36 text-xs">Name</TableHead>
                      <TableHead className="w-28 text-xs">Role</TableHead>
                      <TableHead className="w-24 text-xs">Start Date</TableHead>
-                     {timelineMonths.map((month) => (
-                       <TableHead key={month.label} className="text-center w-12 px-0">
-                         <div className="text-xs">
-                           <div className="text-xs font-medium">{month.shortLabel}</div>
-                           <div className="text-xs text-muted-foreground">{format(month.date, 'yy')}</div>
-                         </div>
-                       </TableHead>
-                     ))}
+                      {timelineMonths.map((month) => (
+                        <TableHead key={month.label} className="text-center w-8 px-0">
+                          <div className="text-xs leading-tight">
+                            <div className="text-xs font-medium">{month.shortLabel}</div>
+                            <div className="text-xs text-muted-foreground">{format(month.date, 'yy')}</div>
+                          </div>
+                        </TableHead>
+                      ))}
                    </TableRow>
                  </TableHeader>
                 <TableBody>
@@ -261,7 +261,7 @@ export function TeamMembersView({
                                   <TableCell key={month.label} className="text-center py-1 px-0">
                                     <Badge 
                                       variant="outline" 
-                                      className={`text-xs px-1 py-0 min-w-[14px] justify-center h-4 ${getStaffingColorClass(actualCount, idealCount)}`}
+                                      className={`text-xs px-0.5 py-0 min-w-[12px] justify-center h-4 ${getStaffingColorClass(actualCount, idealCount)}`}
                                     >
                                       {actualCount}
                                     </Badge>
@@ -294,7 +294,7 @@ export function TeamMembersView({
                                   return (
                                    <TableCell key={month.label} className="text-center py-1 px-0">
                                      <div 
-                                       className="w-4 h-4 mx-auto rounded flex items-center justify-center text-xs font-medium"
+                                       className="w-3 h-3 mx-auto rounded flex items-center justify-center text-xs font-medium"
                                        style={{
                                          backgroundColor: involvement > 0 
                                            ? (team.color || 'hsl(var(--primary))') + '20'
@@ -366,7 +366,7 @@ export function TeamMembersView({
                                   <TableCell key={month.label} className="text-center py-1 px-0">
                                     <Badge 
                                       variant="outline" 
-                                      className={`text-xs px-1 py-0 min-w-[14px] justify-center h-4 ${getStaffingColorClass(actualCount, idealCount)}`}
+                                      className={`text-xs px-0.5 py-0 min-w-[12px] justify-center h-4 ${getStaffingColorClass(actualCount, idealCount)}`}
                                     >
                                       {actualCount}
                                     </Badge>
@@ -399,7 +399,7 @@ export function TeamMembersView({
                                   return (
                                    <TableCell key={month.label} className="text-center py-1 px-0">
                                      <div 
-                                       className="w-4 h-4 mx-auto rounded flex items-center justify-center text-xs font-medium"
+                                       className="w-3 h-3 mx-auto rounded flex items-center justify-center text-xs font-medium"
                                        style={{
                                          backgroundColor: involvement > 0 
                                            ? (team.color || 'hsl(var(--primary))') + '20'
