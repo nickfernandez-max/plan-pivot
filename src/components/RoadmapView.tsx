@@ -306,29 +306,48 @@ export function RoadmapView({
     return months;
   }, [timelineBounds, totalDays]);
 
-  // Generate weekly grid lines
-  const weeklyGridLines = useMemo(() => {
+  // Generate weekly grid lines and backgrounds
+  const weeklyGrid = useMemo(() => {
     const weeks = [];
+    const weekBackgrounds = [];
     // Start from the beginning of the week that contains timeline start
     let current = startOfWeek(timelineBounds.start, { weekStartsOn: 1 }); // Monday as start of week
+    let weekIndex = 0;
     
     while (current <= timelineBounds.end) {
       const daysFromStart = differenceInDays(current, timelineBounds.start);
       const leftPosition = (daysFromStart / totalDays) * 100;
       
-      // Only add if the week line is within our visible timeline
-      if (leftPosition >= 0 && leftPosition <= 100) {
+      // Calculate week width
+      const weekEnd = addWeeks(current, 1);
+      const weekEndFromStart = differenceInDays(weekEnd, timelineBounds.start);
+      const rightPosition = (weekEndFromStart / totalDays) * 100;
+      const weekWidth = rightPosition - leftPosition;
+      
+      // Only add if the week intersects with our visible timeline
+      if (leftPosition < 100 && rightPosition > 0) {
+        // Week grid line
         weeks.push({
           date: current,
-          left: leftPosition,
-          label: format(current, 'MMM d')
+          left: Math.max(0, leftPosition),
+          label: format(current, 'MMM d'),
+          weekNumber: format(current, 'w')
+        });
+        
+        // Week background for alternating colors
+        weekBackgrounds.push({
+          left: Math.max(0, leftPosition),
+          width: Math.min(weekWidth, 100 - Math.max(0, leftPosition)),
+          isEven: weekIndex % 2 === 0,
+          weekLabel: `Week ${format(current, 'w')} - ${format(current, 'MMM d')}`
         });
       }
       
       current = addWeeks(current, 1);
+      weekIndex++;
     }
     
-    return weeks;
+    return { weeks, weekBackgrounds };
   }, [timelineBounds, totalDays]);
 
   // Group teams by product and calculate member rows with allocation slots
@@ -533,18 +552,21 @@ export function RoadmapView({
             ))}
           </div>
 
-          {/* Weekly grid lines */}
-          <div className="relative h-2 mb-1 ml-48">
-            {weeklyGridLines.map((week, index) => (
+          {/* Week headers with labels */}
+          <div className="relative h-8 mb-1 ml-48 border-b border-border/50">
+            {weeklyGrid.weeks.map((week, index) => (
               <div
                 key={index}
-                className="absolute border-l border-border/30"
+                className="absolute text-xs text-muted-foreground font-medium flex flex-col items-start"
                 style={{
                   left: `${week.left}%`,
                   height: '100%'
                 }}
-                title={week.label}
-              />
+                title={week.weekLabel}
+              >
+                <div className="text-xs font-semibold">W{week.weekNumber}</div>
+                <div className="text-xs opacity-75">{week.label}</div>
+              </div>
             ))}
           </div>
 
@@ -730,13 +752,32 @@ export function RoadmapView({
                   });
                 }
 
-                // Add weekly grid lines that span the full height
+                // Calculate total height for week backgrounds and grid lines
                 const totalHeight = currentTop;
-                weeklyGridLines.forEach((week, index) => {
+
+                // Add alternating week backgrounds for better visibility
+                weeklyGrid.weekBackgrounds.forEach((weekBg, index) => {
+                  elements.push(
+                    <div
+                      key={`week-bg-${index}`}
+                      className={`absolute pointer-events-none ${weekBg.isEven ? 'bg-muted/5' : 'bg-background'}`}
+                      style={{
+                        left: `${weekBg.left}%`,
+                        width: `${weekBg.width}%`,
+                        top: '0px',
+                        height: `${totalHeight}px`,
+                      }}
+                      title={weekBg.weekLabel}
+                    />
+                  );
+                });
+
+                // Add weekly grid lines that span the full height
+                weeklyGrid.weeks.forEach((week, index) => {
                   elements.push(
                     <div
                       key={`week-line-${index}`}
-                      className="absolute border-l border-border/20 pointer-events-none"
+                      className="absolute border-l border-border/40 pointer-events-none"
                       style={{
                         left: `${week.left}%`,
                         top: '0px',
