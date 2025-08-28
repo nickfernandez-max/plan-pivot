@@ -142,6 +142,10 @@ export function EditTeamMemberDialog({
                     onSelect={(d) => setTransitionMonth(d ? startOfMonth(d) : undefined)}
                     initialFocus
                     className="p-3 pointer-events-auto"
+                    captionLayout="dropdown-buttons"
+                    fromYear={2020}
+                    toYear={2030}
+                    showOutsideDays={false}
                   />
                 </PopoverContent>
               </Popover>
@@ -189,6 +193,10 @@ export function EditTeamMemberDialog({
                             }}
                             initialFocus
                             className="p-3 pointer-events-auto"
+                            captionLayout="dropdown-buttons"
+                            fromYear={2020}
+                            toYear={2030}
+                            showOutsideDays={false}
                           />
                         </PopoverContent>
                       </Popover>
