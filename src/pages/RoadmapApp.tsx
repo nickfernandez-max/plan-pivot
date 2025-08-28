@@ -7,6 +7,7 @@ import { Plus } from 'lucide-react';
 import { ProjectList } from '@/components/ProjectList';
 import { RoadmapView } from '@/components/RoadmapView';
 import { TeamMembersView } from '@/components/TeamMembersView';
+import { ReportsView } from '@/components/ReportsView';
 import { toast } from 'sonner';
 
 export default function RoadmapApp() {
@@ -211,7 +212,7 @@ export default function RoadmapApp() {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3 max-w-lg">
+          <TabsList className="grid w-full grid-cols-4 max-w-2xl">
             <TabsTrigger value="projects" className="text-sm font-medium">
               Projects
             </TabsTrigger>
@@ -220,6 +221,9 @@ export default function RoadmapApp() {
             </TabsTrigger>
             <TabsTrigger value="members" className="text-sm font-medium">
               Team Members
+            </TabsTrigger>
+            <TabsTrigger value="reports" className="text-sm font-medium">
+              Reports
             </TabsTrigger>
           </TabsList>
 
@@ -283,6 +287,14 @@ export default function RoadmapApp() {
               onAddMembership={addTeamMembership}
               onUpdateMembership={updateTeamMembership}
               onDeleteMembership={deleteTeamMembership}
+            />
+          </TabsContent>
+
+          <TabsContent value="reports">
+            <ReportsView 
+              projects={projects} 
+              teamMembers={teamMembers} 
+              assignments={assignments}
             />
           </TabsContent>
         </Tabs>
