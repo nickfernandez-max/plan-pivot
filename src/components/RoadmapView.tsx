@@ -53,7 +53,7 @@ const assignAllocationSlots = (
 
   const SLOTS_PER_MEMBER = 4;
   const SLOT_PERCENTAGE = 25;
-  const BASE_SLOT_HEIGHT = 22; // Reduced from 32px for more compact view
+  const BASE_SLOT_HEIGHT = 18; // Reduced from 22px for more compact view
 
   // Prepare projects with temporal and allocation data
   const projectsWithData = projects.map(project => {
@@ -328,7 +328,7 @@ export function RoadmapView({
 
   // Group teams by product and calculate member rows with allocation slots
   const productGroups = useMemo(() => {
-    const FIXED_ROW_HEIGHT = 100; // Reduced from 140px for more compact view
+    const FIXED_ROW_HEIGHT = 80; // Reduced from 100px for more compact view
     const ALLOCATION_SLOTS = 4;
     
     // Group teams by product
@@ -431,8 +431,8 @@ export function RoadmapView({
     );
   }
 
-  const TEAM_HEADER_HEIGHT = 32; // Reduced from 40px
-  const PRODUCT_HEADER_HEIGHT = 40; // Reduced from 50px
+  const TEAM_HEADER_HEIGHT = 24; // Reduced from 32px
+  const PRODUCT_HEADER_HEIGHT = 30; // Reduced from 40px
   
   return (
     <DndContext
@@ -441,10 +441,10 @@ export function RoadmapView({
       onDragEnd={handleDragEnd}
     >
       <Card>
-        <CardHeader className="pb-4">
+        <CardHeader className="pb-2">
           <div className="flex items-center justify-between">
-            <CardTitle className="flex items-center gap-2">
-              <Calendar className="h-5 w-5" />
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <Calendar className="h-4 w-4" />
               Team Roadmap Timeline
             </CardTitle>
             <div className="flex items-center gap-4">
@@ -502,7 +502,7 @@ export function RoadmapView({
               </div>
             </div>
           </div>
-          <p className="text-sm text-muted-foreground">
+          <p className="text-xs text-muted-foreground">
             Use two-finger scroll or shift+scroll to navigate the timeline horizontally. Drag projects between team members to reassign them.
           </p>
         </CardHeader>
@@ -513,7 +513,7 @@ export function RoadmapView({
             onWheel={handleWheel}
           >
           {/* Month headers */}
-          <div className="relative h-8 mb-4 border-b border-border ml-48">
+          <div className="relative h-6 mb-2 border-b border-border ml-48">
             {monthHeaders.map((month, index) => (
               <div
                 key={index}
@@ -529,7 +529,7 @@ export function RoadmapView({
           </div>
 
           {/* Weekly grid lines */}
-          <div className="relative h-4 mb-2 ml-48">
+          <div className="relative h-2 mb-1 ml-48">
             {weeklyGridLines.map((week, index) => (
               <div
                 key={index}
@@ -552,7 +552,7 @@ export function RoadmapView({
                 <div key={product.id}>
                   {/* Product header */}
                   <div 
-                    className="flex items-center px-4 py-3 font-bold text-base border-b-2 border-border"
+                    className="flex items-center px-4 py-1 font-bold text-sm border-b-2 border-border"
                     style={{ 
                       height: `${PRODUCT_HEADER_HEIGHT}px`,
                       backgroundColor: product.color ? `${product.color}20` : 'hsl(var(--accent))',
@@ -560,9 +560,9 @@ export function RoadmapView({
                       borderLeftWidth: '6px'
                     }}
                   >
-                    <Users className="w-5 h-5 mr-2" />
-                    <span className="truncate">{product.name}</span>
-                    <Badge variant="secondary" className="ml-2">
+                    <Users className="w-4 h-4 mr-2" />
+                    <span className="truncate text-sm">{product.name}</span>
+                    <Badge variant="secondary" className="ml-2 text-xs">
                       {teamGroups.reduce((sum, tg) => sum + tg.memberRows.length, 0)} member{teamGroups.reduce((sum, tg) => sum + tg.memberRows.length, 0) !== 1 ? 's' : ''}
                     </Badge>
                   </div>
@@ -572,7 +572,7 @@ export function RoadmapView({
                     <div key={team.id}>
                       {/* Team header */}
                       <div 
-                        className="flex items-center px-6 py-2 font-semibold text-sm border-b border-border"
+                        className="flex items-center px-6 py-1 font-semibold text-xs border-b border-border"
                         style={{ 
                           height: `${TEAM_HEADER_HEIGHT}px`,
                           backgroundColor: team.color ? `${team.color}15` : 'hsl(var(--muted))',
@@ -587,11 +587,11 @@ export function RoadmapView({
                       {teamMemberRows.map(({ member, rowHeight, allocatedPercentage }) => (
                         <div
                           key={member.id}
-                          className="flex items-center px-8 py-2 text-sm border-b border-border/50 bg-background"
+                          className="flex items-center px-8 py-1 text-xs border-b border-border/50 bg-background"
                           style={{ height: `${rowHeight}px` }}
                         >
                           <div className="flex-1 min-w-0">
-                            <div className="font-medium truncate">{member.name}</div>
+                            <div className="font-medium truncate text-sm">{member.name}</div>
                             <div className="text-xs text-muted-foreground truncate">{member.role}</div>
                           </div>
                         </div>
@@ -605,15 +605,15 @@ export function RoadmapView({
               {productGroups.unassignedTeamGroups.length > 0 && (
                 <div>
                   <div 
-                    className="flex items-center px-4 py-3 font-bold text-base border-b-2 border-border"
+                    className="flex items-center px-4 py-1 font-bold text-sm border-b-2 border-border"
                     style={{ 
                       height: `${PRODUCT_HEADER_HEIGHT}px`,
                       backgroundColor: 'hsl(var(--accent))'
                     }}
                   >
-                    <Users className="w-5 h-5 mr-2" />
-                    <span className="truncate">Unassigned Teams</span>
-                    <Badge variant="secondary" className="ml-2">
+                    <Users className="w-4 h-4 mr-2" />
+                    <span className="truncate text-sm">Unassigned Teams</span>
+                    <Badge variant="secondary" className="ml-2 text-xs">
                       {productGroups.unassignedTeamGroups.reduce((sum, tg) => sum + tg.memberRows.length, 0)} member{productGroups.unassignedTeamGroups.reduce((sum, tg) => sum + tg.memberRows.length, 0) !== 1 ? 's' : ''}
                     </Badge>
                   </div>
@@ -622,7 +622,7 @@ export function RoadmapView({
                     <div key={team.id}>
                       {/* Team header */}
                       <div 
-                        className="flex items-center px-6 py-2 font-semibold text-sm border-b border-border"
+                        className="flex items-center px-6 py-1 font-semibold text-xs border-b border-border"
                         style={{ 
                           height: `${TEAM_HEADER_HEIGHT}px`,
                           backgroundColor: team.color ? `${team.color}15` : 'hsl(var(--muted))',
@@ -637,11 +637,11 @@ export function RoadmapView({
                       {teamMemberRows.map(({ member, rowHeight, allocatedPercentage }) => (
                         <div
                           key={member.id}
-                          className="flex items-center px-8 py-2 text-sm border-b border-border/50 bg-background"
+                          className="flex items-center px-8 py-1 text-xs border-b border-border/50 bg-background"
                           style={{ height: `${rowHeight}px` }}
                         >
                           <div className="flex-1 min-w-0">
-                            <div className="font-medium truncate">{member.name}</div>
+                            <div className="font-medium truncate text-sm">{member.name}</div>
                             <div className="text-xs text-muted-foreground truncate">{member.role}</div>
                           </div>
                         </div>
@@ -760,7 +760,7 @@ export function RoadmapView({
                       const currentMemberTop = memberTopOffset;
                       memberTopOffset += rowHeight;
                       
-                      const SLOT_HEIGHT = 22; // Reduced from 32px for more compact view
+                      const SLOT_HEIGHT = 18; // Reduced from 22px for more compact view
                       const SLOT_PADDING = 1; // Reduced padding
                       
                       const isDropTarget = dragOverData.memberId === member.id;
@@ -825,7 +825,7 @@ export function RoadmapView({
                       const currentMemberTop = memberTopOffset;
                       memberTopOffset += rowHeight;
                       
-                      const SLOT_HEIGHT = 22; // Reduced from 32px for more compact view
+                      const SLOT_HEIGHT = 18; // Reduced from 22px for more compact view
                       const SLOT_PADDING = 1; // Reduced padding
                       
                       const isDropTarget = dragOverData.memberId === member.id;
