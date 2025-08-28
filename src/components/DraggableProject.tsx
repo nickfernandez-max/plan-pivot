@@ -39,11 +39,24 @@ export function DraggableProject({
     disabled: isPreview,
   });
 
+  // Debug logging
+  if (project.name.toLowerCase().includes('mobile')) {
+    console.log('Mobile project drag state:', {
+      projectName: project.name,
+      projectId: project.id,
+      isDragging,
+      transform,
+      isPreview
+    });
+  }
+
   const dragStyle = {
     transform: CSS.Transform.toString(transform),
-    opacity: isDragging ? 0 : 1,
+    opacity: isDragging ? 0.3 : 1,
     zIndex: isDragging ? 1000 : 1,
-    cursor: 'grab',
+    cursor: isDragging ? 'grabbing' : 'grab',
+    transition: isDragging ? 'none' : 'all 0.2s ease',
+    boxShadow: isDragging ? '0 10px 25px rgba(0,0,0,0.3)' : undefined,
   };
 
   return (
@@ -58,20 +71,28 @@ export function DraggableProject({
       }}
     >
       <div className="h-full flex items-center overflow-hidden">
-        {/* Drag handle area */}
+        {/* Drag handle area - enhanced visual feedback */}
         <div 
           {...listeners}
           {...attributes}
-          className="flex-1 min-w-0 h-full flex items-center px-2 cursor-grab active:cursor-grabbing touch-none"
+          className="flex-1 min-w-0 h-full flex items-center px-2 cursor-grab active:cursor-grabbing touch-none hover:bg-black/10 transition-colors"
+          style={{
+            userSelect: 'none',
+            WebkitUserSelect: 'none',
+            MozUserSelect: 'none',
+            msUserSelect: 'none'
+          }}
         >
           <div className="flex-1 min-w-0">
-            <div className="text-white text-xs font-medium truncate">
+            <div className="text-white text-xs font-medium truncate pointer-events-none">
               {project.name}
             </div>
             {project.is_rd && (
-              <div className="text-white/80 text-xs">R&D</div>
+              <div className="text-white/80 text-xs pointer-events-none">R&D</div>
             )}
           </div>
+          {/* Visual drag indicator */}
+          <div className="text-white/60 text-xs ml-2 pointer-events-none select-none">⋮⋮</div>
         </div>
         
         {/* Edit button - separate from drag handle */}

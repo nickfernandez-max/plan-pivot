@@ -43,6 +43,11 @@ export function useDragAndDrop({
 
   const handleDragStart = useCallback((event: DragStartEvent) => {
     const { active } = event;
+    console.log('🚀 Drag started:', {
+      activeId: active.id,
+      data: active.data.current
+    });
+    
     if (active.data.current) {
       // Find the current allocation for this project and member
       const assignment = assignments.find(a => 
@@ -50,13 +55,16 @@ export function useDragAndDrop({
         a.team_member_id === active.data.current.memberId
       );
       
-      setActiveDrag({
+      const dragData = {
         projectId: active.data.current.projectId,
         originalMemberId: active.data.current.memberId,
         originalStartDate: active.data.current.startDate,
         originalEndDate: active.data.current.endDate,
         originalAllocation: assignment?.percent_allocation || 25,
-      });
+      };
+      
+      console.log('📦 Setting active drag data:', dragData);
+      setActiveDrag(dragData);
     }
   }, [assignments]);
 
@@ -107,7 +115,15 @@ export function useDragAndDrop({
   const handleDragEnd = useCallback(async (event: DragEndEvent) => {
     const { over, delta } = event;
     
+    console.log('🎯 Drag ended:', {
+      overId: over?.id,
+      overData: over?.data?.current,
+      delta,
+      activeDrag
+    });
+    
     if (!over || !activeDrag) {
+      console.log('❌ No valid drop target or active drag');
       setActiveDrag(null);
       setDragOverData({ memberId: null, newStartDate: null, targetSlot: null });
       return;
