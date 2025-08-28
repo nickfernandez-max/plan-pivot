@@ -156,7 +156,7 @@ export function ProjectList({ projects, teams, products, onAddProject, onUpdateP
   };
 
   return (
-      <div className="space-y-6">
+      <div className="space-y-4">
       <div className="flex justify-between items-center">
         <div>
           <h2 className="text-2xl font-bold">Projects</h2>
@@ -359,13 +359,7 @@ export function ProjectList({ projects, teams, products, onAddProject, onUpdateP
       </div>
 
       <Card>
-        <CardHeader>
-          <CardTitle>Project List</CardTitle>
-          <CardDescription>
-            {projects.length} project{projects.length !== 1 ? 's' : ''} total
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
+        <CardContent className="p-0">
           {projects.length === 0 ? (
             <div className="text-center py-8">
               <p className="text-muted-foreground mb-4">No projects found</p>
@@ -377,9 +371,9 @@ export function ProjectList({ projects, teams, products, onAddProject, onUpdateP
           ) : (
             <Table>
               <TableHeader>
-                <TableRow>
+                <TableRow className="hover:bg-transparent">
                   <TableHead 
-                    className="cursor-pointer select-none"
+                    className="cursor-pointer select-none h-10 text-xs font-semibold"
                     onClick={() => handleSort('name')}
                   >
                     <div className="flex items-center space-x-1">
@@ -388,7 +382,7 @@ export function ProjectList({ projects, teams, products, onAddProject, onUpdateP
                     </div>
                   </TableHead>
                   <TableHead 
-                    className="cursor-pointer select-none"
+                    className="cursor-pointer select-none h-10 text-xs font-semibold"
                     onClick={() => handleSort('team')}
                   >
                     <div className="flex items-center space-x-1">
@@ -397,34 +391,34 @@ export function ProjectList({ projects, teams, products, onAddProject, onUpdateP
                     </div>
                   </TableHead>
                   <TableHead 
-                    className="cursor-pointer select-none"
+                    className="cursor-pointer select-none h-10 text-xs font-semibold"
                     onClick={() => handleSort('start_date')}
                   >
                     <div className="flex items-center space-x-1">
-                      <span>Start Date</span>
+                      <span>Start</span>
                       {getSortIcon('start_date')}
                     </div>
                   </TableHead>
                   <TableHead 
-                    className="cursor-pointer select-none"
+                    className="cursor-pointer select-none h-10 text-xs font-semibold"
                     onClick={() => handleSort('end_date')}
                   >
                     <div className="flex items-center space-x-1">
-                      <span>End Date</span>
+                      <span>End</span>
                       {getSortIcon('end_date')}
                     </div>
                   </TableHead>
                   <TableHead 
-                    className="cursor-pointer select-none"
+                    className="cursor-pointer select-none h-10 text-xs font-semibold"
                     onClick={() => handleSort('value_score')}
                   >
                     <div className="flex items-center space-x-1">
-                      <span>Value Score</span>
+                      <span>Score</span>
                       {getSortIcon('value_score')}
                     </div>
                   </TableHead>
                   <TableHead 
-                    className="cursor-pointer select-none"
+                    className="cursor-pointer select-none h-10 text-xs font-semibold"
                     onClick={() => handleSort('is_rd')}
                   >
                     <div className="flex items-center space-x-1">
@@ -432,29 +426,28 @@ export function ProjectList({ projects, teams, products, onAddProject, onUpdateP
                       {getSortIcon('is_rd')}
                     </div>
                   </TableHead>
-                  <TableHead>Link</TableHead>
-                  <TableHead>Products</TableHead>
-                  <TableHead>Assignees</TableHead>
-                  <TableHead>Edit</TableHead>
+                  <TableHead className="h-10 text-xs font-semibold">Products</TableHead>
+                  <TableHead className="h-10 text-xs font-semibold">Assignees</TableHead>
+                  <TableHead className="h-10 text-xs font-semibold w-16"></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {sortedProjects.map((project) => (
-                  <TableRow key={project.id}>
+                  <TableRow key={project.id} className="h-12">
                     {editingProject?.id === project.id ? (
                       <>
-                        <TableCell colSpan={10}>
+                        <TableCell colSpan={9} className="p-4">
                           <Form {...editForm}>
-                            <form onSubmit={editForm.handleSubmit(onEditSubmit)} className="space-y-4">
-                              <div className="grid grid-cols-2 gap-4">
+                            <form onSubmit={editForm.handleSubmit(onEditSubmit)} className="space-y-3">
+                              <div className="grid grid-cols-3 gap-3">
                                 <FormField
                                   control={editForm.control}
                                   name="name"
                                   render={({ field }) => (
                                     <FormItem>
-                                      <FormLabel>Project Name</FormLabel>
+                                      <FormLabel className="text-xs">Project Name</FormLabel>
                                       <FormControl>
-                                        <Input {...field} />
+                                        <Input className="h-8" {...field} />
                                       </FormControl>
                                       <FormMessage />
                                     </FormItem>
@@ -465,10 +458,10 @@ export function ProjectList({ projects, teams, products, onAddProject, onUpdateP
                                   name="team_id"
                                   render={({ field }) => (
                                     <FormItem>
-                                      <FormLabel>Team</FormLabel>
+                                      <FormLabel className="text-xs">Team</FormLabel>
                                       <Select onValueChange={field.onChange} value={field.value}>
                                         <FormControl>
-                                          <SelectTrigger>
+                                          <SelectTrigger className="h-8">
                                             <SelectValue />
                                           </SelectTrigger>
                                         </FormControl>
@@ -486,38 +479,13 @@ export function ProjectList({ projects, teams, products, onAddProject, onUpdateP
                                 />
                                 <FormField
                                   control={editForm.control}
-                                  name="start_date"
-                                  render={({ field }) => (
-                                    <FormItem>
-                                      <FormLabel>Start Date</FormLabel>
-                                      <FormControl>
-                                        <Input type="date" {...field} />
-                                      </FormControl>
-                                      <FormMessage />
-                                    </FormItem>
-                                  )}
-                                />
-                                <FormField
-                                  control={editForm.control}
-                                  name="end_date"
-                                  render={({ field }) => (
-                                    <FormItem>
-                                      <FormLabel>End Date</FormLabel>
-                                      <FormControl>
-                                        <Input type="date" {...field} />
-                                      </FormControl>
-                                      <FormMessage />
-                                    </FormItem>
-                                  )}
-                                />
-                                <FormField
-                                  control={editForm.control}
                                   name="value_score"
                                   render={({ field }) => (
                                     <FormItem>
-                                      <FormLabel>Value Score</FormLabel>
+                                      <FormLabel className="text-xs">Value Score</FormLabel>
                                       <FormControl>
                                         <Input
+                                          className="h-8"
                                           type="number"
                                           min="1"
                                           max="10"
@@ -529,44 +497,78 @@ export function ProjectList({ projects, teams, products, onAddProject, onUpdateP
                                     </FormItem>
                                   )}
                                 />
+                              </div>
+                              <div className="grid grid-cols-3 gap-3">
+                                <FormField
+                                  control={editForm.control}
+                                  name="start_date"
+                                  render={({ field }) => (
+                                    <FormItem>
+                                      <FormLabel className="text-xs">Start Date</FormLabel>
+                                      <FormControl>
+                                        <Input className="h-8" type="date" {...field} />
+                                      </FormControl>
+                                      <FormMessage />
+                                    </FormItem>
+                                  )}
+                                />
+                                <FormField
+                                  control={editForm.control}
+                                  name="end_date"
+                                  render={({ field }) => (
+                                    <FormItem>
+                                      <FormLabel className="text-xs">End Date</FormLabel>
+                                      <FormControl>
+                                        <Input className="h-8" type="date" {...field} />
+                                      </FormControl>
+                                      <FormMessage />
+                                    </FormItem>
+                                  )}
+                                />
                                 <FormField
                                   control={editForm.control}
                                   name="is_rd"
                                   render={({ field }) => (
-                                    <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3">
-                                      <FormLabel>R&D Project</FormLabel>
+                                    <FormItem>
+                                      <FormLabel className="text-xs">R&D Project</FormLabel>
                                       <FormControl>
-                                        <Switch
-                                          checked={field.value}
-                                          onCheckedChange={field.onChange}
-                                        />
+                                        <div className="flex items-center space-x-2 pt-1">
+                                          <Switch
+                                            checked={field.value}
+                                            onCheckedChange={field.onChange}
+                                          />
+                                          <span className="text-xs text-muted-foreground">
+                                            {field.value ? "Yes" : "No"}
+                                          </span>
+                                        </div>
                                       </FormControl>
+                                      <FormMessage />
                                     </FormItem>
                                   )}
                                 />
                               </div>
-                              <FormField
-                                control={editForm.control}
-                                name="description"
-                                render={({ field }) => (
-                                  <FormItem>
-                                    <FormLabel>Description</FormLabel>
-                                    <FormControl>
-                                      <Textarea {...field} />
-                                    </FormControl>
-                                    <FormMessage />
-                                  </FormItem>
-                                )}
-                              />
-                              <div className="grid grid-cols-1 gap-4">
+                              <div className="grid grid-cols-2 gap-3">
+                                <FormField
+                                  control={editForm.control}
+                                  name="description"
+                                  render={({ field }) => (
+                                    <FormItem>
+                                      <FormLabel className="text-xs">Description</FormLabel>
+                                      <FormControl>
+                                        <Textarea className="h-16 resize-none" {...field} />
+                                      </FormControl>
+                                      <FormMessage />
+                                    </FormItem>
+                                  )}
+                                />
                                 <FormField
                                   control={editForm.control}
                                   name="link"
                                   render={({ field }) => (
                                     <FormItem>
-                                      <FormLabel>Link</FormLabel>
+                                      <FormLabel className="text-xs">Link</FormLabel>
                                       <FormControl>
-                                        <Input {...field} />
+                                        <Input className="h-8" {...field} />
                                       </FormControl>
                                       <FormMessage />
                                     </FormItem>
@@ -574,13 +576,13 @@ export function ProjectList({ projects, teams, products, onAddProject, onUpdateP
                                 />
                               </div>
                               <div className="flex justify-end space-x-2">
-                                <Button type="button" variant="outline" onClick={handleCancelEdit}>
-                                  <X className="w-4 h-4 mr-2" />
+                                <Button type="button" variant="outline" size="sm" onClick={handleCancelEdit}>
+                                  <X className="w-3 h-3 mr-1" />
                                   Cancel
                                 </Button>
-                                <Button type="submit">
-                                  <Save className="w-4 h-4 mr-2" />
-                                  Save Changes
+                                <Button type="submit" size="sm">
+                                  <Save className="w-3 h-3 mr-1" />
+                                  Save
                                 </Button>
                               </div>
                             </form>
@@ -589,73 +591,66 @@ export function ProjectList({ projects, teams, products, onAddProject, onUpdateP
                       </>
                     ) : (
                       <>
-                        <TableCell className="font-medium">{project.name}</TableCell>
-                        <TableCell>
-                          <Badge variant="secondary" style={{ backgroundColor: project.team?.color + '20', color: project.team?.color }}>
+                        <TableCell className="font-medium text-sm py-2">{project.name}</TableCell>
+                        <TableCell className="py-2">
+                          <Badge variant="secondary" className="text-xs" style={{ backgroundColor: project.team?.color + '20', color: project.team?.color }}>
                             {project.team?.name}
                           </Badge>
                         </TableCell>
-                        <TableCell>{new Date(project.start_date).toLocaleDateString()}</TableCell>
-                        <TableCell>{new Date(project.end_date).toLocaleDateString()}</TableCell>
-                        <TableCell>
-                          <Badge variant={project.value_score >= 8 ? "default" : project.value_score >= 6 ? "secondary" : "outline"}>
-                            {project.value_score}/10
+                        <TableCell className="text-xs text-muted-foreground py-2">{new Date(project.start_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</TableCell>
+                        <TableCell className="text-xs text-muted-foreground py-2">{new Date(project.end_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</TableCell>
+                        <TableCell className="py-2">
+                          <Badge variant={project.value_score >= 8 ? "default" : project.value_score >= 6 ? "secondary" : "outline"} className="text-xs">
+                            {project.value_score}
                           </Badge>
                         </TableCell>
-                        <TableCell>
+                        <TableCell className="py-2">
                           {project.is_rd ? (
-                            <Badge variant="outline">R&D</Badge>
+                            <Badge variant="outline" className="text-xs">R&D</Badge>
                           ) : (
-                            <span className="text-muted-foreground">—</span>
+                            <span className="text-muted-foreground text-xs">—</span>
                           )}
                         </TableCell>
-                        <TableCell>
-                          {project.link ? (
-                            <a 
-                              href={project.link} 
-                              target="_blank" 
-                              rel="noopener noreferrer"
-                              className="text-primary hover:underline"
-                            >
-                              View Link
-                            </a>
-                          ) : (
-                            <span className="text-muted-foreground">—</span>
-                          )}
-                        </TableCell>
-                        <TableCell>
+                        <TableCell className="py-2">
                           <div className="flex flex-wrap gap-1">
                             {project.products && project.products.length > 0 ? (
-                              project.products.map((product) => (
-                                <Badge key={product.id} variant="outline" style={{ borderColor: product.color, color: product.color }}>
+                              project.products.slice(0, 2).map((product) => (
+                                <Badge key={product.id} variant="outline" className="text-xs" style={{ borderColor: product.color, color: product.color }}>
                                   {product.name}
                                 </Badge>
                               ))
                             ) : (
-                              <span className="text-muted-foreground text-sm">No products</span>
+                              <span className="text-muted-foreground text-xs">—</span>
+                            )}
+                            {project.products && project.products.length > 2 && (
+                              <Badge variant="outline" className="text-xs">+{project.products.length - 2}</Badge>
                             )}
                           </div>
                         </TableCell>
-                        <TableCell>
+                        <TableCell className="py-2">
                           <div className="flex flex-wrap gap-1">
                             {project.assignees && project.assignees.length > 0 ? (
-                              project.assignees.map((assignee) => (
+                              project.assignees.slice(0, 2).map((assignee) => (
                                 <Badge key={assignee.id} variant="outline" className="text-xs">
-                                  {assignee.name}
+                                  {assignee.name.split(' ').map(n => n[0]).join('')}
                                 </Badge>
                               ))
                             ) : (
-                              <span className="text-muted-foreground text-sm">No assignees</span>
+                              <span className="text-muted-foreground text-xs">—</span>
+                            )}
+                            {project.assignees && project.assignees.length > 2 && (
+                              <Badge variant="outline" className="text-xs">+{project.assignees.length - 2}</Badge>
                             )}
                           </div>
                         </TableCell>
-                        <TableCell>
+                        <TableCell className="py-2">
                           <Button
                             variant="ghost"
                             size="sm"
+                            className="h-7 w-7 p-0"
                             onClick={() => handleEditProject(project)}
                           >
-                            <Edit className="w-4 h-4" />
+                            <Edit className="w-3 h-3" />
                           </Button>
                         </TableCell>
                       </>
