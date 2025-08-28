@@ -5,8 +5,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Team, TeamMember, TeamMembership } from '@/types/roadmap';
-import { format, startOfMonth } from 'date-fns';
-import { CalendarIcon, Plus, Trash2 } from 'lucide-react';
+import { format, startOfMonth, subMonths } from 'date-fns';
+import { CalendarIcon, ArrowRight, Trash2 } from 'lucide-react';
 
 interface EditTeamMemberDialogProps {
   member: TeamMember | null;
@@ -29,9 +29,9 @@ export function EditTeamMemberDialog({
   onUpdateMembership,
   onDeleteMembership,
 }: EditTeamMemberDialogProps) {
+  const [selectedMembershipId, setSelectedMembershipId] = useState<string>('');
   const [newTeamId, setNewTeamId] = useState<string>('');
-  const [newStartMonth, setNewStartMonth] = useState<Date | undefined>(undefined);
-  const [newEndMonth, setNewEndMonth] = useState<Date | undefined>(undefined);
+  const [transitionMonth, setTransitionMonth] = useState<Date | undefined>(undefined);
 
   const memberMemberships = useMemo(() => {
     return memberships
@@ -39,25 +39,44 @@ export function EditTeamMemberDialog({
       .sort((a, b) => (a.start_month < b.start_month ? -1 : 1));
   }, [memberships, member?.id]);
 
+  // Get current/active memberships (no end date or end date in future)
+  const activeMemberships = useMemo(() => {
+    const currentMonth = startOfMonth(new Date()).toISOString();
+    return memberMemberships.filter(m => !m.end_month || m.end_month >= currentMonth);
+  }, [memberMemberships]);
+
   const resetForm = () => {
+    setSelectedMembershipId('');
     setNewTeamId('');
-    setNewStartMonth(undefined);
-    setNewEndMonth(undefined);
+    setTransitionMonth(undefined);
   };
 
-  const handleAdd = async () => {
-    if (!member || !newTeamId || !newStartMonth) return;
+  const handleMoveTeam = async () => {
+    if (!member || !selectedMembershipId || !transitionMonth) return;
     
+    const membershipToEnd = memberMemberships.find(m => m.id === selectedMembershipId);
+    if (!membershipToEnd) return;
+
     try {
-      await onAddMembership({
-        team_member_id: member.id,
-        team_id: newTeamId,
-        start_month: startOfMonth(newStartMonth).toISOString(),
-        end_month: newEndMonth ? startOfMonth(newEndMonth).toISOString() : null,
-      } as any);
+      const transitionMonthStr = startOfMonth(transitionMonth).toISOString();
+      
+      // End the current membership one month before transition
+      const endMonth = startOfMonth(subMonths(transitionMonth, 1)).toISOString();
+      await onUpdateMembership(membershipToEnd.id, { end_month: endMonth });
+      
+      // Create new membership if not "Left Company"
+      if (newTeamId && newTeamId !== 'LEFT_COMPANY') {
+        await onAddMembership({
+          team_member_id: member.id,
+          team_id: newTeamId,
+          start_month: transitionMonthStr,
+          end_month: null,
+        } as any);
+      }
+      
       resetForm();
     } catch (error) {
-      console.error('Failed to add membership:', error);
+      console.error('Failed to move team assignment:', error);
     }
   };
 
@@ -71,62 +90,71 @@ export function EditTeamMemberDialog({
           </DialogDescription>
         </DialogHeader>
 
-        {/* Add membership */}
-        <div className="space-y-3 border-b pb-4">
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <Select value={newTeamId} onValueChange={setNewTeamId}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select team" />
-              </SelectTrigger>
-              <SelectContent>
-                {teams.map(t => (
-                  <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+        {/* Move Team Assignment */}
+        {activeMemberships.length > 0 && (
+          <div className="space-y-3 border-b pb-4">
+            <div className="text-sm font-medium">Move Team Assignment</div>
+            <div className="grid grid-cols-1 gap-3">
+              <Select value={selectedMembershipId} onValueChange={setSelectedMembershipId}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select current assignment to move" />
+                </SelectTrigger>
+                <SelectContent>
+                  {activeMemberships.map(m => {
+                    const team = teams.find(t => t.id === m.team_id);
+                    return (
+                      <SelectItem key={m.id} value={m.id}>
+                        {team?.name || 'Unknown team'} (since {format(new Date(m.start_month), 'MMM yyyy')})
+                      </SelectItem>
+                    );
+                  })}
+                </SelectContent>
+              </Select>
 
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button variant="outline" className="justify-start">
-                  <CalendarIcon className="mr-2 h-4 w-4" />
-                  {newStartMonth ? format(newStartMonth, 'MMM yyyy') : 'Start month'}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
-                <Calendar
-                  mode="single"
-                  selected={newStartMonth}
-                  onSelect={(d) => setNewStartMonth(d ? startOfMonth(d) : undefined)}
-                  initialFocus
-                  className="p-3 pointer-events-auto"
-                />
-              </PopoverContent>
-            </Popover>
+              <div className="flex items-center gap-2">
+                <ArrowRight className="w-4 h-4 text-muted-foreground" />
+                <Select value={newTeamId} onValueChange={setNewTeamId}>
+                  <SelectTrigger className="flex-1">
+                    <SelectValue placeholder="Move to..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="LEFT_COMPANY">Left Company</SelectItem>
+                    {teams.map(t => (
+                      <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
 
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button variant="outline" className="justify-start">
-                  <CalendarIcon className="mr-2 h-4 w-4" />
-                  {newEndMonth ? format(newEndMonth, 'MMM yyyy') : 'End month (optional)'}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
-                <Calendar
-                  mode="single"
-                  selected={newEndMonth}
-                  onSelect={(d) => setNewEndMonth(d ? startOfMonth(d) : undefined)}
-                  initialFocus
-                  className="p-3 pointer-events-auto"
-                />
-              </PopoverContent>
-            </Popover>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" className="justify-start">
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {transitionMonth ? format(transitionMonth, 'MMM yyyy') : 'Transition month'}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={transitionMonth}
+                    onSelect={(d) => setTransitionMonth(d ? startOfMonth(d) : undefined)}
+                    initialFocus
+                    className="p-3 pointer-events-auto"
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+            <div className="flex justify-end">
+              <Button 
+                size="sm" 
+                onClick={handleMoveTeam} 
+                disabled={!member || !selectedMembershipId || !newTeamId || !transitionMonth}
+              >
+                <ArrowRight className="mr-2 h-4 w-4" /> Move Assignment
+              </Button>
+            </div>
           </div>
-          <div className="flex justify-end">
-            <Button size="sm" onClick={handleAdd} disabled={!member || !newTeamId || !newStartMonth}>
-              <Plus className="mr-2 h-4 w-4" /> Add period
-            </Button>
-          </div>
-        </div>
+        )}
 
         {/* Existing memberships */}
         <div className="space-y-2">
