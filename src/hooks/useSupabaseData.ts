@@ -526,40 +526,52 @@ export function useSupabaseData() {
   useEffect(() => {
     fetchData();
 
-    // Set up real-time subscriptions
-    const projectsSubscription = supabase
-      .channel('projects-changes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'projects' }, () => {
-        fetchData();
-      })
-      .subscribe();
+    // Set up real-time subscriptions with error handling
+    let subscriptions: any[] = [];
+    
+    try {
+      const projectsSubscription = supabase
+        .channel('projects-changes')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'projects' }, () => {
+          fetchData();
+        })
+        .subscribe();
 
-    const teamMembersSubscription = supabase
-      .channel('team-members-changes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'team_members' }, () => {
-        fetchData();
-      })
-      .subscribe();
+      const teamMembersSubscription = supabase
+        .channel('team-members-changes')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'team_members' }, () => {
+          fetchData();
+        })
+        .subscribe();
 
-    const assigneesSubscription = supabase
-      .channel('project-assignees-changes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'project_assignees' }, () => {
-        fetchData();
-      })
-      .subscribe();
+      const assigneesSubscription = supabase
+        .channel('project-assignees-changes')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'project_assignees' }, () => {
+          fetchData();
+        })
+        .subscribe();
 
-    const membershipsSubscription = supabase
-      .channel('team-memberships-changes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'team_memberships' }, () => {
-        fetchData();
-      })
-      .subscribe();
+      const membershipsSubscription = supabase
+        .channel('team-memberships-changes')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'team_memberships' }, () => {
+          fetchData();
+        })
+        .subscribe();
+
+      subscriptions = [projectsSubscription, teamMembersSubscription, assigneesSubscription, membershipsSubscription];
+    } catch (error) {
+      console.warn('Real-time subscriptions could not be established:', error);
+      // App will continue to work without real-time updates
+    }
 
     return () => {
-      supabase.removeChannel(projectsSubscription);
-      supabase.removeChannel(teamMembersSubscription);
-      supabase.removeChannel(assigneesSubscription);
-      supabase.removeChannel(membershipsSubscription);
+      subscriptions.forEach(subscription => {
+        try {
+          supabase.removeChannel(subscription);
+        } catch (error) {
+          console.warn('Error removing subscription:', error);
+        }
+      });
     };
   }, []);
 
