@@ -10,6 +10,7 @@ import { TeamMembersView } from '@/components/TeamMembersView';
 import { ReportsView } from '@/components/ReportsView';
 import { AddProductDialog } from '@/components/AddProductDialog';
 import { AddTeamDialog } from '@/components/AddTeamDialog';
+import { AddPersonDialog } from '@/components/AddPersonDialog';
 import { toast } from 'sonner';
 
 export default function RoadmapApp() {
@@ -314,6 +315,13 @@ export default function RoadmapApp() {
           onOpenChange={setIsAddTeamDialogOpen}
           onAddTeam={handleAddTeam}
           products={products}
+        />
+        
+        <AddPersonDialog
+          open={isAddMemberDialogOpen}
+          onOpenChange={setIsAddMemberDialogOpen}
+          onAddPerson={handleAddTeamMember}
+          teams={teams}
         />
       </div>
     </div>
