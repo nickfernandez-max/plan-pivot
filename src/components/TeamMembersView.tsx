@@ -198,7 +198,7 @@ export function TeamMembersView({
                      <TableHead className="w-28 text-xs">Role</TableHead>
                      <TableHead className="w-24 text-xs">Start Date</TableHead>
                      {timelineMonths.map((month) => (
-                       <TableHead key={month.label} className="text-center w-16 px-1">
+                       <TableHead key={month.label} className="text-center w-12 px-0">
                          <div className="text-xs">
                            <div className="text-xs font-medium">{month.shortLabel}</div>
                            <div className="text-xs text-muted-foreground">{format(month.date, 'yy')}</div>
@@ -258,10 +258,10 @@ export function TeamMembersView({
                                 const actualCount = getActualMemberCount(team.id, month.date);
                                 const idealCount = team.ideal_size || 1;
                                 return (
-                                  <TableCell key={month.label} className="text-center py-1 px-1">
+                                  <TableCell key={month.label} className="text-center py-1 px-0">
                                     <Badge 
                                       variant="outline" 
-                                      className={`text-xs px-1 py-0 min-w-[16px] justify-center h-4 ${getStaffingColorClass(actualCount, idealCount)}`}
+                                      className={`text-xs px-1 py-0 min-w-[14px] justify-center h-4 ${getStaffingColorClass(actualCount, idealCount)}`}
                                     >
                                       {actualCount}
                                     </Badge>
@@ -292,9 +292,9 @@ export function TeamMembersView({
                                 {timelineMonths.map((month) => {
                                   const involvement = getMemberInvolvement(member, month.date, team.id);
                                   return (
-                                   <TableCell key={month.label} className="text-center py-1 px-1">
+                                   <TableCell key={month.label} className="text-center py-1 px-0">
                                      <div 
-                                       className="w-5 h-5 mx-auto rounded flex items-center justify-center text-xs font-medium"
+                                       className="w-4 h-4 mx-auto rounded flex items-center justify-center text-xs font-medium"
                                        style={{
                                          backgroundColor: involvement > 0 
                                            ? (team.color || 'hsl(var(--primary))') + '20'
@@ -363,10 +363,10 @@ export function TeamMembersView({
                                 const actualCount = getActualMemberCount(team.id, month.date);
                                 const idealCount = team.ideal_size || 1;
                                 return (
-                                  <TableCell key={month.label} className="text-center py-1 px-1">
+                                  <TableCell key={month.label} className="text-center py-1 px-0">
                                     <Badge 
                                       variant="outline" 
-                                      className={`text-xs px-1 py-0 min-w-[16px] justify-center h-4 ${getStaffingColorClass(actualCount, idealCount)}`}
+                                      className={`text-xs px-1 py-0 min-w-[14px] justify-center h-4 ${getStaffingColorClass(actualCount, idealCount)}`}
                                     >
                                       {actualCount}
                                     </Badge>
@@ -397,9 +397,9 @@ export function TeamMembersView({
                                 {timelineMonths.map((month) => {
                                   const involvement = getMemberInvolvement(member, month.date, team.id);
                                   return (
-                                   <TableCell key={month.label} className="text-center py-1 px-1">
+                                   <TableCell key={month.label} className="text-center py-1 px-0">
                                      <div 
-                                       className="w-5 h-5 mx-auto rounded flex items-center justify-center text-xs font-medium"
+                                       className="w-4 h-4 mx-auto rounded flex items-center justify-center text-xs font-medium"
                                        style={{
                                          backgroundColor: involvement > 0 
                                            ? (team.color || 'hsl(var(--primary))') + '20'
