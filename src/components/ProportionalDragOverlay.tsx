@@ -30,8 +30,8 @@ export function ProportionalDragOverlay({
     <div 
       className="rounded-md shadow-lg border-2 border-white/30 pointer-events-none z-50 flex items-center px-2 backdrop-blur-sm"
       style={{
-        backgroundColor: project.team?.color || project.color || 'hsl(var(--primary))',
-        borderColor: project.team?.color || project.color || 'hsl(var(--primary))',
+        backgroundColor: project.color || 'hsl(var(--primary))',
+        borderColor: project.color || 'hsl(var(--primary))',
         width: `${actualWidth}px`,
         height: `${height}px`,
         minWidth: '60px', // Minimum width for readability

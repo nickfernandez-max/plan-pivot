@@ -10,7 +10,7 @@ export function CompactDragOverlay({ project }: CompactDragOverlayProps) {
       <div 
         className="w-4 h-4 rounded-md flex-shrink-0 shadow-sm border border-white/20"
         style={{ 
-          backgroundColor: project.team?.color || project.color || 'hsl(var(--primary))' 
+          backgroundColor: project.color || 'hsl(var(--primary))' 
         }}
       />
       <div className="flex-1 min-w-0">

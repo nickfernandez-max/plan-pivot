@@ -10,14 +10,13 @@ import { Product } from '@/types/roadmap';
 interface AddTeamDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onAddTeam: (teamData: { name: string; description?: string; color?: string; product_id?: string; ideal_size?: number }) => Promise<void>;
+  onAddTeam: (teamData: { name: string; description?: string; product_id?: string; ideal_size?: number }) => Promise<void>;
   products: Product[];
 }
 
 export function AddTeamDialog({ open, onOpenChange, onAddTeam, products }: AddTeamDialogProps) {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
-  const [color, setColor] = useState('#10b981');
   const [productId, setProductId] = useState('');
   const [idealSize, setIdealSize] = useState(3);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -31,13 +30,11 @@ export function AddTeamDialog({ open, onOpenChange, onAddTeam, products }: AddTe
       await onAddTeam({
         name: name.trim(),
         description: description.trim() || undefined,
-        color,
         product_id: productId || undefined,
         ideal_size: idealSize,
       });
       setName('');
       setDescription('');
-      setColor('#10b981');
       setProductId('');
       setIdealSize(3);
       onOpenChange(false);
@@ -102,17 +99,6 @@ export function AddTeamDialog({ open, onOpenChange, onAddTeam, products }: AddTe
               max="20"
               value={idealSize}
               onChange={(e) => setIdealSize(Number(e.target.value))}
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="color">Color</Label>
-            <Input
-              id="color"
-              type="color"
-              value={color}
-              onChange={(e) => setColor(e.target.value)}
-              className="h-10"
             />
           </div>
 

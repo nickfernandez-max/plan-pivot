@@ -18,7 +18,6 @@ interface EditTeamDialogProps {
 export function EditTeamDialog({ team, open, onOpenChange, onUpdateTeam, products }: EditTeamDialogProps) {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
-  const [color, setColor] = useState('#3B82F6');
   const [productId, setProductId] = useState('none');
   const [idealSize, setIdealSize] = useState('1');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -27,7 +26,6 @@ export function EditTeamDialog({ team, open, onOpenChange, onUpdateTeam, product
     if (team) {
       setName(team.name || '');
       setDescription(team.description || '');
-      setColor(team.color || '#3B82F6');
       setProductId(team.product_id || 'none');
       setIdealSize(String(team.ideal_size || 1));
     }
@@ -42,7 +40,6 @@ export function EditTeamDialog({ team, open, onOpenChange, onUpdateTeam, product
       await onUpdateTeam(team.id, {
         name: name.trim(),
         description: description.trim() || undefined,
-        color,
         product_id: productId === 'none' ? undefined : productId,
         ideal_size: parseInt(idealSize) || 1,
       });
@@ -112,16 +109,6 @@ export function EditTeamDialog({ team, open, onOpenChange, onUpdateTeam, product
               max="100"
               value={idealSize}
               onChange={(e) => setIdealSize(e.target.value)}
-            />
-          </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="color">Team Color</Label>
-            <Input
-              id="color"
-              type="color"
-              value={color}
-              onChange={(e) => setColor(e.target.value)}
             />
           </div>
           

@@ -593,7 +593,7 @@ export function ProjectList({ projects, teams, products, onAddProject, onUpdateP
                       <>
                         <TableCell className="font-medium text-sm py-2">{project.name}</TableCell>
                         <TableCell className="py-2">
-                          <Badge variant="secondary" className="text-xs" style={{ backgroundColor: project.team?.color + '20', color: project.team?.color }}>
+                          <Badge variant="secondary" className="text-xs">
                             {project.team?.name}
                           </Badge>
                         </TableCell>

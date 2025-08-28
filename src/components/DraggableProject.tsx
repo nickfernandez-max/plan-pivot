@@ -53,8 +53,8 @@ export function DraggableProject({
       style={{
         ...style,
         ...dragStyle,
-        backgroundColor: project.team?.color || project.color || team.color || 'hsl(var(--primary))',
-        borderColor: project.team?.color || project.color || team.color || 'hsl(var(--primary))',
+        backgroundColor: project.color || 'hsl(var(--primary))',
+        borderColor: project.color || 'hsl(var(--primary))',
       }}
     >
       <div className="h-full flex items-center overflow-hidden">

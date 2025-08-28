@@ -11,7 +11,6 @@ export interface Team {
   id: string;
   name: string;
   description?: string;
-  color?: string;
   product_id?: string;
   ideal_size?: number;
   created_at?: string;

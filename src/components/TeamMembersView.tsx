@@ -240,9 +240,9 @@ export function TeamMembersView({
                             <TableRow className="bg-muted/50 h-7">
                               <TableCell 
                                 className="font-medium text-sm pl-6 py-1"
-                                style={{ 
-                                  borderLeftColor: team.color || 'hsl(var(--primary))',
-                                  borderLeftWidth: '3px'
+                                 style={{ 
+                                   borderLeftColor: 'hsl(var(--primary))',
+                                   borderLeftWidth: '3px'
                                 }}
                               >
                                   <div className="flex items-center justify-between gap-2">
@@ -308,16 +308,16 @@ export function TeamMembersView({
                                    <TableCell key={month.label} className="text-center py-1 px-0">
                                      <div 
                                        className="w-3 h-3 mx-auto rounded flex items-center justify-center text-xs font-medium"
-                                       style={{
-                                         backgroundColor: involvement > 0 
-                                           ? (team.color || 'hsl(var(--primary))') + '20'
-                                           : 'transparent',
-                                         color: involvement > 0 
-                                           ? (team.color || 'hsl(var(--primary))')
-                                           : 'hsl(var(--muted-foreground))',
-                                         border: involvement > 0 
-                                           ? `1px solid ${team.color || 'hsl(var(--primary))'}`
-                                           : '1px solid hsl(var(--border))'
+                                        style={{
+                                          backgroundColor: involvement > 0 
+                                            ? 'hsl(var(--primary/20))'
+                                            : 'transparent',
+                                          color: involvement > 0 
+                                            ? 'hsl(var(--primary))'
+                                            : 'hsl(var(--muted-foreground))',
+                                          border: involvement > 0 
+                                            ? '1px solid hsl(var(--primary))'
+                                            : '1px solid hsl(var(--border))'
                                        }}
                                      >
                                        {involvement > 0 ? involvement : ''}
@@ -356,9 +356,9 @@ export function TeamMembersView({
                             <TableRow className="bg-muted/50 h-7">
                               <TableCell 
                                 className="font-medium text-sm pl-6 py-1"
-                                style={{ 
-                                  borderLeftColor: team.color || 'hsl(var(--primary))',
-                                  borderLeftWidth: '3px'
+                                 style={{ 
+                                   borderLeftColor: 'hsl(var(--primary))',
+                                   borderLeftWidth: '3px'
                                 }}
                               >
                                   <div className="flex items-center justify-between gap-2">
@@ -424,16 +424,16 @@ export function TeamMembersView({
                                    <TableCell key={month.label} className="text-center py-1 px-0">
                                      <div 
                                        className="w-3 h-3 mx-auto rounded flex items-center justify-center text-xs font-medium"
-                                       style={{
-                                         backgroundColor: involvement > 0 
-                                           ? (team.color || 'hsl(var(--primary))') + '20'
-                                           : 'transparent',
-                                         color: involvement > 0 
-                                           ? (team.color || 'hsl(var(--primary))')
-                                           : 'hsl(var(--muted-foreground))',
-                                         border: involvement > 0 
-                                           ? `1px solid ${team.color || 'hsl(var(--primary))'}`
-                                           : '1px solid hsl(var(--border))'
+                                        style={{
+                                          backgroundColor: involvement > 0 
+                                            ? 'hsl(var(--primary/20))'
+                                            : 'transparent',
+                                          color: involvement > 0 
+                                            ? 'hsl(var(--primary))'
+                                            : 'hsl(var(--muted-foreground))',
+                                          border: involvement > 0 
+                                            ? '1px solid hsl(var(--primary))'
+                                            : '1px solid hsl(var(--border))'
                                        }}
                                      >
                                        {involvement > 0 ? involvement : ''}

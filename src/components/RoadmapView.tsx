@@ -602,8 +602,8 @@ export function RoadmapView({
                         className="flex items-center px-6 py-1 font-semibold text-xs border-b border-border"
                         style={{ 
                           height: `${TEAM_HEADER_HEIGHT}px`,
-                          backgroundColor: team.color ? `${team.color}15` : 'hsl(var(--muted))',
-                          borderLeftColor: team.color || 'hsl(var(--primary))',
+                          backgroundColor: 'hsl(var(--muted))',
+                          borderLeftColor: 'hsl(var(--primary))',
                           borderLeftWidth: '4px'
                         }}
                       >
@@ -652,8 +652,8 @@ export function RoadmapView({
                         className="flex items-center px-6 py-1 font-semibold text-xs border-b border-border"
                         style={{ 
                           height: `${TEAM_HEADER_HEIGHT}px`,
-                          backgroundColor: team.color ? `${team.color}15` : 'hsl(var(--muted))',
-                          borderLeftColor: team.color || 'hsl(var(--primary))',
+                          backgroundColor: 'hsl(var(--muted))',
+                          borderLeftColor: 'hsl(var(--primary))',
                           borderLeftWidth: '4px'
                         }}
                       >
@@ -712,7 +712,7 @@ export function RoadmapView({
                         style={{
                           top: `${currentTop}px`,
                           height: `${TEAM_HEADER_HEIGHT}px`,
-                          backgroundColor: team.color ? `${team.color}10` : 'hsl(var(--muted/50))'
+                          backgroundColor: 'hsl(var(--muted/50))'
                         }}
                       />
                     );
@@ -744,7 +744,7 @@ export function RoadmapView({
                         style={{
                           top: `${currentTop}px`,
                           height: `${TEAM_HEADER_HEIGHT}px`,
-                          backgroundColor: team.color ? `${team.color}10` : 'hsl(var(--muted/50))'
+                          backgroundColor: 'hsl(var(--muted/50))'
                         }}
                       />
                     );
