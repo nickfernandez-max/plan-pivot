@@ -118,8 +118,8 @@ export function useDragAndDrop({
       let newStartDate = new Date(activeDrag.originalStartDate);
       let newEndDate = new Date(activeDrag.originalEndDate);
 
-      // Handle member reassignment
-      if (over.data.current?.type === 'member-row') {
+      // Handle member reassignment - only if dropped on a different member row
+      if (over.data.current?.type === 'member-row' && over.data.current.memberId !== activeDrag.originalMemberId) {
         newMemberId = over.data.current.memberId;
       }
 
@@ -154,13 +154,16 @@ export function useDragAndDrop({
         }
       }
 
-      // Update project dates if they changed
+      // Determine what changed
       const datesChanged = 
         newStartDate.toISOString().split('T')[0] !== activeDrag.originalStartDate ||
         newEndDate.toISOString().split('T')[0] !== activeDrag.originalEndDate;
+      
+      const memberChanged = newMemberId !== activeDrag.originalMemberId;
 
-      if (datesChanged) {
-        console.log('Updating project dates:', {
+      // If only dates changed (same member), just update the project dates
+      if (datesChanged && !memberChanged) {
+        console.log('Updating project dates only:', {
           projectId: activeDrag.projectId,
           oldStart: activeDrag.originalStartDate,
           newStart: newStartDate.toISOString().split('T')[0],
@@ -172,15 +175,20 @@ export function useDragAndDrop({
           end_date: newEndDate.toISOString().split('T')[0],
         });
         console.log('Project dates updated successfully');
+        toast({ title: "Success", description: "Project timeline updated!" });
       }
-
-      // Update project assignees and allocations if member changed
-      if (newMemberId !== activeDrag.originalMemberId) {
+      
+      // If member changed (with or without date changes), update assignments
+      else if (memberChanged) {
         console.log('Reassigning project:', {
           projectId: activeDrag.projectId,
           fromMember: activeDrag.originalMemberId,
           toMember: newMemberId,
-          allocation: activeDrag.originalAllocation
+          allocation: activeDrag.originalAllocation,
+          newDates: datesChanged ? {
+            start: newStartDate.toISOString().split('T')[0],
+            end: newEndDate.toISOString().split('T')[0]
+          } : null
         });
         
         // Get all current assignments for this project
@@ -199,6 +207,15 @@ export function useDragAndDrop({
         ];
         
         console.log('New assignment structure:', updatedAssignments);
+        
+        // Update both project dates and assignments if dates changed
+        if (datesChanged) {
+          await onUpdateProject(activeDrag.projectId, {
+            start_date: newStartDate.toISOString().split('T')[0],
+            end_date: newEndDate.toISOString().split('T')[0],
+          });
+        }
+        
         await onUpdateProjectAssignments(activeDrag.projectId, updatedAssignments.map(a => ({
           teamMemberId: a.teamMemberId,
           percentAllocation: a.percentAllocation,
