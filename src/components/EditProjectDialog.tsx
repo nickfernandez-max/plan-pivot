@@ -171,27 +171,27 @@ export function EditProjectDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-4xl max-h-[80vh] overflow-y-auto">
-        <DialogHeader>
+      <DialogContent className="sm:max-w-3xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader className="pb-4">
           <DialogTitle>Edit Project</DialogTitle>
-          <DialogDescription>
-            Update project details and manage team member assignments with allocation percentages.
+          <DialogDescription className="text-sm">
+            Update project details and manage team member assignments.
           </DialogDescription>
         </DialogHeader>
         
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            {/* Project Name as editable header */}
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            {/* Project Name */}
             <FormField
               control={form.control}
               name="name"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="text-lg font-semibold">Project Name</FormLabel>
+                  <FormLabel className="text-base font-semibold">Project Name</FormLabel>
                   <FormControl>
                     <Input 
                       placeholder="Enter project name" 
-                      className="text-xl font-bold border-0 bg-transparent px-0 focus-visible:ring-0 shadow-none"
+                      className="text-lg font-semibold"
                       {...field} 
                     />
                   </FormControl>
@@ -200,14 +200,14 @@ export function EditProjectDialog({
               )}
             />
 
-            {/* First row: Team, Start Date, End Date */}
-            <div className="grid grid-cols-3 gap-4">
+            {/* Basic Details - Compact Grid */}
+            <div className="grid grid-cols-3 gap-3">
               <FormField
                 control={form.control}
                 name="team_id"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Team</FormLabel>
+                    <FormLabel className="text-sm">Team</FormLabel>
                     <Select onValueChange={(value) => {
                       field.onChange(value);
                       setSelectedTeamId(value);
@@ -215,8 +215,8 @@ export function EditProjectDialog({
                       form.setValue("assignments", []);
                     }} value={field.value}>
                       <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select a team" />
+                        <SelectTrigger className="h-9">
+                          <SelectValue placeholder="Select team" />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
@@ -236,9 +236,9 @@ export function EditProjectDialog({
                 name="start_date"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Start Date</FormLabel>
+                    <FormLabel className="text-sm">Start Date</FormLabel>
                     <FormControl>
-                      <Input type="date" {...field} />
+                      <Input type="date" className="h-9" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -249,9 +249,9 @@ export function EditProjectDialog({
                 name="end_date"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>End Date</FormLabel>
+                    <FormLabel className="text-sm">End Date</FormLabel>
                     <FormControl>
-                      <Input type="date" {...field} />
+                      <Input type="date" className="h-9" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -259,18 +259,20 @@ export function EditProjectDialog({
               />
             </div>
 
-            <div className="grid grid-cols-3 gap-4">
+            {/* Value Score and R&D in one row */}
+            <div className="grid grid-cols-2 gap-3">
               <FormField
                 control={form.control}
                 name="value_score"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Value Score (1-10)</FormLabel>
+                    <FormLabel className="text-sm">Value Score (1-10)</FormLabel>
                     <FormControl>
                       <Input
                         type="number"
                         min="1"
                         max="10"
+                        className="h-9"
                         {...field}
                         onChange={(e) => field.onChange(parseInt(e.target.value))}
                       />
@@ -284,9 +286,9 @@ export function EditProjectDialog({
                 name="is_rd"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>R&D Project</FormLabel>
+                    <FormLabel className="text-sm">R&D Project</FormLabel>
                     <FormControl>
-                      <div className="flex items-center space-x-2">
+                      <div className="flex items-center space-x-2 pt-2">
                         <Switch
                           checked={field.value}
                           onCheckedChange={field.onChange}
@@ -300,19 +302,19 @@ export function EditProjectDialog({
                   </FormItem>
                 )}
               />
-              <div></div>
             </div>
 
+            {/* Description - Compact */}
             <FormField
               control={form.control}
               name="description"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Description (Optional)</FormLabel>
+                  <FormLabel className="text-sm">Description (Optional)</FormLabel>
                   <FormControl>
                     <Textarea 
                       placeholder="Enter project description"
-                      className="resize-none"
+                      className="resize-none h-16"
                       {...field}
                     />
                   </FormControl>
@@ -321,19 +323,20 @@ export function EditProjectDialog({
               )}
             />
 
+            {/* Products - More Compact */}
             <FormField
               control={form.control}
               name="product_ids"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Products (Optional)</FormLabel>
+                  <FormLabel className="text-sm">Products (Optional)</FormLabel>
                   <FormControl>
-                    <div className="grid grid-cols-2 gap-2 max-h-32 overflow-y-auto border rounded-md p-2">
+                    <div className="flex flex-wrap gap-2 p-2 border rounded-md max-h-20 overflow-y-auto">
                       {products.map((product) => (
-                        <label key={product.id} className="flex items-center space-x-2 cursor-pointer">
+                        <label key={product.id} className="flex items-center space-x-1 cursor-pointer text-sm">
                           <input
                             type="checkbox"
-                            className="rounded"
+                            className="rounded text-xs"
                             checked={field.value?.includes(product.id) || false}
                             onChange={(e) => {
                               const currentIds = field.value || [];
@@ -344,7 +347,7 @@ export function EditProjectDialog({
                               }
                             }}
                           />
-                          <span className="text-sm">{product.name}</span>
+                          <span>{product.name}</span>
                         </label>
                       ))}
                     </div>
@@ -354,27 +357,25 @@ export function EditProjectDialog({
               )}
             />
 
-            <Separator />
+            <Separator className="my-3" />
 
+            {/* Team Member Assignments - More Compact */}
             <div>
-              <FormLabel className="text-base font-semibold">Team Member Assignments</FormLabel>
-              <p className="text-sm text-muted-foreground mb-4">
-                Assign team members to this project with specific allocation percentages.
+              <FormLabel className="text-base font-semibold">Team Assignments</FormLabel>
+              <p className="text-xs text-muted-foreground mb-3">
+                Assign team members with allocation percentages and dates.
               </p>
 
               {allRelevantMembers.length > 0 ? (
-                <div className="space-y-3">
-                  <p className="text-sm text-muted-foreground mb-3">
-                    💡 You can assign members from any team by first selecting their team above, then checking them here.
-                  </p>
+                <div className="space-y-2 max-h-64 overflow-y-auto">
                   {allRelevantMembers.map((member) => {
                     const assignment = currentAssignments.find(a => a.teamMemberId === member.id);
                     const isAssigned = !!assignment;
                     const isFromOtherTeam = member.team_id !== selectedTeamId;
 
                     return (
-                      <div key={member.id} className="flex items-center justify-between p-3 border rounded-lg">
-                        <div className="flex items-center space-x-3">
+                      <div key={member.id} className="flex items-center justify-between p-2 border rounded text-sm">
+                        <div className="flex items-center space-x-2 flex-1">
                           <input
                             type="checkbox"
                             checked={isAssigned}
@@ -386,57 +387,50 @@ export function EditProjectDialog({
                               }
                             }}
                           />
-                          <div>
-                            <p className="font-medium">{member.name}</p>
-                            <p className="text-sm text-muted-foreground">
+                          <div className="flex-1 min-w-0">
+                            <p className="font-medium truncate">{member.name}</p>
+                            <p className="text-xs text-muted-foreground">
                               {member.role}
                               {isFromOtherTeam && (
-                                <span className="ml-2 px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded">
-                                  {teams.find(t => t.id === member.team_id)?.name || 'Other Team'}
-                                </span>
+                                <Badge variant="secondary" className="ml-1 text-xs">
+                                  {teams.find(t => t.id === member.team_id)?.name}
+                                </Badge>
                               )}
                             </p>
                           </div>
                         </div>
                         
                         {isAssigned && (
-                          <div className="space-y-2">
-                            <div className="flex items-center space-x-2">
-                              <span className="text-sm">Allocation:</span>
-                              <Input
-                                type="number"
-                                min="0"
-                                max="100"
-                                value={assignment.percentAllocation}
-                                onChange={(e) => updateAssignmentAllocation(member.id, parseInt(e.target.value) || 0)}
-                                className="w-20"
-                              />
-                              <span className="text-sm">%</span>
-                            </div>
-                            <div className="flex items-center space-x-2">
-                              <span className="text-sm">From:</span>
-                              <Input
-                                type="date"
-                                value={assignment.startDate || form.getValues().start_date}
-                                onChange={(e) => updateAssignmentDates(
-                                  member.id, 
-                                  e.target.value, 
-                                  assignment.endDate || form.getValues().end_date
-                                )}
-                                className="w-36"
-                              />
-                              <span className="text-sm">To:</span>
-                              <Input
-                                type="date"
-                                value={assignment.endDate || form.getValues().end_date}
-                                onChange={(e) => updateAssignmentDates(
-                                  member.id, 
-                                  assignment.startDate || form.getValues().start_date,
-                                  e.target.value
-                                )}
-                                className="w-36"
-                              />
-                            </div>
+                          <div className="flex items-center space-x-2 text-xs">
+                            <Input
+                              type="number"
+                              min="0"
+                              max="100"
+                              value={assignment.percentAllocation}
+                              onChange={(e) => updateAssignmentAllocation(member.id, parseInt(e.target.value) || 0)}
+                              className="w-14 h-7 text-xs"
+                            />
+                            <span>%</span>
+                            <Input
+                              type="date"
+                              value={assignment.startDate || form.getValues().start_date}
+                              onChange={(e) => updateAssignmentDates(
+                                member.id, 
+                                e.target.value, 
+                                assignment.endDate || form.getValues().end_date
+                              )}
+                              className="w-28 h-7 text-xs"
+                            />
+                            <Input
+                              type="date"
+                              value={assignment.endDate || form.getValues().end_date}
+                              onChange={(e) => updateAssignmentDates(
+                                member.id, 
+                                assignment.startDate || form.getValues().start_date,
+                                e.target.value
+                              )}
+                              className="w-28 h-7 text-xs"
+                            />
                           </div>
                         )}
                       </div>
@@ -444,15 +438,17 @@ export function EditProjectDialog({
                   })}
                 </div>
               ) : (
-                <p className="text-sm text-muted-foreground">Select a team to see available members.</p>
+                <p className="text-sm text-muted-foreground">No team members available. Select a team first.</p>
               )}
             </div>
 
-            <div className="flex justify-end space-x-2">
+            <div className="flex justify-end space-x-2 pt-4">
               <Button type="button" variant="outline" onClick={onClose}>
                 Cancel
               </Button>
-              <Button type="submit">Update Project</Button>
+              <Button type="submit">
+                Update Project
+              </Button>
             </div>
           </form>
         </Form>
