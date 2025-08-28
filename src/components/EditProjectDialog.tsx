@@ -464,7 +464,7 @@ export function EditProjectDialog({
                             max="100"
                             value={assignment.percentAllocation}
                             onChange={(e) => updateAssignmentAllocation(member.id, parseInt(e.target.value) || 0)}
-                            className="w-14 h-7 text-xs"
+                            className="w-16 h-7 text-xs"
                           />
                           <span>%</span>
                           <Input
