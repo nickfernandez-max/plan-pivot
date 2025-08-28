@@ -97,23 +97,38 @@ export function TeamMembersView({
     return months;
   }, []);
 
-  // Group teams by product, then team members by team
+  // Group teams by product, then team members by team based on current memberships
   const groupedData = useMemo(() => {
+    const currentMonth = format(new Date(), 'yyyy-MM-01');
+    
+    // Helper function to get members currently assigned to a team
+    const getCurrentMembers = (teamId: string) => {
+      return teamMembers.filter(member => {
+        // Check if member has an active membership for this team
+        return memberships.some(membership => 
+          membership.team_member_id === member.id &&
+          membership.team_id === teamId &&
+          membership.start_month <= currentMonth &&
+          (!membership.end_month || membership.end_month >= currentMonth)
+        );
+      });
+    };
+
     const productsWithTeams = products.map(product => ({
       product,
       teams: teams.filter(team => team.product_id === product.id).map(team => ({
         team,
-        members: teamMembers.filter(member => member.team_id === team.id)
+        members: getCurrentMembers(team.id)
       })).filter(group => group.members.length > 0)
     })).filter(group => group.teams.length > 0);
 
     const teamsWithoutProduct = teams.filter(team => !team.product_id).map(team => ({
       team,
-      members: teamMembers.filter(member => member.team_id === team.id)
+      members: getCurrentMembers(team.id)
     })).filter(group => group.members.length > 0);
 
     return { productsWithTeams, teamsWithoutProduct };
-  }, [teams, teamMembers, products]);
+  }, [teams, teamMembers, products, memberships]);
 
   // Calculate actual member count for a team in a specific month using memberships data
   const getActualMemberCount = (teamId: string, monthDate: Date) => {
