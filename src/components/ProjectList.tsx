@@ -42,8 +42,6 @@ export function ProjectList({ projects, teams, products, onAddProject, onUpdateP
   const [editingProject, setEditingProject] = useState<Project | null>(null);
   const [sortField, setSortField] = useState<SortField>('start_date');
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
-  const [secondarySortField, setSecondarySortField] = useState<SortField>('name');
-  const [secondarySortDirection, setSecondarySortDirection] = useState<SortDirection>('asc');
 
   const form = useForm<z.infer<typeof projectSchema>>({
     resolver: zodResolver(projectSchema),
@@ -74,74 +72,42 @@ export function ProjectList({ projects, teams, products, onAddProject, onUpdateP
     }
   };
 
-  const getSortValue = (project: Project, field: SortField) => {
-    if (field === 'team') {
-      return project.team?.name || '';
+  const sortedProjects = [...projects].sort((a, b) => {
+    let aValue: any;
+    let bValue: any;
+    
+    // Handle special case for team sorting
+    if (sortField === 'team') {
+      aValue = a.team?.name || '';
+      bValue = b.team?.name || '';
+    } else {
+      aValue = a[sortField as keyof Project];
+      bValue = b[sortField as keyof Project];
     }
-    return project[field as keyof Project];
-  };
-
-  const compareSortValues = (aValue: any, bValue: any, direction: SortDirection) => {
+    
     if (typeof aValue === 'string' && typeof bValue === 'string') {
-      return direction === 'asc' 
+      return sortDirection === 'asc' 
         ? aValue.localeCompare(bValue)
         : bValue.localeCompare(aValue);
     }
     
     if (typeof aValue === 'number' && typeof bValue === 'number') {
-      return direction === 'asc' ? aValue - bValue : bValue - aValue;
+      return sortDirection === 'asc' ? aValue - bValue : bValue - aValue;
     }
     
     if (typeof aValue === 'boolean' && typeof bValue === 'boolean') {
-      return direction === 'asc' 
+      return sortDirection === 'asc' 
         ? (aValue === bValue ? 0 : aValue ? 1 : -1)
         : (aValue === bValue ? 0 : aValue ? -1 : 1);
     }
     
     return 0;
-  };
-
-  const sortedProjects = [...projects].sort((a, b) => {
-    // Primary sort
-    const aPrimaryValue = getSortValue(a, sortField);
-    const bPrimaryValue = getSortValue(b, sortField);
-    
-    const primaryComparison = compareSortValues(aPrimaryValue, bPrimaryValue, sortDirection);
-    
-    // If primary values are equal, use secondary sort
-    if (primaryComparison === 0 && secondarySortField !== sortField) {
-      const aSecondaryValue = getSortValue(a, secondarySortField);
-      const bSecondaryValue = getSortValue(b, secondarySortField);
-      
-      return compareSortValues(aSecondaryValue, bSecondaryValue, secondarySortDirection);
-    }
-    
-    return primaryComparison;
   });
 
-  const getSortIcon = (field: SortField, isPrimary: boolean = true) => {
-    const currentField = isPrimary ? sortField : secondarySortField;
-    const currentDirection = isPrimary ? sortDirection : secondarySortDirection;
-    
-    if (currentField !== field) return null;
-    return currentDirection === 'asc' ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />;
+  const getSortIcon = (field: SortField) => {
+    if (sortField !== field) return null;
+    return sortDirection === 'asc' ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />;
   };
-
-  const getFieldDisplayName = (field: SortField): string => {
-    switch (field) {
-      case 'name': return 'Name';
-      case 'team': return 'Team';
-      case 'start_date': return 'Start Date';
-      case 'end_date': return 'End Date';
-      case 'value_score': return 'Value Score';
-      case 'is_rd': return 'R&D';
-      case 'team_id': return 'Team ID';
-      case 'link': return 'Link';
-      default: return field;
-    }
-  };
-
-  const availableSortFields: SortField[] = ['name', 'team', 'start_date', 'end_date', 'value_score', 'is_rd'];
 
   const handleEditProject = (project: Project) => {
     setEditingProject(project);
@@ -410,72 +376,6 @@ export function ProjectList({ projects, teams, products, onAddProject, onUpdateP
         </Dialog>
       </div>
 
-      {/* Secondary Sort Controls */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">Sort Options</CardTitle>
-          <CardDescription>Configure primary and secondary sorting</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Primary Sort</label>
-              <Select value={sortField} onValueChange={(value: SortField) => setSortField(value)}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {availableSortFields.map(field => (
-                    <SelectItem key={field} value={field}>
-                      {getFieldDisplayName(field)}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Primary Direction</label>
-              <Select value={sortDirection} onValueChange={(value: SortDirection) => setSortDirection(value)}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="asc">Ascending</SelectItem>
-                  <SelectItem value="desc">Descending</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Secondary Sort</label>
-              <Select value={secondarySortField} onValueChange={(value: SortField) => setSecondarySortField(value)}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {availableSortFields.map(field => (
-                    <SelectItem key={field} value={field}>
-                      {getFieldDisplayName(field)}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Secondary Direction</label>
-              <Select value={secondarySortDirection} onValueChange={(value: SortDirection) => setSecondarySortDirection(value)}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="asc">Ascending</SelectItem>
-                  <SelectItem value="desc">Descending</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
       <Card>
         <CardHeader>
           <CardTitle>Project List</CardTitle>
@@ -502,10 +402,7 @@ export function ProjectList({ projects, teams, products, onAddProject, onUpdateP
                   >
                     <div className="flex items-center space-x-1">
                       <span>Name</span>
-                      {getSortIcon('name', true)}
-                      {secondarySortField === 'name' && sortField !== 'name' && (
-                        <span className="text-xs text-muted-foreground">(2nd)</span>
-                      )}
+                      {getSortIcon('name')}
                     </div>
                   </TableHead>
                   <TableHead 
@@ -514,10 +411,7 @@ export function ProjectList({ projects, teams, products, onAddProject, onUpdateP
                   >
                     <div className="flex items-center space-x-1">
                       <span>Team</span>
-                      {getSortIcon('team', true)}
-                      {secondarySortField === 'team' && sortField !== 'team' && (
-                        <span className="text-xs text-muted-foreground">(2nd)</span>
-                      )}
+                      {getSortIcon('team')}
                     </div>
                   </TableHead>
                   <TableHead 
@@ -526,10 +420,7 @@ export function ProjectList({ projects, teams, products, onAddProject, onUpdateP
                   >
                     <div className="flex items-center space-x-1">
                       <span>Start Date</span>
-                      {getSortIcon('start_date', true)}
-                      {secondarySortField === 'start_date' && sortField !== 'start_date' && (
-                        <span className="text-xs text-muted-foreground">(2nd)</span>
-                      )}
+                      {getSortIcon('start_date')}
                     </div>
                   </TableHead>
                   <TableHead 
@@ -538,10 +429,7 @@ export function ProjectList({ projects, teams, products, onAddProject, onUpdateP
                   >
                     <div className="flex items-center space-x-1">
                       <span>End Date</span>
-                      {getSortIcon('end_date', true)}
-                      {secondarySortField === 'end_date' && sortField !== 'end_date' && (
-                        <span className="text-xs text-muted-foreground">(2nd)</span>
-                      )}
+                      {getSortIcon('end_date')}
                     </div>
                   </TableHead>
                   <TableHead 
@@ -550,10 +438,7 @@ export function ProjectList({ projects, teams, products, onAddProject, onUpdateP
                   >
                     <div className="flex items-center space-x-1">
                       <span>Value Score</span>
-                      {getSortIcon('value_score', true)}
-                      {secondarySortField === 'value_score' && sortField !== 'value_score' && (
-                        <span className="text-xs text-muted-foreground">(2nd)</span>
-                      )}
+                      {getSortIcon('value_score')}
                     </div>
                   </TableHead>
                   <TableHead 
@@ -562,10 +447,7 @@ export function ProjectList({ projects, teams, products, onAddProject, onUpdateP
                   >
                     <div className="flex items-center space-x-1">
                       <span>R&D</span>
-                      {getSortIcon('is_rd', true)}
-                      {secondarySortField === 'is_rd' && sortField !== 'is_rd' && (
-                        <span className="text-xs text-muted-foreground">(2nd)</span>
-                      )}
+                      {getSortIcon('is_rd')}
                     </div>
                   </TableHead>
                   <TableHead>Link</TableHead>
