@@ -97,34 +97,65 @@ export function TeamMembersView({
     return months;
   }, []);
 
-  // Group teams by product, then team members by team based on current memberships
+  // Group teams by product, then team members by team based on timeline memberships
   const groupedData = useMemo(() => {
-    const currentMonth = format(new Date(), 'yyyy-MM-01');
+    const timelineStart = format(timelineMonths[0].date, 'yyyy-MM-01');
+    const timelineEnd = format(timelineMonths[timelineMonths.length - 1].date, 'yyyy-MM-01');
     
-    // Helper function to get members currently assigned to a team
-    const getCurrentMembers = (teamId: string) => {
-      return teamMembers.filter(member => {
-        // Check if member has an active membership for this team
-        return memberships.some(membership => 
-          membership.team_member_id === member.id &&
-          membership.team_id === teamId &&
-          membership.start_month <= currentMonth &&
-          (!membership.end_month || membership.end_month >= currentMonth)
-        );
+    console.log('Timeline period:', timelineStart, 'to', timelineEnd);
+    console.log('All memberships:', memberships);
+    console.log('All team members:', teamMembers);
+    
+    // Helper function to get members assigned to a team during the timeline period
+    const getTimelineMembers = (teamId: string) => {
+      const members = teamMembers.filter(member => {
+        // Check if member has any membership for this team that overlaps with timeline
+        const hasTimelineMembership = memberships.some(membership => {
+          const membershipStart = membership.start_month;
+          const membershipEnd = membership.end_month || '9999-12-01'; // Use far future if no end date
+          
+          const overlapsTimeline = membership.team_member_id === member.id &&
+            membership.team_id === teamId &&
+            membershipStart <= timelineEnd &&
+            membershipEnd >= timelineStart;
+          
+          if (member.name === 'Bob Smith') {
+            console.log('Bob Smith membership check:', {
+              membership,
+              teamId,
+              overlapsTimeline,
+              membershipStart,
+              membershipEnd,
+              timelineStart,
+              timelineEnd
+            });
+          }
+          
+          return overlapsTimeline;
+        });
+        
+        if (member.name === 'Bob Smith') {
+          console.log('Bob Smith has timeline membership for team', teamId, ':', hasTimelineMembership);
+        }
+        
+        return hasTimelineMembership;
       });
+      
+      console.log('Timeline members for team', teamId, ':', members.map(m => m.name));
+      return members;
     };
 
     const productsWithTeams = products.map(product => ({
       product,
       teams: teams.filter(team => team.product_id === product.id).map(team => ({
         team,
-        members: getCurrentMembers(team.id)
+        members: getTimelineMembers(team.id)
       })).filter(group => group.members.length > 0)
     })).filter(group => group.teams.length > 0);
 
     const teamsWithoutProduct = teams.filter(team => !team.product_id).map(team => ({
       team,
-      members: getCurrentMembers(team.id)
+      members: getTimelineMembers(team.id)
     })).filter(group => group.members.length > 0);
 
     return { productsWithTeams, teamsWithoutProduct };
