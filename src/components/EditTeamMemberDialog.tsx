@@ -2,7 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Calendar } from '@/components/ui/calendar';
+import { MonthYearPicker } from '@/components/ui/month-year-picker';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Team, TeamMember, TeamMembership } from '@/types/roadmap';
 import { format, startOfMonth, subMonths } from 'date-fns';
@@ -135,17 +135,12 @@ export function EditTeamMemberDialog({
                     {transitionMonth ? format(transitionMonth, 'MMM yyyy') : 'Transition month'}
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar
-                    mode="single"
-                    selected={transitionMonth}
-                    onSelect={(d) => setTransitionMonth(d ? startOfMonth(d) : undefined)}
-                    initialFocus
-                    className="p-3 pointer-events-auto [&_.rdp-month]:hidden [&_.rdp-table]:hidden [&_.rdp-weekdays]:hidden [&_.rdp-week]:hidden"
-                    captionLayout="dropdown-buttons"
+                <PopoverContent className="w-auto p-4" align="start">
+                  <MonthYearPicker
+                    value={transitionMonth}
+                    onChange={(d) => setTransitionMonth(d ? startOfMonth(d) : undefined)}
                     fromYear={2020}
                     toYear={2030}
-                    showOutsideDays={false}
                   />
                 </PopoverContent>
               </Popover>
@@ -184,19 +179,14 @@ export function EditTeamMemberDialog({
                         <PopoverTrigger asChild>
                           <Button variant="outline" size="sm">Set end</Button>
                         </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0" align="end">
-                          <Calendar
-                            mode="single"
-                            selected={m.end_month ? new Date(m.end_month) : undefined}
-                            onSelect={async (d) => {
+                        <PopoverContent className="w-auto p-4" align="end">
+                          <MonthYearPicker
+                            value={m.end_month ? new Date(m.end_month) : undefined}
+                            onChange={async (d) => {
                               await onUpdateMembership(m.id, { end_month: d ? startOfMonth(d).toISOString() : null } as any);
                             }}
-                            initialFocus
-                            className="p-3 pointer-events-auto [&_.rdp-month]:hidden [&_.rdp-table]:hidden [&_.rdp-weekdays]:hidden [&_.rdp-week]:hidden"
-                            captionLayout="dropdown-buttons"
                             fromYear={2020}
                             toYear={2030}
-                            showOutsideDays={false}
                           />
                         </PopoverContent>
                       </Popover>
