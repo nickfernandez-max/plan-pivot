@@ -58,7 +58,7 @@ export function EditProjectDialog({
   onUpdateProjectAssignments
 }: EditProjectDialogProps) {
   const [addAssignmentOpen, setAddAssignmentOpen] = useState(false);
-  const [assignmentFilterTeam, setAssignmentFilterTeam] = useState<string>("");
+  const [assignmentFilterTeam, setAssignmentFilterTeam] = useState<string>("all");
 
   const form = useForm<z.infer<typeof projectSchema>>({
     resolver: zodResolver(projectSchema),
@@ -374,7 +374,7 @@ export function EditProjectDialog({
                             <SelectValue placeholder="All teams" />
                           </SelectTrigger>
                           <SelectContent className="bg-background border shadow-lg z-50">
-                            <SelectItem value="">All teams</SelectItem>
+                            <SelectItem value="all">All teams</SelectItem>
                             {teams.map((team) => (
                               <SelectItem key={team.id} value={team.id}>
                                 {team.name}
@@ -389,7 +389,7 @@ export function EditProjectDialog({
                         {teamMembers
                           .filter(member => 
                             !currentAssignments.some(a => a.teamMemberId === member.id) &&
-                            (assignmentFilterTeam === "" || member.team_id === assignmentFilterTeam)
+                            (assignmentFilterTeam === "all" || member.team_id === assignmentFilterTeam)
                           )
                           .map((member) => {
                             const memberTeam = teams.find(t => t.id === member.team_id);
@@ -413,7 +413,7 @@ export function EditProjectDialog({
                         {teamMembers
                           .filter(member => 
                             !currentAssignments.some(a => a.teamMemberId === member.id) &&
-                            (assignmentFilterTeam === "" || member.team_id === assignmentFilterTeam)
+                            (assignmentFilterTeam === "all" || member.team_id === assignmentFilterTeam)
                           ).length === 0 && (
                           <p className="text-xs text-muted-foreground p-2">
                             {assignmentFilterTeam ? "No unassigned members in this team" : "All members are already assigned"}
