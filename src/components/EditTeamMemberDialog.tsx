@@ -141,7 +141,7 @@ export function EditTeamMemberDialog({
                     selected={transitionMonth}
                     onSelect={(d) => setTransitionMonth(d ? startOfMonth(d) : undefined)}
                     initialFocus
-                    className="p-3 pointer-events-auto"
+                    className="p-3 pointer-events-auto [&_.rdp-day_picker]:hidden [&_.rdp-table]:hidden"
                     captionLayout="dropdown-buttons"
                     fromYear={2020}
                     toYear={2030}
@@ -192,7 +192,7 @@ export function EditTeamMemberDialog({
                               await onUpdateMembership(m.id, { end_month: d ? startOfMonth(d).toISOString() : null } as any);
                             }}
                             initialFocus
-                            className="p-3 pointer-events-auto"
+                            className="p-3 pointer-events-auto [&_.rdp-day_picker]:hidden [&_.rdp-table]:hidden"
                             captionLayout="dropdown-buttons"
                             fromYear={2020}
                             toYear={2030}
