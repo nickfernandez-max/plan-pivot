@@ -206,6 +206,16 @@ export function useSupabaseData() {
 
       if (error) throw error;
 
+      // Also create a team membership starting from their start date
+      const membershipStartMonth = new Date(newMember.start_date).toISOString().split('T')[0].substring(0, 7) + '-01';
+      
+      await addTeamMembership({
+        team_member_id: data.id,
+        team_id: newMember.team_id,
+        start_month: membershipStartMonth,
+        end_month: null // Open-ended membership
+      });
+
       setTeamMembers(prev => [...prev, data]);
       return data;
     } catch (err) {
