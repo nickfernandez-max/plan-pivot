@@ -168,15 +168,20 @@ export function RoadmapView({
   
   // Calculate the full timeline bounds to determine navigation limits
   const fullTimelineBounds = useMemo(() => {
+    const now = new Date();
+    const currentMonth = startOfMonth(now);
+    
     if (projects.length === 0) {
-      const now = new Date();
       return {
-        start: startOfMonth(now),
+        start: currentMonth,
         end: endOfMonth(addDays(now, 365))
       };
     }
 
     const allDates = projects.flatMap(p => [new Date(p.start_date), new Date(p.end_date)]);
+    // Always include current month in the bounds
+    allDates.push(currentMonth);
+    
     const minDate = new Date(Math.min(...allDates.map(d => d.getTime())));
     const maxDate = new Date(Math.max(...allDates.map(d => d.getTime())));
     
