@@ -60,8 +60,10 @@ export function EditTeamMemberDialog({
     try {
       const transitionMonthStr = startOfMonth(transitionMonth).toISOString();
       
-      // End the current membership one month before transition
+      // End the current membership in the month before transition
+      // Since end_month is inclusive, this covers through the previous month
       const endMonth = startOfMonth(subMonths(transitionMonth, 1)).toISOString();
+      
       await onUpdateMembership(membershipToEnd.id, { end_month: endMonth });
       
       // Create new membership if not "Left Company"

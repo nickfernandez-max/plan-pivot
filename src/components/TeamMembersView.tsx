@@ -102,47 +102,20 @@ export function TeamMembersView({
     const timelineStart = format(timelineMonths[0].date, 'yyyy-MM-01');
     const timelineEnd = format(timelineMonths[timelineMonths.length - 1].date, 'yyyy-MM-01');
     
-    console.log('Timeline period:', timelineStart, 'to', timelineEnd);
-    console.log('All memberships:', memberships);
-    console.log('All team members:', teamMembers);
-    
     // Helper function to get members assigned to a team during the timeline period
     const getTimelineMembers = (teamId: string) => {
-      const members = teamMembers.filter(member => {
+      return teamMembers.filter(member => {
         // Check if member has any membership for this team that overlaps with timeline
-        const hasTimelineMembership = memberships.some(membership => {
+        return memberships.some(membership => {
           const membershipStart = membership.start_month;
           const membershipEnd = membership.end_month || '9999-12-01'; // Use far future if no end date
           
-          const overlapsTimeline = membership.team_member_id === member.id &&
+          return membership.team_member_id === member.id &&
             membership.team_id === teamId &&
             membershipStart <= timelineEnd &&
             membershipEnd >= timelineStart;
-          
-          if (member.name === 'Bob Smith') {
-            console.log('Bob Smith membership check:', {
-              membership,
-              teamId,
-              overlapsTimeline,
-              membershipStart,
-              membershipEnd,
-              timelineStart,
-              timelineEnd
-            });
-          }
-          
-          return overlapsTimeline;
         });
-        
-        if (member.name === 'Bob Smith') {
-          console.log('Bob Smith has timeline membership for team', teamId, ':', hasTimelineMembership);
-        }
-        
-        return hasTimelineMembership;
       });
-      
-      console.log('Timeline members for team', teamId, ':', members.map(m => m.name));
-      return members;
     };
 
     const productsWithTeams = products.map(product => ({
