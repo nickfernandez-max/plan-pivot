@@ -1,0 +1,1 @@
+INSERT INTO team_memberships (team_member_id, team_id, start_month) VALUES ('6c5f9f10-fd78-4e18-a932-37cbb74a457f', 'b0878bff-71b7-41cc-9d9e-d776103940f3', '2025-10-01');
