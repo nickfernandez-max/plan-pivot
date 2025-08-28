@@ -169,24 +169,18 @@ export function useSupabaseData() {
         .from('projects')
         .update(updates)
         .eq('id', id)
-        .select(`
-          *,
-          team:teams(*),
-          assignees:project_assignees(
-            team_member:team_members(*)
-          )
-        `)
+        .select()
         .single();
 
       if (error) throw error;
 
-      const transformedProject = {
-        ...data,
-        assignees: data.assignees?.map(assignee => assignee.team_member).filter(Boolean) || []
-      };
-
-      setProjects(prev => prev.map(p => p.id === id ? transformedProject : p));
-      return transformedProject;
+      // Update local state immediately for responsive UI
+      setProjects(prev => prev.map(p => p.id === id ? { ...p, ...updates } : p));
+      
+      // Trigger full data refetch to ensure consistency
+      await fetchData();
+      
+      return data;
     } catch (err) {
       console.error('Error updating project:', err);
       throw err;
