@@ -83,8 +83,11 @@ export function useDragAndDrop({
 
     // Calculate horizontal position change with weekly snapping
     if (delta.x !== 0) {
-      const containerWidth = document.querySelector('.timeline-container')?.clientWidth || 1;
-      const pixelsPerWeek = (containerWidth * 7) / totalDays; // 7 days per week
+      const containerElement = document.querySelector('.timeline-container');
+      const containerWidth = containerElement?.clientWidth || 1;
+      const sidebarWidth = 192; // 48 * 4 = 192px for the fixed sidebar
+      const effectiveTimelineWidth = containerWidth - sidebarWidth;
+      const pixelsPerWeek = (effectiveTimelineWidth * 7) / totalDays; // 7 days per week
       const weekOffset = Math.round(delta.x / pixelsPerWeek);
       
       const originalStart = new Date(activeDrag.originalStartDate);
@@ -125,8 +128,11 @@ export function useDragAndDrop({
 
       // Handle date changes with weekly snapping
       if (delta.x !== 0) {
-        const containerWidth = document.querySelector('.timeline-container')?.clientWidth || 1;
-        const pixelsPerWeek = (containerWidth * 7) / totalDays; // 7 days per week
+        const containerElement = document.querySelector('.timeline-container');
+        const containerWidth = containerElement?.clientWidth || 1;
+        const sidebarWidth = 192; // 48 * 4 = 192px for the fixed sidebar
+        const effectiveTimelineWidth = containerWidth - sidebarWidth;
+        const pixelsPerWeek = (effectiveTimelineWidth * 7) / totalDays; // 7 days per week
         const weekOffset = Math.round(delta.x / pixelsPerWeek);
         
         const originalStart = new Date(activeDrag.originalStartDate);
@@ -264,8 +270,11 @@ export function useDragAndDrop({
   const calculatePreviewPosition = useCallback((project: Project, delta: { x: number; y: number }) => {
     if (!activeDrag || project.id !== activeDrag.projectId) return null;
 
-    const containerWidth = document.querySelector('.timeline-container')?.clientWidth || 1;
-    const pixelsPerWeek = (containerWidth * 7) / totalDays; // 7 days per week
+    const containerElement = document.querySelector('.timeline-container');
+    const containerWidth = containerElement?.clientWidth || 1;
+    const sidebarWidth = 192; // 48 * 4 = 192px for the fixed sidebar
+    const effectiveTimelineWidth = containerWidth - sidebarWidth;
+    const pixelsPerWeek = (effectiveTimelineWidth * 7) / totalDays; // 7 days per week
     const weekOffset = Math.round(delta.x / pixelsPerWeek);
     
     const originalStart = new Date(activeDrag.originalStartDate);
