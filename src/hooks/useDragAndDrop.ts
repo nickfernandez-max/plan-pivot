@@ -161,6 +161,18 @@ export function useDragAndDrop({
       
       const memberChanged = newMemberId !== activeDrag.originalMemberId;
 
+      console.log('Drag end analysis:', {
+        projectId: activeDrag.projectId,
+        datesChanged,
+        memberChanged,
+        originalStart: activeDrag.originalStartDate,
+        newStart: newStartDate.toISOString().split('T')[0],
+        originalEnd: activeDrag.originalEndDate,
+        newEnd: newEndDate.toISOString().split('T')[0],
+        originalMember: activeDrag.originalMemberId,
+        newMember: newMemberId
+      });
+
       // If only dates changed (same member), update both project and assignment dates
       if (datesChanged && !memberChanged) {
         console.log('Updating project and assignment dates:', {
