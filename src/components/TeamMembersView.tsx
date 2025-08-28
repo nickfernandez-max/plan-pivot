@@ -7,13 +7,14 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Plus, User, Edit2, Users } from 'lucide-react';
+import { Plus, User, Edit2, Users, Settings } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { format, addMonths, startOfMonth, differenceInMonths } from 'date-fns';
 import { TeamMember, Team, Product, TeamMembership } from '@/types/roadmap';
 import { EditTeamMemberDialog } from '@/components/EditTeamMemberDialog';
+import { EditTeamDialog } from '@/components/EditTeamDialog';
 
 
 interface TeamMembersViewProps {
@@ -26,7 +27,7 @@ interface TeamMembersViewProps {
   onAddProduct: (product: Omit<Product, 'id' | 'created_at' | 'updated_at'>) => void;
   onUpdateProduct: (id: string, updates: Partial<Product>) => void;
   onAddTeam: (team: Omit<Team, 'id' | 'created_at' | 'updated_at'>) => void;
-  onUpdateTeam: (id: string, updates: Partial<Team>) => void;
+  onUpdateTeam: (id: string, updates: Partial<Team>) => Promise<void>;
   onAddMembership: (membership: Omit<TeamMembership, 'id' | 'created_at' | 'updated_at'>) => Promise<any>;
   onUpdateMembership: (id: string, updates: Partial<TeamMembership>) => Promise<any>;
   onDeleteMembership: (id: string) => Promise<any> | void;
@@ -69,6 +70,7 @@ export function TeamMembersView({
   onDeleteMembership,
 }: TeamMembersViewProps) {
   const [editingMember, setEditingMember] = useState<TeamMember | null>(null);
+  const [editingTeam, setEditingTeam] = useState<Team | null>(null);
 
   const form = useForm<z.infer<typeof teamMemberSchema>>({
     resolver: zodResolver(teamMemberSchema),
@@ -243,12 +245,23 @@ export function TeamMembersView({
                                   borderLeftWidth: '3px'
                                 }}
                               >
-                                 <div className="flex items-center gap-2">
-                                   <span>{team.name}</span>
-                                   <Badge variant="secondary" className="text-xs px-1 py-0">
-                                     Ideal: {team.ideal_size || 1}
-                                   </Badge>
-                                 </div>
+                                  <div className="flex items-center justify-between gap-2">
+                                    <div className="flex items-center gap-2">
+                                      <span>{team.name}</span>
+                                      <Badge variant="secondary" className="text-xs px-1 py-0">
+                                        Ideal: {team.ideal_size || 1}
+                                      </Badge>
+                                    </div>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      className="h-5 w-5 p-0"
+                                      onClick={() => setEditingTeam(team)}
+                                      title="Edit team"
+                                    >
+                                      <Settings className="w-2.5 h-2.5" />
+                                    </Button>
+                                  </div>
                               </TableCell>
                               <TableCell className="font-medium text-muted-foreground py-1">
                                 <span className="text-xs">Actual →</span>
@@ -348,12 +361,23 @@ export function TeamMembersView({
                                   borderLeftWidth: '3px'
                                 }}
                               >
-                                 <div className="flex items-center gap-2">
-                                   <span>{team.name}</span>
-                                   <Badge variant="secondary" className="text-xs px-1 py-0">
-                                     Ideal: {team.ideal_size || 1}
-                                   </Badge>
-                                 </div>
+                                  <div className="flex items-center justify-between gap-2">
+                                    <div className="flex items-center gap-2">
+                                      <span>{team.name}</span>
+                                      <Badge variant="secondary" className="text-xs px-1 py-0">
+                                        Ideal: {team.ideal_size || 1}
+                                      </Badge>
+                                    </div>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      className="h-5 w-5 p-0"
+                                      onClick={() => setEditingTeam(team)}
+                                      title="Edit team"
+                                    >
+                                      <Settings className="w-2.5 h-2.5" />
+                                    </Button>
+                                  </div>
                               </TableCell>
                               <TableCell className="font-medium text-muted-foreground py-1">
                                 <span className="text-xs">Actual →</span>
@@ -439,6 +463,14 @@ export function TeamMembersView({
         onAddMembership={onAddMembership}
         onUpdateMembership={onUpdateMembership}
         onDeleteMembership={onDeleteMembership}
+      />
+      
+      <EditTeamDialog
+        team={editingTeam}
+        open={!!editingTeam}
+        onOpenChange={(open) => !open && setEditingTeam(null)}
+        onUpdateTeam={onUpdateTeam}
+        products={products}
       />
     </div>
   );
