@@ -453,7 +453,7 @@ export function ProjectList({ projects, teams, products, onAddProject, onUpdateP
                   <TableHead>Link</TableHead>
                   <TableHead>Products</TableHead>
                   <TableHead>Assignees</TableHead>
-                  <TableHead>Actions</TableHead>
+                  <TableHead>Edit</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
