@@ -47,13 +47,18 @@ export function EditTeamMemberDialog({
 
   const handleAdd = async () => {
     if (!member || !newTeamId || !newStartMonth) return;
-    await onAddMembership({
-      team_member_id: member.id,
-      team_id: newTeamId,
-      start_month: startOfMonth(newStartMonth).toISOString(),
-      end_month: newEndMonth ? startOfMonth(newEndMonth).toISOString() : null,
-    } as any);
-    resetForm();
+    
+    try {
+      await onAddMembership({
+        team_member_id: member.id,
+        team_id: newTeamId,
+        start_month: startOfMonth(newStartMonth).toISOString(),
+        end_month: newEndMonth ? startOfMonth(newEndMonth).toISOString() : null,
+      } as any);
+      resetForm();
+    } catch (error) {
+      console.error('Failed to add membership:', error);
+    }
   };
 
   return (

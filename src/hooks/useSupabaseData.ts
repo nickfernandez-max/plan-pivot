@@ -461,6 +461,23 @@ export function useSupabaseData() {
       start_month: new Date(membership.start_month).toISOString().split('T')[0],
       end_month: membership.end_month ? new Date(membership.end_month).toISOString().split('T')[0] : null,
     };
+
+    // Check for overlapping memberships and end them automatically
+    const overlappingMemberships = memberships.filter(m => 
+      m.team_member_id === membership.team_member_id &&
+      m.team_id !== membership.team_id &&
+      (!m.end_month || new Date(m.end_month) >= new Date(payload.start_month))
+    );
+
+    // End overlapping memberships by setting their end_month to one month before the new start
+    for (const overlapping of overlappingMemberships) {
+      const newEndDate = new Date(payload.start_month);
+      newEndDate.setMonth(newEndDate.getMonth() - 1);
+      const endMonth = newEndDate.toISOString().split('T')[0];
+      
+      await updateTeamMembership(overlapping.id, { end_month: endMonth });
+    }
+
     const { data, error } = await supabase
       .from('team_memberships')
       .insert(payload)
