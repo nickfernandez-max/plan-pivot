@@ -40,21 +40,31 @@ interface ProjectWithPosition extends Project {
   slotHeight: number;
 }
 
+interface WorkAssignmentWithPosition extends WorkAssignment {
+  left: number;
+  width: number;
+  slot: number;
+  allocation: number;
+  slotHeight: number;
+}
+
 interface MemberRow {
   member: TeamMember;
   team: Team;
   projects: ProjectWithPosition[];
+  workAssignments: WorkAssignmentWithPosition[];
   allocatedPercentage: number;
   rowHeight: number;
 }
 
-// Function to assign allocation slots to projects based on temporal scheduling and percentage
+// Function to assign allocation slots to projects and work assignments based on temporal scheduling and percentage
 const assignAllocationSlots = (
   projects: Array<Project & { left: number; width: number }>,
+  workAssignments: Array<WorkAssignment & { left: number; width: number }>,
   assignments: ProjectAssignment[],
   memberId: string
-): ProjectWithPosition[] => {
-  if (projects.length === 0) return [];
+): { projects: ProjectWithPosition[]; workAssignments: WorkAssignmentWithPosition[] } => {
+  if (projects.length === 0 && workAssignments.length === 0) return { projects: [], workAssignments: [] };
 
   const SLOTS_PER_MEMBER = 4;
   const SLOT_PERCENTAGE = 25;
@@ -83,18 +93,39 @@ const assignAllocationSlots = (
     };
   });
 
-  // Sort projects by start date, then by allocation (higher allocation first)
-  projectsWithData.sort((a, b) => {
+  // Prepare work assignments with temporal and allocation data
+  const workAssignmentsWithData = workAssignments.map(workAssignment => {
+    const allocation = workAssignment.percent_allocation;
+    const startDate = new Date(workAssignment.start_date);
+    const endDate = new Date(workAssignment.end_date);
+    
+    return {
+      ...workAssignment,
+      allocation,
+      startDate,
+      endDate,
+      slotsNeeded: Math.ceil(allocation / SLOT_PERCENTAGE),
+      assigned: false,
+      slot: -1,
+      slotHeight: BASE_SLOT_HEIGHT * Math.ceil(allocation / SLOT_PERCENTAGE)
+    };
+  });
+
+  // Combine all items for unified slot assignment
+  const allItems = [...projectsWithData, ...workAssignmentsWithData];
+
+  // Sort all items by start date, then by allocation (higher allocation first)
+  allItems.sort((a, b) => {
     const dateCompare = a.startDate.getTime() - b.startDate.getTime();
     if (dateCompare !== 0) return dateCompare;
     return b.allocation - a.allocation; // Higher allocation gets priority
   });
 
   // Track slot occupancy with time intervals
-  const slotOccupancy: Array<Array<{ startDate: Date; endDate: Date; projectId: string }>> = 
+  const slotOccupancy: Array<Array<{ startDate: Date; endDate: Date; itemId: string }>> = 
     Array.from({ length: SLOTS_PER_MEMBER }, () => []);
 
-  // Function to check if a project can fit in a slot during its time period
+  // Function to check if an item can fit in a slot during its time period
   const canFitInSlot = (slotIndex: number, slotsNeeded: number, startDate: Date, endDate: Date): boolean => {
     // Check if we have enough consecutive slots available
     if (slotIndex + slotsNeeded > SLOTS_PER_MEMBER) return false;
@@ -111,24 +142,24 @@ const assignAllocationSlots = (
     return true;
   };
 
-  // Function to reserve slots for a project
-  const reserveSlots = (slotIndex: number, slotsNeeded: number, startDate: Date, endDate: Date, projectId: string) => {
+  // Function to reserve slots for an item
+  const reserveSlots = (slotIndex: number, slotsNeeded: number, startDate: Date, endDate: Date, itemId: string) => {
     for (let i = 0; i < slotsNeeded; i++) {
       const currentSlot = slotIndex + i;
-      slotOccupancy[currentSlot].push({ startDate, endDate, projectId });
+      slotOccupancy[currentSlot].push({ startDate, endDate, itemId });
     }
   };
 
   // Assign slots using a scheduling algorithm
-  for (const project of projectsWithData) {
+  for (const item of allItems) {
     let assigned = false;
     
-    // Try to find the best slot for this project
-    for (let slot = 0; slot <= SLOTS_PER_MEMBER - project.slotsNeeded; slot++) {
-      if (canFitInSlot(slot, project.slotsNeeded, project.startDate, project.endDate)) {
-        project.slot = slot;
-        project.assigned = true;
-        reserveSlots(slot, project.slotsNeeded, project.startDate, project.endDate, project.id);
+    // Try to find the best slot for this item
+    for (let slot = 0; slot <= SLOTS_PER_MEMBER - item.slotsNeeded; slot++) {
+      if (canFitInSlot(slot, item.slotsNeeded, item.startDate, item.endDate)) {
+        item.slot = slot;
+        item.assigned = true;
+        reserveSlots(slot, item.slotsNeeded, item.startDate, item.endDate, item.id);
         assigned = true;
         break;
       }
@@ -136,21 +167,33 @@ const assignAllocationSlots = (
     
     // If no slot found, assign to the last available slot (overflow handling)
     if (!assigned) {
-      const lastSlot = Math.max(0, SLOTS_PER_MEMBER - project.slotsNeeded);
-      project.slot = lastSlot;
-      project.assigned = true;
+      const lastSlot = Math.max(0, SLOTS_PER_MEMBER - item.slotsNeeded);
+      item.slot = lastSlot;
+      item.assigned = true;
       // Still reserve the slot to track the overflow
-      reserveSlots(lastSlot, project.slotsNeeded, project.startDate, project.endDate, project.id);
+      reserveSlots(lastSlot, item.slotsNeeded, item.startDate, item.endDate, item.id);
     }
   }
 
-  // Return the projects with their assigned slots
-  return projectsWithData.map(project => ({
+  // Separate projects and work assignments with their assigned slots
+  const assignedProjects = projectsWithData.map(project => ({
     ...project,
     slot: project.slot,
     allocation: project.allocation,
     slotHeight: project.slotHeight
   }));
+
+  const assignedWorkAssignments = workAssignmentsWithData.map(workAssignment => {
+    const { startDate: _startDate, endDate: _endDate, slotsNeeded: _slotsNeeded, assigned: _assigned, ...rest } = workAssignment;
+    return {
+      ...rest,
+      slot: workAssignment.slot,
+      allocation: workAssignment.allocation,
+      slotHeight: workAssignment.slotHeight
+    };
+  });
+
+  return { projects: assignedProjects, workAssignments: assignedWorkAssignments };
 };
 
 export function RoadmapView({ 
@@ -259,6 +302,17 @@ export function RoadmapView({
       return projectStart <= timelineBounds.end && projectEnd >= timelineBounds.start;
     });
   }, [projects, timelineBounds]);
+
+  // Filter work assignments to only include those that intersect with the visible timeline
+  const visibleWorkAssignments = useMemo(() => {
+    return workAssignments.filter(workAssignment => {
+      const assignmentStart = new Date(workAssignment.start_date);
+      const assignmentEnd = new Date(workAssignment.end_date);
+      
+      // Work assignment intersects if it starts before timeline ends and ends after timeline starts
+      return assignmentStart <= timelineBounds.end && assignmentEnd >= timelineBounds.start;
+    });
+  }, [workAssignments, timelineBounds]);
 
   // Ref for timeline container to handle scrolling
   const timelineRef = useRef<HTMLDivElement>(null);
@@ -420,16 +474,41 @@ export function RoadmapView({
               };
             });
 
+          // Find visible work assignments for this member
+          const memberWorkAssignments = visibleWorkAssignments
+            .filter(workAssignment => workAssignment.team_member_id === member.id)
+            .map(workAssignment => {
+              const startDate = new Date(workAssignment.start_date);
+              const endDate = new Date(workAssignment.end_date);
+              
+              // Clamp dates to visible timeline bounds
+              const clampedStart = startDate < timelineBounds.start ? timelineBounds.start : startDate;
+              const clampedEnd = endDate > timelineBounds.end ? timelineBounds.end : endDate;
+              
+              const daysFromStart = differenceInDays(clampedStart, timelineBounds.start);
+              const duration = differenceInDays(clampedEnd, clampedStart) + 1;
+              
+              return {
+                ...workAssignment,
+                left: (daysFromStart / totalDays) * 100,
+                width: Math.max((duration / totalDays) * 100, 2) // Minimum width for visibility
+              };
+            });
+
           // Assign allocation slots based on percentage
-          const projectsWithSlots = assignAllocationSlots(memberProjects, assignments, member.id);
+          const { projects: projectsWithSlots, workAssignments: workAssignmentsWithSlots } = 
+            assignAllocationSlots(memberProjects, memberWorkAssignments, assignments, member.id);
           
           // Calculate total allocated percentage for this member
-          const allocatedPercentage = projectsWithSlots.reduce((sum, p) => sum + p.allocation, 0);
+          const allocatedPercentage = 
+            projectsWithSlots.reduce((sum, p) => sum + p.allocation, 0) +
+            workAssignmentsWithSlots.reduce((sum, w) => sum + w.allocation, 0);
 
           memberRows.push({
             member,
             team,
             projects: projectsWithSlots,
+            workAssignments: workAssignmentsWithSlots,
             allocatedPercentage,
             rowHeight: FIXED_ROW_HEIGHT
           });
@@ -827,7 +906,7 @@ export function RoadmapView({
                   teamGroups.forEach(({ team, memberRows: teamMemberRows }) => {
                     memberTopOffset += TEAM_HEADER_HEIGHT; // Skip team header
                     
-                    teamMemberRows.forEach(({ member, projects, rowHeight }) => {
+                    teamMemberRows.forEach(({ member, projects, workAssignments, rowHeight }) => {
                       const currentMemberTop = memberTopOffset;
                       memberTopOffset += rowHeight;
                       
@@ -879,6 +958,34 @@ export function RoadmapView({
                               />
                             );
                           })}
+                          
+                          {/* Work assignments in their assigned slots */}
+                          {workAssignments.map(workAssignment => {
+                            const slotTop = workAssignment.slot * SLOT_HEIGHT + SLOT_PADDING;
+                            const assignmentHeight = workAssignment.slotHeight - (SLOT_PADDING * 2);
+                            
+                            return (
+                              <div
+                                key={`work-${member.id}-${workAssignment.id}`}
+                                className="absolute border border-secondary/50 bg-secondary/20 rounded px-1 text-xs font-medium truncate cursor-pointer hover:bg-secondary/30 transition-colors"
+                                style={{
+                                  left: `${workAssignment.left}%`,
+                                  width: `${workAssignment.width}%`,
+                                  top: `${slotTop}px`,
+                                  height: `${assignmentHeight}px`,
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  borderColor: workAssignment.color || 'hsl(var(--secondary))',
+                                  backgroundColor: workAssignment.color ? `${workAssignment.color}20` : 'hsl(var(--secondary/20))',
+                                }}
+                                title={`${workAssignment.name} (${workAssignment.type}) - ${workAssignment.percent_allocation}%`}
+                              >
+                                <span className="truncate text-secondary-foreground">
+                                  {workAssignment.name} ({workAssignment.percent_allocation}%)
+                                </span>
+                              </div>
+                            );
+                          })}
                         </DroppableMemberRow>
                       );
                     });
@@ -892,7 +999,7 @@ export function RoadmapView({
                   productGroups.unassignedTeamGroups.forEach(({ team, memberRows: teamMemberRows }) => {
                     memberTopOffset += TEAM_HEADER_HEIGHT; // Skip team header
                     
-                    teamMemberRows.forEach(({ member, projects, rowHeight }) => {
+                    teamMemberRows.forEach(({ member, projects, workAssignments, rowHeight }) => {
                       const currentMemberTop = memberTopOffset;
                       memberTopOffset += rowHeight;
                       
@@ -943,6 +1050,34 @@ export function RoadmapView({
                                  }}
                                />
                              );
+                          })}
+                          
+                          {/* Work assignments in their assigned slots */}
+                          {workAssignments.map(workAssignment => {
+                            const slotTop = workAssignment.slot * SLOT_HEIGHT + SLOT_PADDING;
+                            const assignmentHeight = workAssignment.slotHeight - (SLOT_PADDING * 2);
+                            
+                            return (
+                              <div
+                                key={`work-${member.id}-${workAssignment.id}`}
+                                className="absolute border border-secondary/50 bg-secondary/20 rounded px-1 text-xs font-medium truncate cursor-pointer hover:bg-secondary/30 transition-colors"
+                                style={{
+                                  left: `${workAssignment.left}%`,
+                                  width: `${workAssignment.width}%`,
+                                  top: `${slotTop}px`,
+                                  height: `${assignmentHeight}px`,
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  borderColor: workAssignment.color || 'hsl(var(--secondary))',
+                                  backgroundColor: workAssignment.color ? `${workAssignment.color}20` : 'hsl(var(--secondary/20))',
+                                }}
+                                title={`${workAssignment.name} (${workAssignment.type}) - ${workAssignment.percent_allocation}%`}
+                              >
+                                <span className="truncate text-secondary-foreground">
+                                  {workAssignment.name} ({workAssignment.percent_allocation}%)
+                                </span>
+                              </div>
+                            );
                           })}
                         </DroppableMemberRow>
                       );
