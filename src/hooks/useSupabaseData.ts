@@ -71,8 +71,7 @@ export function useSupabaseData() {
           *,
           team:teams(*),
           role:roles(*)
-        `)
-        .order('name');
+        `);
 
       if (teamMembersError) {
         console.error('Team members error:', teamMembersError);

@@ -114,7 +114,9 @@ export function TeamMembersView({
       teams: teams.filter(team => team.product_id === product.id).map(team => ({
         team,
         members: getTimelineMembers(team.id).sort((a, b) => {
-          const roleCompare = (a.role?.name || '').localeCompare(b.role?.name || '');
+          const roleA = a.role?.name || '';
+          const roleB = b.role?.name || '';
+          const roleCompare = roleA.localeCompare(roleB);
           if (roleCompare !== 0) return roleCompare;
           return a.name.localeCompare(b.name);
         })
@@ -124,7 +126,9 @@ export function TeamMembersView({
     const teamsWithoutProduct = teams.filter(team => !team.product_id).map(team => ({
       team,
       members: getTimelineMembers(team.id).sort((a, b) => {
-        const roleCompare = (a.role?.name || '').localeCompare(b.role?.name || '');
+        const roleA = a.role?.name || '';
+        const roleB = b.role?.name || '';
+        const roleCompare = roleA.localeCompare(roleB);
         if (roleCompare !== 0) return roleCompare;
         return a.name.localeCompare(b.name);
       })
@@ -208,7 +212,7 @@ export function TeamMembersView({
         </TableHeader>
         <TableBody>
           {teams.map(({ team, members }) => (
-            <React.Fragment key={team.id}>
+            <Fragment key={team.id}>
               {/* Team header row */}
               <TableRow className="bg-gradient-to-r from-blue-100 to-blue-50 dark:from-blue-950 dark:to-blue-900 border-l-4 border-l-blue-500 shadow-sm h-9">
                 <TableCell 
@@ -306,7 +310,7 @@ export function TeamMembersView({
                  </TableRow>
                 );
               })}
-            </React.Fragment>
+            </Fragment>
           ))}
         </TableBody>
       </Table>
