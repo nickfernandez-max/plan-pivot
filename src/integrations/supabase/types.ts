@@ -330,7 +330,7 @@ export type Database = {
           id: string
           ideal_size: number | null
           name: string
-          product_id: string | null
+          product_id: string
           updated_at: string
         }
         Insert: {
@@ -340,7 +340,7 @@ export type Database = {
           id?: string
           ideal_size?: number | null
           name: string
-          product_id?: string | null
+          product_id: string
           updated_at?: string
         }
         Update: {
@@ -350,7 +350,7 @@ export type Database = {
           id?: string
           ideal_size?: number | null
           name?: string
-          product_id?: string | null
+          product_id?: string
           updated_at?: string
         }
         Relationships: [
