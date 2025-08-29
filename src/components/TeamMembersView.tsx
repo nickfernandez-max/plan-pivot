@@ -243,26 +243,26 @@ export function TeamMembersView({
              
               {/* Team member rows */}
               {members.map((member) => (
-                <TableRow key={member.id} className="h-8 bg-gradient-to-r from-green-50 to-green-25 dark:from-green-950/20 dark:to-green-900/10 border-l-2 border-l-green-400">
+                <TableRow key={member.id} className="h-8">
                   <TableCell className="font-medium text-sm py-2">
                     <div className="flex items-center justify-between gap-2">
                       <div className="flex items-center gap-3">
-                        <User className="w-3.5 h-3.5 text-green-600 dark:text-green-400 ml-2" />
-                        <span className="truncate text-sm text-green-900 dark:text-green-100">{member.name}</span>
+                        <User className="w-3.5 h-3.5 text-muted-foreground ml-2" />
+                        <span className="truncate text-sm">{member.name}</span>
                       </div>
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="h-5 w-5 p-0 hover:bg-green-200 dark:hover:bg-green-800"
+                        className="h-5 w-5 p-0"
                         onClick={() => setEditingMember(member)}
                         title="Edit memberships"
                       >
-                        <Edit2 className="w-2.5 h-2.5 text-green-600 dark:text-green-400" />
+                        <Edit2 className="w-2.5 h-2.5" />
                       </Button>
                     </div>
                   </TableCell>
-                  <TableCell className="text-green-700 dark:text-green-300 text-sm py-2">{member.role}</TableCell>
-                  <TableCell className="text-green-700 dark:text-green-300 text-sm py-2">{format(new Date(member.start_date), 'MMM d, yy')}</TableCell>
+                  <TableCell className="text-muted-foreground text-sm py-2">{member.role}</TableCell>
+                  <TableCell className="text-sm py-2">{format(new Date(member.start_date), 'MMM d, yy')}</TableCell>
                   {timelineMonths.map((month) => {
                     const involvement = getMemberInvolvement(member, month.date, team.id);
                     return (
