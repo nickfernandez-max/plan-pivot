@@ -10,6 +10,7 @@ import { Switch } from "@/components/ui/switch";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
 import { Plus, Edit, Save, X, ChevronUp, ChevronDown } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -628,20 +629,42 @@ export function ProjectList({ projects, teams, products, onAddProject, onUpdateP
                           </div>
                         </TableCell>
                         <TableCell className="py-2">
-                          <div className="flex flex-wrap gap-1">
-                            {project.assignees && project.assignees.length > 0 ? (
-                              project.assignees.slice(0, 2).map((assignee) => (
-                                <Badge key={assignee.id} variant="outline" className="text-xs">
-                                  {assignee.name.split(' ').map(n => n[0]).join('')}
-                                </Badge>
-                              ))
-                            ) : (
-                              <span className="text-muted-foreground text-xs">—</span>
-                            )}
-                            {project.assignees && project.assignees.length > 2 && (
-                              <Badge variant="outline" className="text-xs">+{project.assignees.length - 2}</Badge>
-                            )}
-                          </div>
+                          <TooltipProvider>
+                            <div className="flex flex-wrap gap-1">
+                              {project.assignees && project.assignees.length > 0 ? (
+                                project.assignees.slice(0, 2).map((assignee) => (
+                                  <Tooltip key={assignee.id}>
+                                    <TooltipTrigger asChild>
+                                      <Badge variant="outline" className="text-xs cursor-help">
+                                        {assignee.name.split(' ').map(n => n[0]).join('')}
+                                      </Badge>
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                      <p>{assignee.name}</p>
+                                    </TooltipContent>
+                                  </Tooltip>
+                                ))
+                              ) : (
+                                <span className="text-muted-foreground text-xs">—</span>
+                              )}
+                              {project.assignees && project.assignees.length > 2 && (
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Badge variant="outline" className="text-xs cursor-help">
+                                      +{project.assignees.length - 2}
+                                    </Badge>
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <div className="space-y-1">
+                                      {project.assignees.slice(2).map((assignee) => (
+                                        <p key={assignee.id}>{assignee.name}</p>
+                                      ))}
+                                    </div>
+                                  </TooltipContent>
+                                </Tooltip>
+                              )}
+                            </div>
+                          </TooltipProvider>
                         </TableCell>
                         <TableCell className="py-2">
                           <Button
