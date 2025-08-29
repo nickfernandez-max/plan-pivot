@@ -77,7 +77,8 @@ export function useSupabaseData() {
         console.error('Team members error:', teamMembersError);
         throw teamMembersError;
       }
-      console.log('Team members fetched:', teamMembersData?.length || 0);
+  console.log('Team members fetched:', teamMembersData?.length || 0);
+  console.log('Sample team member structure:', teamMembersData?.[0]);
 
       // Fetch projects with teams, assignees, and products
       console.log('Fetching projects...');

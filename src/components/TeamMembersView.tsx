@@ -242,7 +242,10 @@ export function TeamMembersView({
               </TableRow>
              
               {/* Team member rows */}
-              {members.map((member) => (
+              {members.map((member) => {
+                // Debug log to check role structure
+                console.log('Member role object:', member.role);
+                return (
                 <TableRow key={member.id} className="h-8">
                   <TableCell className="font-medium text-sm py-2">
                     <div className="flex items-center justify-between gap-2">
@@ -261,7 +264,9 @@ export function TeamMembersView({
                       </Button>
                     </div>
                   </TableCell>
-                  <TableCell className="text-muted-foreground text-sm py-2">{member.role?.name}</TableCell>
+                  <TableCell className="text-muted-foreground text-sm py-2">
+                    {member.role?.name}
+                  </TableCell>
                   <TableCell className="text-sm py-2">{format(new Date(member.start_date), 'MMM d, yy')}</TableCell>
                   {timelineMonths.map((month) => {
                     const involvement = getMemberInvolvement(member, month.date, team.id);
@@ -284,10 +289,11 @@ export function TeamMembersView({
                           {involvement > 0 ? involvement : ''}
                         </div>
                       </TableCell>
-                    );
-                  })}
-                </TableRow>
-              ))}
+                     );
+                   })}
+                 </TableRow>
+                );
+              })}
             </Fragment>
           ))}
         </TableBody>
