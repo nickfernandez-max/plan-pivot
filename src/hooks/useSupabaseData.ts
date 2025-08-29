@@ -1,12 +1,13 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { Project, TeamMember, Team, Product, ProjectAssignment, TeamMembership } from '@/types/roadmap';
+import { Project, TeamMember, Team, Product, ProjectAssignment, TeamMembership, Role } from '@/types/roadmap';
 
 export function useSupabaseData() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
   const [teams, setTeams] = useState<Team[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
+  const [roles, setRoles] = useState<Role[]>([]);
   const [assignments, setAssignments] = useState<ProjectAssignment[]>([]);
   const [memberships, setMemberships] = useState<TeamMembership[]>([]);
   const [loading, setLoading] = useState(true);
@@ -18,6 +19,19 @@ export function useSupabaseData() {
       setError(null);
 
       console.log('Starting data fetch...');
+
+      // Fetch roles
+      console.log('Fetching roles...');
+      const { data: rolesData, error: rolesError } = await supabase
+        .from('roles')
+        .select('*')
+        .order('name');
+
+      if (rolesError) {
+        console.error('Roles error:', rolesError);
+        throw rolesError;
+      }
+      console.log('Roles fetched:', rolesData?.length || 0);
 
       // Fetch products
       console.log('Fetching products...');
@@ -48,13 +62,14 @@ export function useSupabaseData() {
       }
       console.log('Teams fetched:', teamsData?.length || 0);
 
-      // Fetch team members with their teams
+      // Fetch team members with their teams and roles
       console.log('Fetching team members...');
       const { data: teamMembersData, error: teamMembersError } = await supabase
         .from('team_members')
         .select(`
           *,
-          team:teams(*)
+          team:teams(*),
+          role:roles(*)
         `)
         .order('name');
 
@@ -114,6 +129,7 @@ export function useSupabaseData() {
       })) || [];
 
       setProducts(productsData || []);
+      setRoles(rolesData || []);
       setTeams(teamsData || []);
       setTeamMembers(teamMembersData || []);
       setProjects(transformedProjects);
@@ -194,7 +210,8 @@ export function useSupabaseData() {
         .insert(newMember)
         .select(`
           *,
-          team:teams(*)
+          team:teams(*),
+          role:roles(*)
         `)
         .single();
 
@@ -226,7 +243,8 @@ export function useSupabaseData() {
         .eq('id', id)
         .select(`
           *,
-          team:teams(*)
+          team:teams(*),
+          role:roles(*)
         `)
         .single();
 
@@ -272,6 +290,22 @@ export function useSupabaseData() {
     setProducts(prev => prev.map(product => 
       product.id === id ? { ...product, ...updates } : product
     ));
+    return data;
+  };
+
+  const addRole = async (newRole: Omit<Role, 'id' | 'created_at' | 'updated_at'>) => {
+    const { data, error } = await supabase
+      .from('roles')
+      .insert([newRole])
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error adding role:', error);
+      throw error;
+    }
+
+    setRoles(prev => [...prev, data]);
     return data;
   };
 
@@ -574,6 +608,7 @@ export function useSupabaseData() {
     teamMembers,
     teams,
     products,
+    roles,
     assignments,
     memberships,
     loading,
@@ -582,6 +617,7 @@ export function useSupabaseData() {
     updateProject,
     addTeamMember,
     updateTeamMember,
+    addRole,
     addTeam,
     updateTeam,
     updateProjectAssignees,

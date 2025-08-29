@@ -1,3 +1,11 @@
+export interface Role {
+  id: string;
+  name: string;
+  description?: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
 export interface Product {
   id: string;
   name: string;
@@ -39,12 +47,13 @@ export interface Project {
 export interface TeamMember {
   id: string;
   name: string;
-  role: string;
+  role_id: string;
   team_id: string;
   start_date: string;
   created_at?: string;
   updated_at?: string;
   team?: Team;
+  role?: Role;
 }
 
 export interface ProjectAssignment {

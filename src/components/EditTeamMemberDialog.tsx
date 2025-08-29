@@ -90,7 +90,7 @@ export function EditTeamMemberDialog({
         <DialogHeader>
           <DialogTitle>Edit Member</DialogTitle>
           <DialogDescription>
-            {member ? `${member.name} — ${member.role}` : ''}
+            {member ? `${member.name} — ${member.role?.name}` : ''}
           </DialogDescription>
         </DialogHeader>
 

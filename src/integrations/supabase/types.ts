@@ -175,12 +175,36 @@ export type Database = {
           },
         ]
       }
+      roles: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       team_members: {
         Row: {
           created_at: string
           id: string
           name: string
-          role: string
+          role_id: string
           start_date: string
           team_id: string
           updated_at: string
@@ -189,7 +213,7 @@ export type Database = {
           created_at?: string
           id?: string
           name: string
-          role: string
+          role_id: string
           start_date: string
           team_id: string
           updated_at?: string
@@ -198,12 +222,19 @@ export type Database = {
           created_at?: string
           id?: string
           name?: string
-          role?: string
+          role_id?: string
           start_date?: string
           team_id?: string
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "team_members_role_id_fkey"
+            columns: ["role_id"]
+            isOneToOne: false
+            referencedRelation: "roles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "team_members_team_id_fkey"
             columns: ["team_id"]

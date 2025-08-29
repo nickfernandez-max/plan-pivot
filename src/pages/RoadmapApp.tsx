@@ -36,6 +36,7 @@ export default function RoadmapApp() {
     teamMembers, 
     teams, 
     products,
+    roles,
     assignments,
     memberships,
     loading, 
@@ -44,6 +45,7 @@ export default function RoadmapApp() {
     updateProject, 
     addTeamMember, 
     updateTeamMember,
+    addRole,
     addTeam,
     updateTeam,
     updateProjectAssignees,
@@ -116,6 +118,18 @@ export default function RoadmapApp() {
     } catch (error) {
       console.error('Error adding team member:', error);
       toast({ title: "Error", description: "Failed to add team member", variant: "destructive" });
+    }
+  };
+
+  const handleAddRole = async (roleData: any) => {
+    try {
+      const newRole = await addRole(roleData);
+      toast({ title: "Success", description: "Role added successfully" });
+      return newRole;
+    } catch (error) {
+      console.error('Error adding role:', error);
+      toast({ title: "Error", description: "Failed to add role", variant: "destructive" });
+      throw error;
     }
   };
 
@@ -331,7 +345,9 @@ export default function RoadmapApp() {
           open={isAddMemberDialogOpen}
           onOpenChange={setIsAddMemberDialogOpen}
           onAddPerson={handleAddTeamMember}
+          onAddRole={handleAddRole}
           teams={teams}
+          roles={roles}
         />
       </div>
     </div>

@@ -405,7 +405,7 @@ export function EditProjectDialog({
                               >
                                 <div className="font-medium">{member.name}</div>
                                 <div className="text-xs text-muted-foreground">
-                                  {member.role} • {memberTeam?.name}
+                                  {member.role?.name} • {memberTeam?.name}
                                 </div>
                               </button>
                             )
@@ -447,7 +447,7 @@ export function EditProjectDialog({
                           <div className="flex-1 min-w-0">
                             <p className="font-medium truncate">{member.name}</p>
                             <p className="text-xs text-muted-foreground">
-                              {member.role}
+                              {member.role?.name}
                               {memberTeam && (
                                 <Badge variant="secondary" className="ml-1 text-xs">
                                   {memberTeam.name}

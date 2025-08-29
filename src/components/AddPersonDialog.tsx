@@ -4,36 +4,45 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Team } from '@/types/roadmap';
+import { Team, Role } from '@/types/roadmap';
+import { Plus, X } from 'lucide-react';
 
 interface AddPersonDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onAddPerson: (personData: { name: string; role: string; team_id: string; start_date: string }) => Promise<void>;
+  onAddPerson: (personData: { name: string; role_id: string; team_id: string; start_date: string }) => Promise<void>;
+  onAddRole: (roleData: { name: string; description?: string }) => Promise<Role>;
   teams: Team[];
+  roles: Role[];
 }
 
-export function AddPersonDialog({ open, onOpenChange, onAddPerson, teams }: AddPersonDialogProps) {
+export function AddPersonDialog({ open, onOpenChange, onAddPerson, onAddRole, teams, roles }: AddPersonDialogProps) {
   const [name, setName] = useState('');
-  const [role, setRole] = useState('');
+  const [roleId, setRoleId] = useState('');
   const [teamId, setTeamId] = useState('');
   const [startDate, setStartDate] = useState(new Date().toISOString().split('T')[0]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  // New role creation state
+  const [showNewRoleForm, setShowNewRoleForm] = useState(false);
+  const [newRoleName, setNewRoleName] = useState('');
+  const [newRoleDescription, setNewRoleDescription] = useState('');
+  const [isCreatingRole, setIsCreatingRole] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name.trim() || !role.trim() || !teamId) return;
+    if (!name.trim() || !roleId || !teamId) return;
 
     setIsSubmitting(true);
     try {
       await onAddPerson({
         name: name.trim(),
-        role: role.trim(),
+        role_id: roleId,
         team_id: teamId,
         start_date: startDate,
       });
       setName('');
-      setRole('');
+      setRoleId('');
       setTeamId('');
       setStartDate(new Date().toISOString().split('T')[0]);
       onOpenChange(false);
@@ -42,6 +51,37 @@ export function AddPersonDialog({ open, onOpenChange, onAddPerson, teams }: AddP
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const handleCreateRole = async () => {
+    if (!newRoleName.trim()) return;
+
+    setIsCreatingRole(true);
+    try {
+      const createdRole = await onAddRole({
+        name: newRoleName.trim(),
+        description: newRoleDescription.trim() || undefined,
+      });
+      setRoleId(createdRole.id);
+      setNewRoleName('');
+      setNewRoleDescription('');
+      setShowNewRoleForm(false);
+    } catch (error) {
+      console.error('Error creating role:', error);
+    } finally {
+      setIsCreatingRole(false);
+    }
+  };
+
+  const handleCancel = () => {
+    setName('');
+    setRoleId('');
+    setTeamId('');
+    setStartDate(new Date().toISOString().split('T')[0]);
+    setShowNewRoleForm(false);
+    setNewRoleName('');
+    setNewRoleDescription('');
+    onOpenChange(false);
   };
 
   return (
@@ -64,13 +104,71 @@ export function AddPersonDialog({ open, onOpenChange, onAddPerson, teams }: AddP
           
           <div className="space-y-2">
             <Label htmlFor="role">Role</Label>
-            <Input
-              id="role"
-              value={role}
-              onChange={(e) => setRole(e.target.value)}
-              placeholder="Enter role (e.g., Developer, Designer)"
-              required
-            />
+            {!showNewRoleForm ? (
+              <div className="flex gap-2">
+                <Select value={roleId} onValueChange={setRoleId} required>
+                  <SelectTrigger className="flex-1">
+                    <SelectValue placeholder="Select a role" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-background border border-border shadow-lg z-50">
+                    {roles.map((role) => (
+                      <SelectItem key={role.id} value={role.id}>
+                        {role.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowNewRoleForm(true)}
+                  title="Add new role"
+                >
+                  <Plus className="w-4 h-4" />
+                </Button>
+              </div>
+            ) : (
+              <div className="space-y-3 p-3 border rounded-md bg-muted/50">
+                <div className="flex items-center justify-between">
+                  <Label className="text-sm font-medium">Create New Role</Label>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      setShowNewRoleForm(false);
+                      setNewRoleName('');
+                      setNewRoleDescription('');
+                    }}
+                  >
+                    <X className="w-4 h-4" />
+                  </Button>
+                </div>
+                <div className="space-y-2">
+                  <Input
+                    placeholder="Role name"
+                    value={newRoleName}
+                    onChange={(e) => setNewRoleName(e.target.value)}
+                    required
+                  />
+                  <Input
+                    placeholder="Description (optional)"
+                    value={newRoleDescription}
+                    onChange={(e) => setNewRoleDescription(e.target.value)}
+                  />
+                  <Button
+                    type="button"
+                    onClick={handleCreateRole}
+                    disabled={!newRoleName.trim() || isCreatingRole}
+                    size="sm"
+                    className="w-full"
+                  >
+                    {isCreatingRole ? 'Creating...' : 'Create Role'}
+                  </Button>
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="space-y-2">
@@ -101,10 +199,10 @@ export function AddPersonDialog({ open, onOpenChange, onAddPerson, teams }: AddP
           </div>
 
           <div className="flex justify-end gap-2">
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+            <Button type="button" variant="outline" onClick={handleCancel}>
               Cancel
             </Button>
-            <Button type="submit" disabled={isSubmitting || !name.trim() || !role.trim() || !teamId}>
+            <Button type="submit" disabled={isSubmitting || !name.trim() || !roleId || !teamId}>
               {isSubmitting ? 'Adding...' : 'Add Person'}
             </Button>
           </div>
