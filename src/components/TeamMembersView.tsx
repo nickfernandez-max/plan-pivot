@@ -113,13 +113,21 @@ export function TeamMembersView({
       product,
       teams: teams.filter(team => team.product_id === product.id).map(team => ({
         team,
-        members: getTimelineMembers(team.id).sort((a, b) => (a.role?.name || '').localeCompare(b.role?.name || ''))
+        members: getTimelineMembers(team.id).sort((a, b) => {
+          const roleCompare = (a.role?.name || '').localeCompare(b.role?.name || '');
+          if (roleCompare !== 0) return roleCompare;
+          return a.name.localeCompare(b.name);
+        })
       }))
     })).filter(group => group.teams.length > 0);
 
     const teamsWithoutProduct = teams.filter(team => !team.product_id).map(team => ({
       team,
-      members: getTimelineMembers(team.id).sort((a, b) => (a.role?.name || '').localeCompare(b.role?.name || ''))
+      members: getTimelineMembers(team.id).sort((a, b) => {
+        const roleCompare = (a.role?.name || '').localeCompare(b.role?.name || '');
+        if (roleCompare !== 0) return roleCompare;
+        return a.name.localeCompare(b.name);
+      })
     }));
 
     return { productsWithTeams, teamsWithoutProduct };
