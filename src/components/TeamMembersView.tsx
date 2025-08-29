@@ -12,6 +12,7 @@ import { format, addMonths, startOfMonth } from 'date-fns';
 import { TeamMember, Team, Product, TeamMembership } from '@/types/roadmap';
 import { EditTeamMemberDialog } from '@/components/EditTeamMemberDialog';
 import { EditTeamDialog } from '@/components/EditTeamDialog';
+import { EditProductDialog } from '@/components/EditProductDialog';
 
 interface TeamMembersViewProps {
   teamMembers: TeamMember[];
@@ -53,6 +54,7 @@ export function TeamMembersView({
 }: TeamMembersViewProps) {
   const [editingMember, setEditingMember] = useState<TeamMember | null>(null);
   const [editingTeam, setEditingTeam] = useState<Team | null>(null);
+  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [activeTab, setActiveTab] = useState<string>('');
 
   const form = useForm<z.infer<typeof teamMemberSchema>>({
@@ -179,7 +181,7 @@ export function TeamMembersView({
       <Table>
         <TableHeader>
           <TableRow className="h-8">
-            <TableHead className="w-36 text-xs">Name</TableHead>
+            <TableHead className="w-36 text-xs">Team / Member</TableHead>
             <TableHead className="w-28 text-xs">Role</TableHead>
             <TableHead className="w-24 text-xs">Start Date</TableHead>
             {timelineMonths.map((month) => (
@@ -196,7 +198,7 @@ export function TeamMembersView({
           {teams.map(({ team, members }) => (
             <Fragment key={team.id}>
               {/* Team header row */}
-              <TableRow className="bg-muted/50 h-7">
+              <TableRow className="bg-blue-50/50 dark:bg-blue-950/20 h-7">
                 <TableCell 
                   className="font-medium text-sm py-1"
                   style={{ 
@@ -244,7 +246,7 @@ export function TeamMembersView({
              
               {/* Team member rows */}
               {members.map((member) => (
-                <TableRow key={member.id} className="h-8">
+                <TableRow key={member.id} className="h-8 bg-green-50/30 dark:bg-green-950/10">
                   <TableCell className="font-medium text-sm py-1">
                     <div className="flex items-center justify-between gap-1">
                       <span className="truncate text-sm">{member.name}</span>
@@ -265,20 +267,20 @@ export function TeamMembersView({
                     const involvement = getMemberInvolvement(member, month.date, team.id);
                     return (
                       <TableCell key={month.label} className="text-center py-1 px-0">
-                        <div 
-                          className="w-3 h-3 mx-auto rounded flex items-center justify-center text-xs font-medium"
-                          style={{
-                            backgroundColor: involvement > 0 
-                              ? 'hsl(var(--primary/20))'
-                              : 'transparent',
-                            color: involvement > 0 
-                              ? 'black'
-                              : 'hsl(var(--muted-foreground))',
-                            border: involvement > 0 
-                              ? '1px solid hsl(var(--primary))'
-                              : '1px solid hsl(var(--border))'
-                          }}
-                        >
+                         <div 
+                           className="w-3 h-3 mx-auto rounded flex items-center justify-center text-xs font-medium"
+                           style={{
+                             backgroundColor: involvement > 0 
+                               ? 'hsl(var(--primary/20))'
+                               : 'transparent',
+                             color: involvement > 0 
+                               ? 'black'
+                               : 'hsl(var(--muted-foreground))',
+                             border: involvement > 0 
+                               ? '1px solid hsl(var(--primary))'
+                               : '1px solid hsl(var(--border))'
+                           }}
+                         >
                           {involvement > 0 ? involvement : ''}
                         </div>
                       </TableCell>
@@ -306,8 +308,22 @@ export function TeamMembersView({
             <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
               <TabsList className="grid w-full" style={{ gridTemplateColumns: `repeat(${groupedData.productsWithTeams.length + (groupedData.teamsWithoutProduct.length > 0 ? 1 : 0)}, 1fr)` }}>
                 {groupedData.productsWithTeams.map(({ product }) => (
-                  <TabsTrigger key={product.id} value={product.id} className="text-sm">
-                    {product.name}
+                  <TabsTrigger key={product.id} value={product.id} className="text-sm group">
+                    <div className="flex items-center gap-2">
+                      {product.name}
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-4 w-4 p-0 opacity-0 group-hover:opacity-100 group-data-[state=active]:opacity-100 transition-opacity"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setEditingProduct(product);
+                        }}
+                        title="Edit product"
+                      >
+                        <Settings className="w-2.5 h-2.5" />
+                      </Button>
+                    </div>
                   </TabsTrigger>
                 ))}
                 {groupedData.teamsWithoutProduct.length > 0 && (
@@ -351,6 +367,13 @@ export function TeamMembersView({
         onOpenChange={(open) => !open && setEditingTeam(null)}
         onUpdateTeam={onUpdateTeam}
         products={products}
+      />
+      
+      <EditProductDialog
+        product={editingProduct}
+        open={!!editingProduct}
+        onOpenChange={(open) => !open && setEditingProduct(null)}
+        onUpdateProduct={onUpdateProduct}
       />
     </div>
   );
