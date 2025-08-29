@@ -29,6 +29,7 @@ interface TeamMembersViewProps {
   onAddMembership: (membership: Omit<TeamMembership, 'id' | 'created_at' | 'updated_at'>) => Promise<any>;
   onUpdateMembership: (id: string, updates: Partial<TeamMembership>) => Promise<any>;
   onDeleteMembership: (id: string) => Promise<any> | void;
+  onAddRole: (role: Omit<Role, 'id' | 'created_at' | 'updated_at'>) => Promise<Role>;
 }
 
 const teamMemberSchema = z.object({
@@ -53,6 +54,7 @@ export function TeamMembersView({
   onAddMembership,
   onUpdateMembership,
   onDeleteMembership,
+  onAddRole,
 }: TeamMembersViewProps) {
   const [editingMember, setEditingMember] = useState<TeamMember | null>(null);
   const [editingTeam, setEditingTeam] = useState<Team | null>(null);
@@ -362,6 +364,7 @@ export function TeamMembersView({
           member={editingMember}
           teams={teams}
           roles={roles}
+          teamMembers={teamMembers}
           memberships={memberships}
           isOpen={!!editingMember}
           onClose={() => setEditingMember(null)}
@@ -369,6 +372,7 @@ export function TeamMembersView({
           onUpdateMembership={onUpdateMembership}
           onDeleteMembership={onDeleteMembership}
           onUpdateMember={onUpdateTeamMember}
+          onAddRole={onAddRole}
         />
       
       <EditTeamDialog

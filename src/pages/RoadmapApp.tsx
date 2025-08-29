@@ -317,6 +317,7 @@ export default function RoadmapApp() {
               onAddMembership={addTeamMembership}
               onUpdateMembership={updateTeamMembership}
               onDeleteMembership={deleteTeamMembership}
+              onAddRole={addRole}
             />
           </TabsContent>
 

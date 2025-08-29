@@ -6,12 +6,15 @@ import { MonthYearPicker } from '@/components/ui/month-year-picker';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Team, TeamMember, TeamMembership, Role } from '@/types/roadmap';
 import { format, startOfMonth, subMonths } from 'date-fns';
-import { CalendarIcon, ArrowRight, Trash2 } from 'lucide-react';
+import { CalendarIcon, ArrowRight, Trash2, Plus, X } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 
 interface EditTeamMemberDialogProps {
   member: TeamMember | null;
   teams: Team[];
   roles: Role[];
+  teamMembers: TeamMember[];
   memberships: TeamMembership[];
   isOpen: boolean;
   onClose: () => void;
@@ -19,12 +22,14 @@ interface EditTeamMemberDialogProps {
   onUpdateMembership: (id: string, updates: Partial<TeamMembership>) => Promise<any>;
   onDeleteMembership: (id: string) => Promise<any> | void;
   onUpdateMember: (id: string, updates: Partial<TeamMember>) => Promise<any>;
+  onAddRole: (role: Omit<Role, 'id' | 'created_at' | 'updated_at'>) => Promise<Role>;
 }
 
 export function EditTeamMemberDialog({
   member,
   teams,
   roles,
+  teamMembers,
   memberships,
   isOpen,
   onClose,
@@ -32,16 +37,27 @@ export function EditTeamMemberDialog({
   onUpdateMembership,
   onDeleteMembership,
   onUpdateMember,
+  onAddRole,
 }: EditTeamMemberDialogProps) {
   const [selectedMembershipId, setSelectedMembershipId] = useState<string>('');
   const [newTeamId, setNewTeamId] = useState<string>('');
   const [transitionMonth, setTransitionMonth] = useState<Date | undefined>(undefined);
+  const [showNewRoleForm, setShowNewRoleForm] = useState(false);
+  const [newRoleName, setNewRoleName] = useState('');
+  const [newRoleDescription, setNewRoleDescription] = useState('');
+  const [isCreatingRole, setIsCreatingRole] = useState(false);
 
   const memberMemberships = useMemo(() => {
     return memberships
       .filter(m => m.team_member_id === (member?.id || ''))
       .sort((a, b) => (a.start_month < b.start_month ? -1 : 1));
   }, [memberships, member?.id]);
+
+  // Filter roles to only show ones that are currently assigned to team members
+  const availableRoles = useMemo(() => {
+    const assignedRoleIds = new Set(teamMembers.map(member => member.role_id));
+    return roles.filter(role => assignedRoleIds.has(role.id));
+  }, [roles, teamMembers]);
 
   // Get current/active memberships (no end date or end date in future)
   const activeMemberships = useMemo(() => {
@@ -55,6 +71,34 @@ export function EditTeamMemberDialog({
     setSelectedMembershipId('');
     setNewTeamId('');
     setTransitionMonth(undefined);
+    setShowNewRoleForm(false);
+    setNewRoleName('');
+    setNewRoleDescription('');
+  };
+
+  const handleCreateRole = async () => {
+    if (!newRoleName.trim()) return;
+    
+    setIsCreatingRole(true);
+    try {
+      const createdRole = await onAddRole({
+        name: newRoleName.trim(),
+        description: newRoleDescription.trim() || undefined,
+      });
+      
+      // Update member with new role
+      if (member) {
+        await onUpdateMember(member.id, { role_id: createdRole.id });
+      }
+      
+      setNewRoleName('');
+      setNewRoleDescription('');
+      setShowNewRoleForm(false);
+    } catch (error) {
+      console.error('Error creating role:', error);
+    } finally {
+      setIsCreatingRole(false);
+    }
   };
 
   const handleMoveTeam = async () => {
@@ -101,25 +145,79 @@ export function EditTeamMemberDialog({
         {/* Change Role */}
         <div className="space-y-3 border-b pb-4">
           <div className="text-sm font-medium">Change Role</div>
-          <Select 
-            value={member?.role_id || ''} 
-            onValueChange={async (roleId) => {
-              if (member && roleId) {
-                await onUpdateMember(member.id, { role_id: roleId });
-              }
-            }}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Select role" />
-            </SelectTrigger>
-            <SelectContent>
-              {roles.map(role => (
-                <SelectItem key={role.id} value={role.id}>
-                  {role.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          {!showNewRoleForm ? (
+            <div className="space-y-2">
+              <Select 
+                value={member?.role_id || ''} 
+                onValueChange={async (roleId) => {
+                  if (member && roleId) {
+                    await onUpdateMember(member.id, { role_id: roleId });
+                  }
+                }}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select role" />
+                </SelectTrigger>
+                <SelectContent>
+                  {availableRoles.map(role => (
+                    <SelectItem key={role.id} value={role.id}>
+                      {role.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setShowNewRoleForm(true)}
+                className="w-full"
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Create New Role
+              </Button>
+            </div>
+          ) : (
+            <div className="space-y-3 p-3 border rounded-md bg-muted/50">
+              <div className="flex items-center justify-between">
+                <Label className="text-sm font-medium">Create New Role</Label>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setShowNewRoleForm(false);
+                    setNewRoleName('');
+                    setNewRoleDescription('');
+                  }}
+                >
+                  <X className="w-4 h-4" />
+                </Button>
+              </div>
+              <div className="space-y-2">
+                <Input
+                  placeholder="Role name"
+                  value={newRoleName}
+                  onChange={(e) => setNewRoleName(e.target.value)}
+                  required
+                />
+                <Input
+                  placeholder="Description (optional)"
+                  value={newRoleDescription}
+                  onChange={(e) => setNewRoleDescription(e.target.value)}
+                />
+                <Button
+                  type="button"
+                  onClick={handleCreateRole}
+                  disabled={!newRoleName.trim() || isCreatingRole}
+                  size="sm"
+                  className="w-full"
+                >
+                  {isCreatingRole ? 'Creating...' : 'Create Role'}
+                </Button>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Move Team Assignment */}
