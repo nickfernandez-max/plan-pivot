@@ -600,7 +600,14 @@ export function ProjectList({ projects, teams, products, onAddProject, onUpdateP
                         <TableCell className="text-xs text-muted-foreground py-2">{new Date(project.start_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</TableCell>
                         <TableCell className="text-xs text-muted-foreground py-2">{new Date(project.end_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</TableCell>
                         <TableCell className="py-2">
-                          <Badge variant={project.value_score >= 8 ? "default" : project.value_score >= 6 ? "secondary" : "outline"} className="text-xs">
+                          <Badge 
+                            variant="outline" 
+                            className="text-xs border-transparent text-white font-medium"
+                            style={{
+                              backgroundColor: `hsl(${200 + (project.value_score - 1) * 20}, 95%, ${Math.max(30, 45 - (project.value_score - 1) * 2)}%)`,
+                              color: 'white'
+                            }}
+                          >
                             {project.value_score}
                           </Badge>
                         </TableCell>
