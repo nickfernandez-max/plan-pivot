@@ -306,6 +306,7 @@ export default function RoadmapApp() {
               teamMembers={filteredTeamMembers} 
               teams={teams}
               products={products}
+              roles={roles}
               memberships={memberships}
               onAddTeamMember={handleAddTeamMember} 
               onUpdateTeamMember={handleUpdateTeamMember}

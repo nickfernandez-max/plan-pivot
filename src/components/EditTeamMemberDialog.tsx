@@ -4,30 +4,34 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { MonthYearPicker } from '@/components/ui/month-year-picker';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Team, TeamMember, TeamMembership } from '@/types/roadmap';
+import { Team, TeamMember, TeamMembership, Role } from '@/types/roadmap';
 import { format, startOfMonth, subMonths } from 'date-fns';
 import { CalendarIcon, ArrowRight, Trash2 } from 'lucide-react';
 
 interface EditTeamMemberDialogProps {
   member: TeamMember | null;
   teams: Team[];
+  roles: Role[];
   memberships: TeamMembership[];
   isOpen: boolean;
   onClose: () => void;
   onAddMembership: (membership: Omit<TeamMembership, 'id' | 'created_at' | 'updated_at'>) => Promise<any>;
   onUpdateMembership: (id: string, updates: Partial<TeamMembership>) => Promise<any>;
   onDeleteMembership: (id: string) => Promise<any> | void;
+  onUpdateMember: (id: string, updates: Partial<TeamMember>) => Promise<any>;
 }
 
 export function EditTeamMemberDialog({
   member,
   teams,
+  roles,
   memberships,
   isOpen,
   onClose,
   onAddMembership,
   onUpdateMembership,
   onDeleteMembership,
+  onUpdateMember,
 }: EditTeamMemberDialogProps) {
   const [selectedMembershipId, setSelectedMembershipId] = useState<string>('');
   const [newTeamId, setNewTeamId] = useState<string>('');
@@ -93,6 +97,30 @@ export function EditTeamMemberDialog({
             {member ? `${member.name} — ${member.role?.name}` : ''}
           </DialogDescription>
         </DialogHeader>
+
+        {/* Change Role */}
+        <div className="space-y-3 border-b pb-4">
+          <div className="text-sm font-medium">Change Role</div>
+          <Select 
+            value={member?.role_id || ''} 
+            onValueChange={async (roleId) => {
+              if (member && roleId) {
+                await onUpdateMember(member.id, { role_id: roleId });
+              }
+            }}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Select role" />
+            </SelectTrigger>
+            <SelectContent>
+              {roles.map(role => (
+                <SelectItem key={role.id} value={role.id}>
+                  {role.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
 
         {/* Move Team Assignment */}
         {activeMemberships.length > 0 && (

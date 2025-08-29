@@ -9,7 +9,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { format, addMonths, startOfMonth } from 'date-fns';
-import { TeamMember, Team, Product, TeamMembership } from '@/types/roadmap';
+import { TeamMember, Team, Product, TeamMembership, Role } from '@/types/roadmap';
 import { EditTeamMemberDialog } from '@/components/EditTeamMemberDialog';
 import { EditTeamDialog } from '@/components/EditTeamDialog';
 import { EditProductDialog } from '@/components/EditProductDialog';
@@ -18,9 +18,10 @@ interface TeamMembersViewProps {
   teamMembers: TeamMember[];
   teams: Team[];
   products: Product[];
+  roles: Role[];
   memberships: TeamMembership[];
   onAddTeamMember: (member: Omit<TeamMember, 'id' | 'created_at' | 'updated_at'>) => void;
-  onUpdateTeamMember: (id: string, updates: Partial<TeamMember>) => void;
+  onUpdateTeamMember: (id: string, updates: Partial<TeamMember>) => Promise<void>;
   onAddProduct: (product: Omit<Product, 'id' | 'created_at' | 'updated_at'>) => void;
   onUpdateProduct: (id: string, updates: Partial<Product>) => void;
   onAddTeam: (team: Omit<Team, 'id' | 'created_at' | 'updated_at'>) => void;
@@ -41,6 +42,7 @@ export function TeamMembersView({
   teamMembers, 
   teams, 
   products, 
+  roles,
   memberships,
   onAddTeamMember, 
   onUpdateTeamMember, 
@@ -356,16 +358,18 @@ export function TeamMembersView({
         </CardContent>
       </Card>
 
-      <EditTeamMemberDialog
-        member={editingMember}
-        teams={teams}
-        memberships={memberships}
-        isOpen={!!editingMember}
-        onClose={() => setEditingMember(null)}
-        onAddMembership={onAddMembership}
-        onUpdateMembership={onUpdateMembership}
-        onDeleteMembership={onDeleteMembership}
-      />
+        <EditTeamMemberDialog
+          member={editingMember}
+          teams={teams}
+          roles={roles}
+          memberships={memberships}
+          isOpen={!!editingMember}
+          onClose={() => setEditingMember(null)}
+          onAddMembership={onAddMembership}
+          onUpdateMembership={onUpdateMembership}
+          onDeleteMembership={onDeleteMembership}
+          onUpdateMember={onUpdateTeamMember}
+        />
       
       <EditTeamDialog
         team={editingTeam}
