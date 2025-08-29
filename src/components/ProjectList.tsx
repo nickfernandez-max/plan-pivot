@@ -382,6 +382,7 @@ export function ProjectList({ projects, teams, products, onAddProject, onUpdateP
                       {getSortIcon('name')}
                     </div>
                   </TableHead>
+                  <TableHead className="h-10 text-xs font-semibold">Products</TableHead>
                   <TableHead 
                     className="cursor-pointer select-none h-10 text-xs font-semibold"
                     onClick={() => handleSort('team')}
@@ -427,7 +428,6 @@ export function ProjectList({ projects, teams, products, onAddProject, onUpdateP
                       {getSortIcon('is_rd')}
                     </div>
                   </TableHead>
-                  <TableHead className="h-10 text-xs font-semibold">Products</TableHead>
                   <TableHead className="h-10 text-xs font-semibold">Assignees</TableHead>
                   <TableHead className="h-10 text-xs font-semibold w-16"></TableHead>
                 </TableRow>
@@ -594,6 +594,22 @@ export function ProjectList({ projects, teams, products, onAddProject, onUpdateP
                       <>
                         <TableCell className="font-medium text-sm py-2">{project.name}</TableCell>
                         <TableCell className="py-2">
+                          <div className="flex flex-wrap gap-1">
+                            {project.products && project.products.length > 0 ? (
+                              project.products.slice(0, 2).map((product) => (
+                                <Badge key={product.id} variant="outline" className="text-xs" style={{ borderColor: product.color, color: product.color }}>
+                                  {product.name}
+                                </Badge>
+                              ))
+                            ) : (
+                              <span className="text-muted-foreground text-xs">—</span>
+                            )}
+                            {project.products && project.products.length > 2 && (
+                              <Badge variant="outline" className="text-xs">+{project.products.length - 2}</Badge>
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell className="py-2">
                           <Badge variant="secondary" className="text-xs">
                             {project.team?.name}
                           </Badge>
@@ -611,22 +627,6 @@ export function ProjectList({ projects, teams, products, onAddProject, onUpdateP
                           ) : (
                             <span className="text-muted-foreground text-xs">—</span>
                           )}
-                        </TableCell>
-                        <TableCell className="py-2">
-                          <div className="flex flex-wrap gap-1">
-                            {project.products && project.products.length > 0 ? (
-                              project.products.slice(0, 2).map((product) => (
-                                <Badge key={product.id} variant="outline" className="text-xs" style={{ borderColor: product.color, color: product.color }}>
-                                  {product.name}
-                                </Badge>
-                              ))
-                            ) : (
-                              <span className="text-muted-foreground text-xs">—</span>
-                            )}
-                            {project.products && project.products.length > 2 && (
-                              <Badge variant="outline" className="text-xs">+{project.products.length - 2}</Badge>
-                            )}
-                          </div>
                         </TableCell>
                         <TableCell className="py-2">
                           <TooltipProvider delayDuration={300}>
