@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Project, TeamMember, Team, Product, ProjectAssignment } from '@/types/roadmap';
+import { Project, TeamMember, Team, Product, ProjectAssignment, WorkAssignment } from '@/types/roadmap';
 import { format, differenceInDays, addDays, startOfMonth, endOfMonth, addMonths, subMonths, startOfWeek, addWeeks, differenceInWeeks } from 'date-fns';
 import { useDragAndDrop } from '@/hooks/useDragAndDrop';
 import { DraggableProject } from '@/components/DraggableProject';
@@ -13,6 +13,7 @@ import { EditProjectDialog } from '@/components/EditProjectDialog';
 import { ProportionalDragOverlay } from '@/components/ProportionalDragOverlay';
 import { Users, ChevronLeft, ChevronRight, Calendar, UserPlus } from 'lucide-react';
 import { AddProjectAssignmentDialog } from '@/components/AddProjectAssignmentDialog';
+import { AddWorkAssignmentDialog } from '@/components/AddWorkAssignmentDialog';
 
 interface RoadmapViewProps {
   projects: Project[];
@@ -20,11 +21,15 @@ interface RoadmapViewProps {
   teams: Team[];
   products: Product[];
   assignments: ProjectAssignment[];
+  workAssignments: WorkAssignment[];
   onUpdateProject: (id: string, updates: Partial<Project>) => Promise<void>;
   onUpdateProjectAssignees: (projectId: string, assigneeIds: string[]) => Promise<void>;
   onUpdateProjectProducts: (projectId: string, productIds: string[]) => Promise<void>;
   onUpdateProjectAssignments: (projectId: string, assignments: { teamMemberId: string; percentAllocation: number; startDate?: string; endDate?: string }[]) => Promise<void>;
   onAddProject: (project: Omit<Project, 'id' | 'created_at' | 'updated_at'>) => Promise<any>;
+  onAddWorkAssignment: (assignment: Omit<WorkAssignment, 'id' | 'created_at' | 'updated_at'>) => Promise<any>;
+  onUpdateWorkAssignment: (id: string, updates: Partial<WorkAssignment>) => Promise<any>;
+  onDeleteWorkAssignment: (id: string) => Promise<void>;
 }
 
 interface ProjectWithPosition extends Project {
@@ -154,17 +159,33 @@ export function RoadmapView({
   teams, 
   products,
   assignments,
+  workAssignments,
   onUpdateProject, 
   onUpdateProjectAssignees,
   onUpdateProjectProducts,
   onUpdateProjectAssignments,
-  onAddProject
+  onAddProject,
+  onAddWorkAssignment,
+  onUpdateWorkAssignment,
+  onDeleteWorkAssignment
 }: RoadmapViewProps) {
   const [editingProject, setEditingProject] = useState<Project | null>(null);
   const [isAssignmentDialogOpen, setIsAssignmentDialogOpen] = useState(false);
+  const [isWorkAssignmentDialogOpen, setIsWorkAssignmentDialogOpen] = useState(false);
+  const [selectedMember, setSelectedMember] = useState<{ id: string; name: string } | null>(null);
   
   // State for number of months to display
   const [monthsToShow, setMonthsToShow] = useState<number>(9);
+  
+  const handleOpenWorkAssignmentDialog = (memberId: string, memberName: string) => {
+    setSelectedMember({ id: memberId, name: memberName });
+    setIsWorkAssignmentDialogOpen(true);
+  };
+
+  const handleCloseWorkAssignmentDialog = () => {
+    setIsWorkAssignmentDialogOpen(false);
+    setSelectedMember(null);
+  };
   
   // Calculate the full timeline bounds to determine navigation limits
   const fullTimelineBounds = useMemo(() => {
@@ -614,8 +635,10 @@ export function RoadmapView({
                       {teamMemberRows.map(({ member, rowHeight, allocatedPercentage }) => (
                         <div
                           key={member.id}
-                          className="flex items-center px-8 py-1 text-xs border-b border-border/50 bg-background"
+                          className="flex items-center px-8 py-1 text-xs border-b border-border/50 bg-background cursor-pointer hover:bg-muted/50 transition-colors"
                           style={{ height: `${rowHeight}px` }}
+                          onClick={() => handleOpenWorkAssignmentDialog(member.id, member.name)}
+                          title="Click to add work assignment"
                         >
                           <div className="flex-1 min-w-0">
                             <div className="font-medium truncate text-sm">{member.name}</div>
@@ -664,8 +687,10 @@ export function RoadmapView({
                       {teamMemberRows.map(({ member, rowHeight, allocatedPercentage }) => (
                         <div
                           key={member.id}
-                          className="flex items-center px-8 py-1 text-xs border-b border-border/50 bg-background"
+                          className="flex items-center px-8 py-1 text-xs border-b border-border/50 bg-background cursor-pointer hover:bg-muted/50 transition-colors"
                           style={{ height: `${rowHeight}px` }}
+                          onClick={() => handleOpenWorkAssignmentDialog(member.id, member.name)}
+                          title="Click to add work assignment"
                         >
                           <div className="flex-1 min-w-0">
                             <div className="font-medium truncate text-sm">{member.name}</div>
@@ -977,6 +1002,17 @@ export function RoadmapView({
       onAddProject={onAddProject}
       onUpdateProjectAssignments={onUpdateProjectAssignments}
     />
+
+    {/* Add Work Assignment Dialog */}
+    {selectedMember && (
+      <AddWorkAssignmentDialog
+        isOpen={isWorkAssignmentDialogOpen}
+        onClose={handleCloseWorkAssignmentDialog}
+        teamMemberId={selectedMember.id}
+        memberName={selectedMember.name}
+        onAddWorkAssignment={onAddWorkAssignment}
+      />
+    )}
   </DndContext>
   );
 }

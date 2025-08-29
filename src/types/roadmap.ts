@@ -76,5 +76,19 @@ export interface TeamMembership {
   updated_at?: string;
 }
 
+export interface WorkAssignment {
+  id: string;
+  name: string;
+  description?: string;
+  team_member_id: string;
+  type: 'support' | 'queue_work' | 'other';
+  percent_allocation: number;
+  start_date: string;
+  end_date: string;
+  color?: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
 export type SortField = keyof Omit<Project, 'id' | 'assignees' | 'color' | 'created_at' | 'updated_at' | 'description'> | 'team';
 export type SortDirection = 'asc' | 'desc';

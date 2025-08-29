@@ -363,6 +363,48 @@ export type Database = {
           },
         ]
       }
+      work_assignments: {
+        Row: {
+          color: string | null
+          created_at: string
+          description: string | null
+          end_date: string
+          id: string
+          name: string
+          percent_allocation: number
+          start_date: string
+          team_member_id: string
+          type: string
+          updated_at: string
+        }
+        Insert: {
+          color?: string | null
+          created_at?: string
+          description?: string | null
+          end_date: string
+          id?: string
+          name: string
+          percent_allocation?: number
+          start_date: string
+          team_member_id: string
+          type: string
+          updated_at?: string
+        }
+        Update: {
+          color?: string | null
+          created_at?: string
+          description?: string | null
+          end_date?: string
+          id?: string
+          name?: string
+          percent_allocation?: number
+          start_date?: string
+          team_member_id?: string
+          type?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { Project, TeamMember, Team, Product, ProjectAssignment, TeamMembership, Role } from '@/types/roadmap';
+import { Project, TeamMember, Team, Product, ProjectAssignment, TeamMembership, Role, WorkAssignment } from '@/types/roadmap';
 
 export function useSupabaseData() {
   const [projects, setProjects] = useState<Project[]>([]);
@@ -10,6 +10,7 @@ export function useSupabaseData() {
   const [roles, setRoles] = useState<Role[]>([]);
   const [assignments, setAssignments] = useState<ProjectAssignment[]>([]);
   const [memberships, setMemberships] = useState<TeamMembership[]>([]);
+  const [workAssignments, setWorkAssignments] = useState<WorkAssignment[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -122,6 +123,18 @@ export function useSupabaseData() {
       }
       console.log('Team memberships fetched:', membershipsData?.length || 0);
 
+      // Fetch work assignments
+      console.log('Fetching work assignments...');
+      const { data: workAssignmentsData, error: workAssignmentsError } = await supabase
+        .from('work_assignments')
+        .select('*')
+        .order('start_date');
+      if (workAssignmentsError) {
+        console.error('Work assignments error:', workAssignmentsError);
+        throw workAssignmentsError;
+      }
+      console.log('Work assignments fetched:', workAssignmentsData?.length || 0);
+
       // Transform the data to match our interface
       const transformedProjects = projectsData?.map(project => ({
         ...project,
@@ -136,6 +149,7 @@ export function useSupabaseData() {
       setProjects(transformedProjects);
       setAssignments(assignmentsData || []);
       setMemberships(membershipsData || []);
+      setWorkAssignments((workAssignmentsData || []) as WorkAssignment[]);
       console.log('Data fetch completed successfully');
     } catch (err) {
       console.error('Error fetching data:', err);
@@ -552,6 +566,60 @@ export function useSupabaseData() {
     setMemberships(prev => prev.filter(m => m.id !== id));
   };
 
+  // Work assignments CRUD
+  const addWorkAssignment = async (assignment: Omit<WorkAssignment, 'id' | 'created_at' | 'updated_at'>) => {
+    try {
+      const { data, error } = await supabase
+        .from('work_assignments')
+        .insert(assignment)
+        .select('*')
+        .single();
+      
+      if (error) throw error;
+      
+      setWorkAssignments(prev => [...prev, data as WorkAssignment]);
+      return data;
+    } catch (err) {
+      console.error('Error adding work assignment:', err);
+      throw err;
+    }
+  };
+
+  const updateWorkAssignment = async (id: string, updates: Partial<WorkAssignment>) => {
+    try {
+      const { data, error } = await supabase
+        .from('work_assignments')
+        .update(updates)
+        .eq('id', id)
+        .select('*')
+        .single();
+      
+      if (error) throw error;
+      
+      setWorkAssignments(prev => prev.map(w => w.id === id ? data as WorkAssignment : w));
+      return data;
+    } catch (err) {
+      console.error('Error updating work assignment:', err);
+      throw err;
+    }
+  };
+
+  const deleteWorkAssignment = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('work_assignments')
+        .delete()
+        .eq('id', id);
+      
+      if (error) throw error;
+      
+      setWorkAssignments(prev => prev.filter(w => w.id !== id));
+    } catch (err) {
+      console.error('Error deleting work assignment:', err);
+      throw err;
+    }
+  };
+
   useEffect(() => {
     fetchData();
 
@@ -587,7 +655,14 @@ export function useSupabaseData() {
         })
         .subscribe();
 
-      subscriptions = [projectsSubscription, teamMembersSubscription, assigneesSubscription, membershipsSubscription];
+      const workAssignmentsSubscription = supabase
+        .channel('work-assignments-changes')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'work_assignments' }, () => {
+          fetchData();
+        })
+        .subscribe();
+
+      subscriptions = [projectsSubscription, teamMembersSubscription, assigneesSubscription, membershipsSubscription, workAssignmentsSubscription];
     } catch (error) {
       console.warn('Real-time subscriptions could not be established:', error);
       // App will continue to work without real-time updates
@@ -612,6 +687,7 @@ export function useSupabaseData() {
     roles,
     assignments,
     memberships,
+    workAssignments,
     loading,
     error,
     addProject,
@@ -629,6 +705,9 @@ export function useSupabaseData() {
     addTeamMembership,
     updateTeamMembership,
     deleteTeamMembership,
+    addWorkAssignment,
+    updateWorkAssignment,
+    deleteWorkAssignment,
     refetch: fetchData,
   };
 };

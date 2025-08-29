@@ -39,6 +39,7 @@ export default function RoadmapApp() {
     roles,
     assignments,
     memberships,
+    workAssignments,
     loading, 
     error, 
     addProject, 
@@ -56,6 +57,9 @@ export default function RoadmapApp() {
     addTeamMembership,
     updateTeamMembership,
     deleteTeamMembership,
+    addWorkAssignment,
+    updateWorkAssignment,
+    deleteWorkAssignment,
   } = useSupabaseData();
 
   // Generate filter options
@@ -274,6 +278,7 @@ export default function RoadmapApp() {
               teams={teams}
               products={products}
               assignments={assignments}
+              workAssignments={workAssignments}
               onUpdateProject={handleUpdateProject}
               onUpdateProjectAssignees={async (projectId: string, assigneeIds: string[]) => {
                 await updateProjectAssignees(projectId, assigneeIds);
@@ -283,6 +288,9 @@ export default function RoadmapApp() {
               }}
               onUpdateProjectAssignments={updateProjectAssignments}
               onAddProject={handleAddProject}
+              onAddWorkAssignment={addWorkAssignment}
+              onUpdateWorkAssignment={updateWorkAssignment}
+              onDeleteWorkAssignment={deleteWorkAssignment}
             />
           </TabsContent>
 
