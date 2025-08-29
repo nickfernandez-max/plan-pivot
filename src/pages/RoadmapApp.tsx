@@ -274,6 +274,10 @@ export default function RoadmapApp() {
 
           <TabsContent value="members">
             <div className="flex gap-2 mb-6">
+              <Button variant="outline" onClick={() => setIsAddMemberDialogOpen(true)}>
+                <Plus className="w-4 h-4 mr-2" />
+                Add Person
+              </Button>
               <Button variant="outline" onClick={() => setIsAddTeamDialogOpen(true)}>
                 <Plus className="w-4 h-4 mr-2" />
                 Add Team
@@ -281,10 +285,6 @@ export default function RoadmapApp() {
               <Button variant="outline" onClick={() => setIsAddProductDialogOpen(true)}>
                 <Plus className="w-4 h-4 mr-2" />
                 Add Product
-              </Button>
-              <Button variant="outline" onClick={() => setIsAddMemberDialogOpen(true)}>
-                <Plus className="w-4 h-4 mr-2" />
-                Add Person
               </Button>
             </div>
             
