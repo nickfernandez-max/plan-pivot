@@ -629,17 +629,17 @@ export function ProjectList({ projects, teams, products, onAddProject, onUpdateP
                           </div>
                         </TableCell>
                         <TableCell className="py-2">
-                          <TooltipProvider>
+                          <TooltipProvider delayDuration={300}>
                             <div className="flex flex-wrap gap-1">
                               {project.assignees && project.assignees.length > 0 ? (
                                 project.assignees.slice(0, 2).map((assignee) => (
                                   <Tooltip key={assignee.id}>
                                     <TooltipTrigger asChild>
-                                      <Badge variant="outline" className="text-xs hover:bg-muted cursor-pointer">
+                                      <button className="text-xs px-2 py-1 border rounded hover:bg-muted">
                                         {assignee.name.split(' ').map(n => n[0]).join('')}
-                                      </Badge>
+                                      </button>
                                     </TooltipTrigger>
-                                    <TooltipContent>
+                                    <TooltipContent side="top">
                                       <p>{assignee.name}</p>
                                     </TooltipContent>
                                   </Tooltip>
@@ -650,11 +650,11 @@ export function ProjectList({ projects, teams, products, onAddProject, onUpdateP
                               {project.assignees && project.assignees.length > 2 && (
                                 <Tooltip>
                                   <TooltipTrigger asChild>
-                                    <Badge variant="outline" className="text-xs hover:bg-muted cursor-pointer">
+                                    <button className="text-xs px-2 py-1 border rounded hover:bg-muted">
                                       +{project.assignees.length - 2}
-                                    </Badge>
+                                    </button>
                                   </TooltipTrigger>
-                                  <TooltipContent>
+                                  <TooltipContent side="top">
                                     <div className="space-y-1">
                                       {project.assignees.slice(2).map((assignee) => (
                                         <p key={assignee.id}>{assignee.name}</p>
