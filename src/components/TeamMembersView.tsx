@@ -114,13 +114,13 @@ export function TeamMembersView({
       teams: teams.filter(team => team.product_id === product.id).map(team => ({
         team,
         members: getTimelineMembers(team.id).sort((a, b) => (a.role?.name || '').localeCompare(b.role?.name || ''))
-      })).filter(group => group.members.length > 0)
+      }))
     })).filter(group => group.teams.length > 0);
 
     const teamsWithoutProduct = teams.filter(team => !team.product_id).map(team => ({
       team,
       members: getTimelineMembers(team.id).sort((a, b) => (a.role?.name || '').localeCompare(b.role?.name || ''))
-    })).filter(group => group.members.length > 0);
+    }));
 
     return { productsWithTeams, teamsWithoutProduct };
   }, [teams, teamMembers, products, memberships]);
@@ -200,7 +200,7 @@ export function TeamMembersView({
         </TableHeader>
         <TableBody>
           {teams.map(({ team, members }) => (
-            <Fragment key={team.id}>
+            <React.Fragment key={team.id}>
               {/* Team header row */}
               <TableRow className="bg-gradient-to-r from-blue-100 to-blue-50 dark:from-blue-950 dark:to-blue-900 border-l-4 border-l-blue-500 shadow-sm h-9">
                 <TableCell 
@@ -298,7 +298,7 @@ export function TeamMembersView({
                  </TableRow>
                 );
               })}
-            </Fragment>
+            </React.Fragment>
           ))}
         </TableBody>
       </Table>

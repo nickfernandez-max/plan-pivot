@@ -310,7 +310,7 @@ export function useSupabaseData() {
     return data;
   };
 
-  const addTeam = async (newTeam: Omit<Team, 'id' | 'created_at' | 'updated_at'>) => {
+  const addTeam = async (newTeam: Omit<Team, 'id' | 'created_at' | 'updated_at'> & { product_id: string }) => {
     try {
       const { data, error } = await supabase
         .from('teams')
