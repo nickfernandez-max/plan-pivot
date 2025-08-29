@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { User, Edit2, Settings } from 'lucide-react';
+import { User, Edit2, Settings, Users } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -198,36 +198,33 @@ export function TeamMembersView({
           {teams.map(({ team, members }) => (
             <Fragment key={team.id}>
               {/* Team header row */}
-              <TableRow className="bg-blue-50/50 dark:bg-blue-950/20 h-7">
+              <TableRow className="bg-gradient-to-r from-blue-100 to-blue-50 dark:from-blue-950 dark:to-blue-900 border-l-4 border-l-blue-500 shadow-sm h-9">
                 <TableCell 
-                  className="font-medium text-sm py-1"
-                  style={{ 
-                    borderLeftColor: 'hsl(var(--primary))',
-                    borderLeftWidth: '3px'
-                  }}
+                  className="font-semibold text-sm py-2"
                 >
                   <div className="flex items-center justify-between gap-2">
-                    <div className="flex items-center gap-2">
-                      <span>{team.name}</span>
-                      <Badge variant="secondary" className="text-xs px-1 py-0">
+                    <div className="flex items-center gap-3">
+                      <Users className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                      <span className="text-blue-900 dark:text-blue-100">{team.name}</span>
+                      <Badge variant="secondary" className="text-xs px-2 py-1 bg-blue-200 text-blue-800 dark:bg-blue-800 dark:text-blue-200">
                         Ideal: {team.ideal_size || 1}
                       </Badge>
                     </div>
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="h-5 w-5 p-0"
+                      className="h-6 w-6 p-0 hover:bg-blue-200 dark:hover:bg-blue-800"
                       onClick={() => setEditingTeam(team)}
                       title="Edit team"
                     >
-                      <Settings className="w-2.5 h-2.5" />
+                      <Settings className="w-3 h-3 text-blue-600 dark:text-blue-400" />
                     </Button>
                   </div>
                 </TableCell>
-                <TableCell className="font-medium text-muted-foreground py-1">
-                  <span className="text-xs">Actual →</span>
+                <TableCell className="font-medium text-blue-700 dark:text-blue-300 py-2">
+                  <span className="text-xs font-medium">Actual →</span>
                 </TableCell>
-                <TableCell className="py-1"></TableCell>
+                <TableCell className="py-2"></TableCell>
                 {timelineMonths.map((month) => {
                   const actualCount = getActualMemberCount(team.id, month.date);
                   const idealCount = team.ideal_size || 1;
@@ -246,23 +243,26 @@ export function TeamMembersView({
              
               {/* Team member rows */}
               {members.map((member) => (
-                <TableRow key={member.id} className="h-8 bg-green-50/30 dark:bg-green-950/10">
-                  <TableCell className="font-medium text-sm py-1">
-                    <div className="flex items-center justify-between gap-1">
-                      <span className="truncate text-sm">{member.name}</span>
+                <TableRow key={member.id} className="h-8 bg-gradient-to-r from-green-50 to-green-25 dark:from-green-950/20 dark:to-green-900/10 border-l-2 border-l-green-400">
+                  <TableCell className="font-medium text-sm py-2">
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-3">
+                        <User className="w-3.5 h-3.5 text-green-600 dark:text-green-400 ml-2" />
+                        <span className="truncate text-sm text-green-900 dark:text-green-100">{member.name}</span>
+                      </div>
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="h-5 w-5 p-0"
+                        className="h-5 w-5 p-0 hover:bg-green-200 dark:hover:bg-green-800"
                         onClick={() => setEditingMember(member)}
                         title="Edit memberships"
                       >
-                        <Edit2 className="w-2.5 h-2.5" />
+                        <Edit2 className="w-2.5 h-2.5 text-green-600 dark:text-green-400" />
                       </Button>
                     </div>
                   </TableCell>
-                  <TableCell className="text-muted-foreground text-sm py-1">{member.role}</TableCell>
-                  <TableCell className="text-sm py-1">{format(new Date(member.start_date), 'MMM d, yy')}</TableCell>
+                  <TableCell className="text-green-700 dark:text-green-300 text-sm py-2">{member.role}</TableCell>
+                  <TableCell className="text-green-700 dark:text-green-300 text-sm py-2">{format(new Date(member.start_date), 'MMM d, yy')}</TableCell>
                   {timelineMonths.map((month) => {
                     const involvement = getMemberInvolvement(member, month.date, team.id);
                     return (
