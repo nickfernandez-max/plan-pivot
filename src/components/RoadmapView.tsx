@@ -1115,13 +1115,35 @@ export function RoadmapView({
         // Estimate timeline width (full container minus 192px sidebar width)
         const timelineWidth = Math.max(800, window.innerWidth - 240);
 
+        // Find all assignees for this project
+        const projectAssignees = assignments.filter(a => a.project_id === draggedProject.id);
+        
+        // Get assignee names for display
+        const assigneeNames = projectAssignees
+          .map(assignment => {
+            const member = teamMembers.find(m => m.id === assignment.team_member_id);
+            return member?.name;
+          })
+          .filter(Boolean);
+
         return (
-          <ProportionalDragOverlay 
-            project={draggedProject} 
-            timelineBounds={timelineBounds}
-            totalDays={totalDays}
-            timelineWidth={timelineWidth}
-          />
+          <div className="pointer-events-none">
+            <ProportionalDragOverlay 
+              project={draggedProject} 
+              timelineBounds={timelineBounds}
+              totalDays={totalDays}
+              timelineWidth={timelineWidth}
+            />
+            {/* Show indicator for multiple assignees */}
+            {assigneeNames.length > 1 && (
+              <div className="absolute top-full left-0 mt-1 px-2 py-1 bg-popover text-popover-foreground rounded-md shadow-lg text-xs whitespace-nowrap border">
+                <div className="font-medium">Assigned to {assigneeNames.length} members:</div>
+                <div className="text-muted-foreground">
+                  {assigneeNames.join(', ')}
+                </div>
+              </div>
+            )}
+          </div>
         );
       })()}
     </DragOverlay>
