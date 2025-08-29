@@ -157,6 +157,7 @@ export function ProjectList({ projects, teams, products, onAddProject, onUpdateP
   };
 
   return (
+    <TooltipProvider>
       <div className="space-y-4">
       <div className="flex justify-between items-center">
         <div>
@@ -629,42 +630,40 @@ export function ProjectList({ projects, teams, products, onAddProject, onUpdateP
                           </div>
                         </TableCell>
                         <TableCell className="py-2">
-                          <TooltipProvider>
-                            <div className="flex flex-wrap gap-1">
-                              {project.assignees && project.assignees.length > 0 ? (
-                                project.assignees.slice(0, 2).map((assignee) => (
-                                  <Tooltip key={assignee.id}>
-                                    <TooltipTrigger asChild>
-                                      <Badge variant="outline" className="text-xs cursor-help">
-                                        {assignee.name.split(' ').map(n => n[0]).join('')}
-                                      </Badge>
-                                    </TooltipTrigger>
-                                    <TooltipContent>
-                                      <p>{assignee.name}</p>
-                                    </TooltipContent>
-                                  </Tooltip>
-                                ))
-                              ) : (
-                                <span className="text-muted-foreground text-xs">—</span>
-                              )}
-                              {project.assignees && project.assignees.length > 2 && (
-                                <Tooltip>
+                          <div className="flex flex-wrap gap-1">
+                            {project.assignees && project.assignees.length > 0 ? (
+                              project.assignees.slice(0, 2).map((assignee) => (
+                                <Tooltip key={assignee.id}>
                                   <TooltipTrigger asChild>
-                                    <Badge variant="outline" className="text-xs cursor-help">
-                                      +{project.assignees.length - 2}
+                                    <Badge variant="outline" className="text-xs hover:bg-muted">
+                                      {assignee.name.split(' ').map(n => n[0]).join('')}
                                     </Badge>
                                   </TooltipTrigger>
                                   <TooltipContent>
-                                    <div className="space-y-1">
-                                      {project.assignees.slice(2).map((assignee) => (
-                                        <p key={assignee.id}>{assignee.name}</p>
-                                      ))}
-                                    </div>
+                                    <p>{assignee.name}</p>
                                   </TooltipContent>
                                 </Tooltip>
-                              )}
-                            </div>
-                          </TooltipProvider>
+                              ))
+                            ) : (
+                              <span className="text-muted-foreground text-xs">—</span>
+                            )}
+                            {project.assignees && project.assignees.length > 2 && (
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Badge variant="outline" className="text-xs hover:bg-muted">
+                                    +{project.assignees.length - 2}
+                                  </Badge>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <div className="space-y-1">
+                                    {project.assignees.slice(2).map((assignee) => (
+                                      <p key={assignee.id}>{assignee.name}</p>
+                                    ))}
+                                  </div>
+                                </TooltipContent>
+                              </Tooltip>
+                            )}
+                          </div>
                         </TableCell>
                         <TableCell className="py-2">
                           <Button
@@ -686,5 +685,6 @@ export function ProjectList({ projects, teams, products, onAddProject, onUpdateP
         </CardContent>
       </Card>
     </div>
+    </TooltipProvider>
   );
 }
