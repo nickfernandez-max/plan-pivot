@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -33,6 +33,7 @@ interface Assignment {
 }
 
 const assignmentSchema = z.object({
+  memberId: z.string().min(1, "Please select a team member"),
   projectType: z.enum(['existing', 'new']),
   existingProjectId: z.string().optional(),
   newProjectName: z.string().optional(),
@@ -41,12 +42,9 @@ const assignmentSchema = z.object({
   newProjectEndDate: z.string().optional(),
   newProjectValueScore: z.number().min(1).max(10).optional(),
   newProjectIsRD: z.boolean().optional(),
-  assignments: z.array(z.object({
-    memberId: z.string(),
-    allocation: z.number().min(1).max(100),
-    startDate: z.string().optional(),
-    endDate: z.string().optional(),
-  })).min(1),
+  allocation: z.number().min(1).max(100),
+  startDate: z.string().optional(),
+  endDate: z.string().optional(),
 }).refine((data) => {
   if (data.projectType === 'existing') {
     return !!data.existingProjectId;
@@ -80,49 +78,74 @@ export function AddProjectAssignmentDialog({
   onAddProject,
   onUpdateProjectAssignments,
 }: AddProjectAssignmentDialogProps) {
-  const [assignments, setAssignments] = useState<Assignment[]>([]);
-
   const form = useForm<AssignmentFormData>({
     resolver: zodResolver(assignmentSchema),
     defaultValues: {
       projectType: 'existing',
       newProjectValueScore: 5,
       newProjectIsRD: false,
-      assignments: [],
+      allocation: 25,
     },
   });
 
   const projectType = form.watch('projectType');
   const selectedProjectId = form.watch('existingProjectId');
+  const selectedMemberId = form.watch('memberId');
 
-  useEffect(() => {
-    form.setValue('assignments', assignments);
-  }, [assignments, form]);
+  // Sort projects based on selected team member's relevance
+  const sortedProjects = useMemo(() => {
+    if (!selectedMemberId) return projects;
+    
+    const selectedMember = teamMembers.find(m => m.id === selectedMemberId);
+    if (!selectedMember) return projects;
+
+    const memberTeam = teams.find(t => t.id === selectedMember.team_id);
+    const memberProductId = memberTeam?.product_id;
+
+    // Categorize projects
+    const generalProjects = projects.filter(p => 
+      p.name.toLowerCase().includes('support') || 
+      p.name.toLowerCase().includes('queue') ||
+      p.name.toLowerCase().includes('maintenance') ||
+      p.name.toLowerCase().includes('ops')
+    );
+    
+    const sameProductProjects = memberProductId 
+      ? projects.filter(p => 
+          !generalProjects.includes(p) && 
+          (p.team?.product_id === memberProductId || 
+           p.products?.some(prod => prod.id === memberProductId))
+        )
+      : [];
+    
+    const otherProjects = projects.filter(p => 
+      !generalProjects.includes(p) && !sameProductProjects.includes(p)
+    );
+
+    // Sort each category alphabetically
+    const sortAlphabetically = (a: Project, b: Project) => a.name.localeCompare(b.name);
+    
+    return [
+      ...generalProjects.sort(sortAlphabetically),
+      ...sameProductProjects.sort(sortAlphabetically), 
+      ...otherProjects.sort(sortAlphabetically)
+    ];
+  }, [projects, selectedMemberId, teamMembers, teams]);
 
   // Get project dates for assignment defaults
-  const selectedProject = projects.find(p => p.id === selectedProjectId);
+  const selectedProject = sortedProjects.find(p => p.id === selectedProjectId);
   const defaultStartDate = selectedProject?.start_date || form.watch('newProjectStartDate');
   const defaultEndDate = selectedProject?.end_date || form.watch('newProjectEndDate');
 
-  const addAssignment = () => {
-    const newAssignment: Assignment = {
-      memberId: '',
-      allocation: 25,
-      startDate: defaultStartDate,
-      endDate: defaultEndDate,
-    };
-    setAssignments([...assignments, newAssignment]);
-  };
-
-  const removeAssignment = (index: number) => {
-    setAssignments(assignments.filter((_, i) => i !== index));
-  };
-
-  const updateAssignment = (index: number, field: keyof Assignment, value: any) => {
-    const updated = [...assignments];
-    updated[index] = { ...updated[index], [field]: value };
-    setAssignments(updated);
-  };
+  // Auto-fill dates when member or project changes
+  useEffect(() => {
+    if (defaultStartDate && !form.getValues('startDate')) {
+      form.setValue('startDate', defaultStartDate);
+    }
+    if (defaultEndDate && !form.getValues('endDate')) {
+      form.setValue('endDate', defaultEndDate);
+    }
+  }, [defaultStartDate, defaultEndDate, form]);
 
   const onSubmit = async (data: AssignmentFormData) => {
     try {
@@ -152,19 +175,18 @@ export function AddProjectAssignmentDialog({
         projectId = data.existingProjectId!;
       }
 
-      // Add assignments
-      const assignmentData = assignments.map(assignment => ({
-        teamMemberId: assignment.memberId,
-        percentAllocation: assignment.allocation,
-        startDate: assignment.startDate,
-        endDate: assignment.endDate,
-      }));
+      // Create single assignment
+      const assignmentData = [{
+        teamMemberId: data.memberId!,
+        percentAllocation: data.allocation,
+        startDate: data.startDate,
+        endDate: data.endDate,
+      }];
 
       await onUpdateProjectAssignments(projectId, assignmentData);
 
       // Reset form and close dialog
       form.reset();
-      setAssignments([]);
       onOpenChange(false);
     } catch (error) {
       console.error('Error creating project assignment:', error);
@@ -183,22 +205,25 @@ export function AddProjectAssignmentDialog({
         
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            {/* Project Selection */}
+            {/* Team Member Selection - First Step */}
             <FormField
               control={form.control}
-              name="projectType"
+              name="memberId"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Project Type</FormLabel>
+                  <FormLabel>Select Team Member</FormLabel>
                   <Select onValueChange={field.onChange} value={field.value}>
                     <FormControl>
                       <SelectTrigger>
-                        <SelectValue placeholder="Select project type" />
+                        <SelectValue placeholder="Choose a team member to assign" />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="existing">Assign to Existing Project</SelectItem>
-                      <SelectItem value="new">Create New Project & Assign</SelectItem>
+                      {teamMembers.map((member) => (
+                        <SelectItem key={member.id} value={member.id}>
+                          {member.name} ({member.team?.name})
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                   <FormMessage />
@@ -206,7 +231,34 @@ export function AddProjectAssignmentDialog({
               )}
             />
 
-            {projectType === 'existing' && (
+            {selectedMemberId && (
+              <>
+                {/* Project Selection */}
+                <FormField
+                  control={form.control}
+                  name="projectType"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Project Type</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select project type" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="existing">Assign to Existing Project</SelectItem>
+                          <SelectItem value="new">Create New Project & Assign</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </>
+            )}
+
+            {selectedMemberId && projectType === 'existing' && (
               <FormField
                 control={form.control}
                 name="existingProjectId"
@@ -220,11 +272,28 @@ export function AddProjectAssignmentDialog({
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        {projects.map((project) => (
-                          <SelectItem key={project.id} value={project.id}>
-                            {project.name} ({project.team?.name})
-                          </SelectItem>
-                        ))}
+                        {sortedProjects.map((project, index) => {
+                          const isGeneral = project.name.toLowerCase().includes('support') || 
+                                          project.name.toLowerCase().includes('queue') ||
+                                          project.name.toLowerCase().includes('maintenance') ||
+                                          project.name.toLowerCase().includes('ops');
+                          
+                          const selectedMember = teamMembers.find(m => m.id === selectedMemberId);
+                          const memberTeam = teams.find(t => t.id === selectedMember?.team_id);
+                          const isSameProduct = memberTeam?.product_id && 
+                            (project.team?.product_id === memberTeam.product_id || 
+                             project.products?.some(p => p.id === memberTeam.product_id));
+
+                          return (
+                            <SelectItem key={project.id} value={project.id}>
+                              <div className="flex items-center gap-2">
+                                {project.name} ({project.team?.name})
+                                {isGeneral && <Badge variant="secondary" className="text-xs">General</Badge>}
+                                {isSameProduct && !isGeneral && <Badge variant="outline" className="text-xs">Same Product</Badge>}
+                              </div>
+                            </SelectItem>
+                          );
+                        })}
                       </SelectContent>
                     </Select>
                     <FormMessage />
@@ -233,7 +302,7 @@ export function AddProjectAssignmentDialog({
               />
             )}
 
-            {projectType === 'new' && (
+            {selectedMemberId && projectType === 'new' && (
               <div className="space-y-4 border rounded-lg p-4">
                 <h3 className="font-medium">New Project Details</h3>
                 
@@ -327,96 +396,73 @@ export function AddProjectAssignmentDialog({
               </div>
             )}
 
-            {/* Assignments Section */}
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <h3 className="font-medium">Team Member Assignments</h3>
-                <Button type="button" variant="outline" size="sm" onClick={addAssignment}>
-                  <Plus className="w-4 h-4 mr-2" />
-                  Add Assignment
-                </Button>
+            {/* Assignment Details */}
+            {selectedMemberId && (projectType === 'existing' ? selectedProjectId : (projectType === 'new' && form.watch('newProjectName'))) && (
+              <div className="space-y-4 border rounded-lg p-4">
+                <h3 className="font-medium">Assignment Details</h3>
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="allocation"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Allocation %</FormLabel>
+                        <FormControl>
+                          <Input 
+                            type="number" 
+                            min={1} 
+                            max={100} 
+                            {...field}
+                            onChange={(e) => field.onChange(parseInt(e.target.value))}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="startDate"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Start Date</FormLabel>
+                        <FormControl>
+                          <Input type="date" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="endDate"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>End Date</FormLabel>
+                        <FormControl>
+                          <Input type="date" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
               </div>
-
-              {assignments.map((assignment, index) => (
-                <div key={index} className="border rounded-lg p-4 space-y-4">
-                  <div className="flex items-center justify-between">
-                    <span className="font-medium">Assignment {index + 1}</span>
-                    <Button 
-                      type="button" 
-                      variant="ghost" 
-                      size="sm" 
-                      onClick={() => removeAssignment(index)}
-                    >
-                      <X className="w-4 h-4" />
-                    </Button>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="text-sm font-medium">Team Member</label>
-                      <Select 
-                        value={assignment.memberId} 
-                        onValueChange={(value) => updateAssignment(index, 'memberId', value)}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select member" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {teamMembers.map((member) => (
-                            <SelectItem key={member.id} value={member.id}>
-                              {member.name} ({member.team?.name})
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <div>
-                      <label className="text-sm font-medium">Allocation %</label>
-                      <Input 
-                        type="number" 
-                        min={1} 
-                        max={100} 
-                        value={assignment.allocation}
-                        onChange={(e) => updateAssignment(index, 'allocation', parseInt(e.target.value))}
-                      />
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="text-sm font-medium">Start Date</label>
-                      <Input 
-                        type="date" 
-                        value={assignment.startDate || ''}
-                        onChange={(e) => updateAssignment(index, 'startDate', e.target.value)}
-                      />
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium">End Date</label>
-                      <Input 
-                        type="date" 
-                        value={assignment.endDate || ''}
-                        onChange={(e) => updateAssignment(index, 'endDate', e.target.value)}
-                      />
-                    </div>
-                  </div>
-                </div>
-              ))}
-
-              {assignments.length === 0 && (
-                <div className="text-center py-8 text-muted-foreground">
-                  No assignments added. Click "Add Assignment" to get started.
-                </div>
-              )}
-            </div>
+            )}
 
             <div className="flex justify-end gap-2">
               <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
                 Cancel
               </Button>
-              <Button type="submit" disabled={assignments.length === 0}>
-                Create Assignment{assignments.length > 1 ? 's' : ''}
+              <Button 
+                type="submit" 
+                disabled={!selectedMemberId || (projectType === 'existing' ? !selectedProjectId : !form.watch('newProjectName'))}
+              >
+                Create Assignment
               </Button>
             </div>
           </form>
