@@ -12,6 +12,7 @@ import { DroppableMemberRow } from '@/components/DroppableMemberRow';
 import { EditProjectDialog } from '@/components/EditProjectDialog';
 import { ProportionalDragOverlay } from '@/components/ProportionalDragOverlay';
 import { CompactDragOverlay } from '@/components/CompactDragOverlay';
+import { DragPreviewOverlay } from '@/components/DragPreviewOverlay';
 import { Users, ChevronLeft, ChevronRight, Calendar, UserPlus } from 'lucide-react';
 import { AddProjectAssignmentDialog } from '@/components/AddProjectAssignmentDialog';
 import { AddWorkAssignmentDialog } from '@/components/AddWorkAssignmentDialog';
@@ -924,6 +925,19 @@ export function RoadmapView({
                           top={currentMemberTop}
                           isOver={isDropTarget}
                         >
+                          {/* Week grid lines for better alignment during drag */}
+                          {activeDrag && dragOverData.memberId === member.id && (
+                            <div className="absolute inset-0 pointer-events-none">
+                              {Array.from({ length: Math.ceil(totalDays / 7) }, (_, weekIndex) => (
+                                <div
+                                  key={weekIndex}
+                                  className="absolute top-0 bottom-0 w-px bg-primary/30 z-50"
+                                  style={{ left: `${(weekIndex * 7 / totalDays) * 100}%` }}
+                                />
+                              ))}
+                            </div>
+                          )}
+
                           {/* Allocation slot guides */}
                           {[0, 1, 2, 3].map(slotIndex => (
                             <div
@@ -987,6 +1001,23 @@ export function RoadmapView({
                               </div>
                             );
                           })}
+
+                          {/* Drag preview overlay */}
+                          {activeDrag && dragOverData.memberId === member.id && dragOverData.newStartDate && (
+                            <DragPreviewOverlay
+                              project={visibleProjects.find(p => p.id === activeDrag.projectId)!}
+                              newStartDate={dragOverData.newStartDate}
+                              newEndDate={(() => {
+                                const originalStart = new Date(activeDrag.originalStartDate);
+                                const originalEnd = new Date(activeDrag.originalEndDate);
+                                const duration = differenceInDays(originalEnd, originalStart);
+                                return addDays(dragOverData.newStartDate, duration);
+                              })()}
+                              timelineBounds={timelineBounds}
+                              totalDays={totalDays}
+                              isValidDrop={dragOverData.isValidDrop}
+                            />
+                          )}
                         </DroppableMemberRow>
                       );
                     });
@@ -1017,6 +1048,19 @@ export function RoadmapView({
                           top={currentMemberTop}
                           isOver={isDropTarget}
                         >
+                          {/* Week grid lines for better alignment during drag */}
+                          {activeDrag && dragOverData.memberId === member.id && (
+                            <div className="absolute inset-0 pointer-events-none">
+                              {Array.from({ length: Math.ceil(totalDays / 7) }, (_, weekIndex) => (
+                                <div
+                                  key={weekIndex}
+                                  className="absolute top-0 bottom-0 w-px bg-primary/30 z-50"
+                                  style={{ left: `${(weekIndex * 7 / totalDays) * 100}%` }}
+                                />
+                              ))}
+                            </div>
+                          )}
+
                           {/* Allocation slot guides */}
                           {[0, 1, 2, 3].map(slotIndex => (
                             <div
@@ -1080,6 +1124,23 @@ export function RoadmapView({
                               </div>
                             );
                           })}
+
+                          {/* Drag preview overlay */}
+                          {activeDrag && dragOverData.memberId === member.id && dragOverData.newStartDate && (
+                            <DragPreviewOverlay
+                              project={visibleProjects.find(p => p.id === activeDrag.projectId)!}
+                              newStartDate={dragOverData.newStartDate}
+                              newEndDate={(() => {
+                                const originalStart = new Date(activeDrag.originalStartDate);
+                                const originalEnd = new Date(activeDrag.originalEndDate);
+                                const duration = differenceInDays(originalEnd, originalStart);
+                                return addDays(dragOverData.newStartDate, duration);
+                              })()}
+                              timelineBounds={timelineBounds}
+                              totalDays={totalDays}
+                              isValidDrop={dragOverData.isValidDrop}
+                            />
+                          )}
                         </DroppableMemberRow>
                       );
                     });

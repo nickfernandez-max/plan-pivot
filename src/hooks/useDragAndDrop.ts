@@ -77,7 +77,7 @@ export function useDragAndDrop({
     
     if (!over || !activeDrag || timelineDimensions.pixelsPerDay === 0) return;
 
-    // Calculate new position based on drag offset
+    // Calculate new position with better precision
     let newMemberId: string | null = null;
     let newStartDate: Date | null = null;
     let isValidDrop = false;
@@ -87,17 +87,22 @@ export function useDragAndDrop({
       isValidDrop = true;
     }
 
-    // Simplified horizontal position calculation with day-level snapping
+    // More precise horizontal calculation with week-level snapping for better UX
     if (delta.x !== 0) {
-      const dayOffset = Math.round(delta.x / timelineDimensions.pixelsPerDay);
+      // Calculate which week we're hovering over
+      const pixelsPerWeek = timelineDimensions.pixelsPerDay * 7;
+      const weekOffset = Math.round(delta.x / pixelsPerWeek);
+      
       const originalStart = new Date(activeDrag.originalStartDate);
-      newStartDate = addDays(originalStart, dayOffset);
+      const weekStart = startOfWeek(originalStart, { weekStartsOn: 1 });
+      newStartDate = addWeeks(weekStart, weekOffset);
       
       // Constrain to timeline bounds
       if (newStartDate < timelineBounds.start) {
-        newStartDate = new Date(timelineBounds.start);
+        newStartDate = startOfWeek(timelineBounds.start, { weekStartsOn: 1 });
       } else if (newStartDate > timelineBounds.end) {
-        newStartDate = new Date(timelineBounds.end);
+        const weeksInTimeline = Math.floor(differenceInDays(timelineBounds.end, timelineBounds.start) / 7);
+        newStartDate = addWeeks(startOfWeek(timelineBounds.start, { weekStartsOn: 1 }), weeksInTimeline);
       }
     }
 
@@ -123,23 +128,33 @@ export function useDragAndDrop({
         newMemberId = over.data.current.memberId;
       }
 
-      // Handle date changes with day-level precision
+      // Handle date changes with week-level precision for better alignment
       if (delta.x !== 0 && timelineDimensions.pixelsPerDay > 0) {
-        const dayOffset = Math.round(delta.x / timelineDimensions.pixelsPerDay);
+        const pixelsPerWeek = timelineDimensions.pixelsPerDay * 7;
+        const weekOffset = Math.round(delta.x / pixelsPerWeek);
+        
         const originalStart = new Date(activeDrag.originalStartDate);
         const originalEnd = new Date(activeDrag.originalEndDate);
         const projectDuration = differenceInDays(originalEnd, originalStart);
         
-        newStartDate = addDays(originalStart, dayOffset);
+        // Snap to week boundaries for predictable alignment
+        const weekStart = startOfWeek(originalStart, { weekStartsOn: 1 });
+        newStartDate = addWeeks(weekStart, weekOffset);
         newEndDate = addDays(newStartDate, projectDuration);
         
         // Constrain to timeline bounds
         if (newStartDate < timelineBounds.start) {
-          newStartDate = new Date(timelineBounds.start);
+          newStartDate = startOfWeek(timelineBounds.start, { weekStartsOn: 1 });
           newEndDate = addDays(newStartDate, projectDuration);
         } else if (newEndDate > timelineBounds.end) {
           newEndDate = new Date(timelineBounds.end);
           newStartDate = addDays(newEndDate, -projectDuration);
+          // Snap back to week boundary if possible
+          const snappedStart = startOfWeek(newStartDate, { weekStartsOn: 1 });
+          if (addDays(snappedStart, projectDuration) <= timelineBounds.end) {
+            newStartDate = snappedStart;
+            newEndDate = addDays(newStartDate, projectDuration);
+          }
         }
       }
 
