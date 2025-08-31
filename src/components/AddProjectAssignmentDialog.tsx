@@ -21,8 +21,12 @@ import {
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from '@/components/ui/command';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Check, ChevronsUpDown } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Plus, X } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import { Project, TeamMember, Team, Product } from '@/types/roadmap';
 
 interface Assignment {
@@ -78,6 +82,8 @@ export function AddProjectAssignmentDialog({
   onAddProject,
   onUpdateProjectAssignments,
 }: AddProjectAssignmentDialogProps) {
+  const [projectSearchOpen, setProjectSearchOpen] = useState(false);
+  
   const form = useForm<AssignmentFormData>({
     resolver: zodResolver(assignmentSchema),
     defaultValues: {
@@ -265,37 +271,66 @@ export function AddProjectAssignmentDialog({
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Select Project</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select a project" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {sortedProjects.map((project, index) => {
-                          const isGeneral = project.name.toLowerCase().includes('support') || 
-                                          project.name.toLowerCase().includes('queue') ||
-                                          project.name.toLowerCase().includes('maintenance') ||
-                                          project.name.toLowerCase().includes('ops');
-                          
-                          const selectedMember = teamMembers.find(m => m.id === selectedMemberId);
-                          const memberTeam = teams.find(t => t.id === selectedMember?.team_id);
-                          const isSameProduct = memberTeam?.product_id && 
-                            (project.team?.product_id === memberTeam.product_id || 
-                             project.products?.some(p => p.id === memberTeam.product_id));
+                    <Popover open={projectSearchOpen} onOpenChange={setProjectSearchOpen}>
+                      <PopoverTrigger asChild>
+                        <FormControl>
+                          <Button
+                            variant="outline"
+                            role="combobox"
+                            aria-expanded={projectSearchOpen}
+                            className="w-full justify-between"
+                          >
+                            {field.value
+                              ? sortedProjects.find((project) => project.id === field.value)?.name
+                              : "Search and select a project..."}
+                            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                          </Button>
+                        </FormControl>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-full p-0 bg-popover border border-border shadow-md" align="start">
+                        <Command>
+                          <CommandInput placeholder="Search projects..." className="h-9" />
+                          <CommandEmpty>No projects found.</CommandEmpty>
+                          <CommandGroup className="max-h-64 overflow-auto">
+                            {sortedProjects.map((project) => {
+                              const isGeneral = project.name.toLowerCase().includes('support') || 
+                                              project.name.toLowerCase().includes('queue') ||
+                                              project.name.toLowerCase().includes('maintenance') ||
+                                              project.name.toLowerCase().includes('ops');
+                              
+                              const selectedMember = teamMembers.find(m => m.id === selectedMemberId);
+                              const memberTeam = teams.find(t => t.id === selectedMember?.team_id);
+                              const isSameProduct = memberTeam?.product_id && 
+                                (project.team?.product_id === memberTeam.product_id || 
+                                 project.products?.some(p => p.id === memberTeam.product_id));
 
-                          return (
-                            <SelectItem key={project.id} value={project.id}>
-                              <div className="flex items-center gap-2">
-                                {project.name} ({project.team?.name})
-                                {isGeneral && <Badge variant="secondary" className="text-xs">General</Badge>}
-                                {isSameProduct && !isGeneral && <Badge variant="outline" className="text-xs">Same Product</Badge>}
-                              </div>
-                            </SelectItem>
-                          );
-                        })}
-                      </SelectContent>
-                    </Select>
+                              return (
+                                <CommandItem
+                                  key={project.id}
+                                  value={`${project.name} ${project.team?.name}`}
+                                  onSelect={() => {
+                                    field.onChange(project.id);
+                                    setProjectSearchOpen(false);
+                                  }}
+                                  className="flex items-center gap-2"
+                                >
+                                  <Check
+                                    className={`mr-2 h-4 w-4 ${
+                                      field.value === project.id ? "opacity-100" : "opacity-0"
+                                    }`}
+                                  />
+                                  <div className="flex items-center gap-2 flex-1">
+                                    <span className="flex-1">{project.name} ({project.team?.name})</span>
+                                    {isGeneral && <Badge variant="secondary" className="text-xs">General</Badge>}
+                                    {isSameProduct && !isGeneral && <Badge variant="outline" className="text-xs">Same Product</Badge>}
+                                  </div>
+                                </CommandItem>
+                              );
+                            })}
+                          </CommandGroup>
+                        </Command>
+                      </PopoverContent>
+                    </Popover>
                     <FormMessage />
                   </FormItem>
                 )}
