@@ -21,9 +21,6 @@ import {
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from '@/components/ui/command';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Check, ChevronsUpDown } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Plus, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -82,7 +79,7 @@ export function AddProjectAssignmentDialog({
   onAddProject,
   onUpdateProjectAssignments,
 }: AddProjectAssignmentDialogProps) {
-  const [projectSearchOpen, setProjectSearchOpen] = useState(false);
+  const [projectSearchTerm, setProjectSearchTerm] = useState('');
   
   const form = useForm<AssignmentFormData>({
     resolver: zodResolver(assignmentSchema),
@@ -98,8 +95,8 @@ export function AddProjectAssignmentDialog({
   const selectedProjectId = form.watch('existingProjectId');
   const selectedMemberId = form.watch('memberId');
 
-  // Sort projects based on selected team member's relevance
-  const sortedProjects = useMemo(() => {
+  // Sort and filter projects based on selected team member's relevance and search term
+  const filteredAndSortedProjects = useMemo(() => {
     // Add defensive checks for all dependencies
     if (!projects || !Array.isArray(projects)) return [];
     if (!teamMembers || !Array.isArray(teamMembers)) return projects;
@@ -140,15 +137,25 @@ export function AddProjectAssignmentDialog({
       return a.name.localeCompare(b.name);
     };
     
-    return [
+    const sortedProjects = [
       ...generalProjects.sort(sortAlphabetically),
       ...sameProductProjects.sort(sortAlphabetically), 
       ...otherProjects.sort(sortAlphabetically)
     ];
-  }, [projects, selectedMemberId, teamMembers, teams]);
+
+    // Filter by search term
+    if (!projectSearchTerm.trim()) return sortedProjects;
+    
+    const searchLower = projectSearchTerm.toLowerCase();
+    return sortedProjects.filter(project => 
+      project && project.name && 
+      (project.name.toLowerCase().includes(searchLower) || 
+       project.team?.name?.toLowerCase().includes(searchLower))
+    );
+  }, [projects, selectedMemberId, teamMembers, teams, projectSearchTerm]);
 
   // Get project dates for assignment defaults
-  const selectedProject = sortedProjects.find(p => p.id === selectedProjectId);
+  const selectedProject = filteredAndSortedProjects.find(p => p.id === selectedProjectId);
   const defaultStartDate = selectedProject?.start_date || form.watch('newProjectStartDate');
   const defaultEndDate = selectedProject?.end_date || form.watch('newProjectEndDate');
 
@@ -280,79 +287,53 @@ export function AddProjectAssignmentDialog({
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Select Project</FormLabel>
-                    <Popover open={projectSearchOpen} onOpenChange={setProjectSearchOpen}>
-                      <PopoverTrigger asChild>
+                    <div className="space-y-2">
+                      <Input
+                        placeholder="Search projects..."
+                        value={projectSearchTerm}
+                        onChange={(e) => setProjectSearchTerm(e.target.value)}
+                        className="w-full"
+                      />
+                      <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl>
-                          <Button
-                            variant="outline"
-                            role="combobox"
-                            aria-expanded={projectSearchOpen}
-                            className="w-full justify-between"
-                          >
-                            {field.value
-                              ? sortedProjects.find((project) => project && project.id === field.value)?.name || "Unknown Project"
-                              : "Search and select a project..."}
-                            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                          </Button>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select a project" />
+                          </SelectTrigger>
                         </FormControl>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-full p-0 bg-popover border border-border shadow-md z-50" align="start">
-                        {/* Only render Command when we have valid data */}
-                        {sortedProjects && sortedProjects.length > 0 ? (
-                          <Command>
-                            <CommandInput placeholder="Search projects..." className="h-9" />
-                            <CommandEmpty>No projects found.</CommandEmpty>
-                            <CommandGroup className="max-h-64 overflow-auto">
-                              {sortedProjects.map((project) => {
-                                // Skip invalid projects
-                                if (!project || !project.id || !project.name) return null;
-                                
-                                const isGeneral = project.name.toLowerCase().includes('support') || 
-                                                project.name.toLowerCase().includes('queue') ||
-                                                project.name.toLowerCase().includes('maintenance') ||
-                                                project.name.toLowerCase().includes('ops');
-                                
-                                const selectedMember = teamMembers?.find(m => m && m.id === selectedMemberId);
-                                const memberTeam = teams?.find(t => t && t.id === selectedMember?.team_id);
-                                const isSameProduct = memberTeam?.product_id && 
-                                  (project.team?.product_id === memberTeam.product_id || 
-                                   (project.products && Array.isArray(project.products) && project.products.some(p => p && p.id === memberTeam.product_id)));
+                        <SelectContent className="max-h-64">
+                          {filteredAndSortedProjects && filteredAndSortedProjects.length > 0 ? (
+                            filteredAndSortedProjects.map((project) => {
+                              if (!project || !project.id || !project.name) return null;
+                              
+                              const isGeneral = project.name.toLowerCase().includes('support') || 
+                                              project.name.toLowerCase().includes('queue') ||
+                                              project.name.toLowerCase().includes('maintenance') ||
+                                              project.name.toLowerCase().includes('ops');
+                              
+                              const selectedMember = teamMembers?.find(m => m && m.id === selectedMemberId);
+                              const memberTeam = teams?.find(t => t && t.id === selectedMember?.team_id);
+                              const isSameProduct = memberTeam?.product_id && 
+                                (project.team?.product_id === memberTeam.product_id || 
+                                 (project.products && Array.isArray(project.products) && project.products.some(p => p && p.id === memberTeam.product_id)));
 
-                                // Ensure value is always a string
-                                const searchValue = `${project.name} ${project.team?.name || 'no-team'}`.trim();
-
-                                return (
-                                  <CommandItem
-                                    key={project.id}
-                                    value={searchValue}
-                                    onSelect={() => {
-                                      field.onChange(project.id);
-                                      setProjectSearchOpen(false);
-                                    }}
-                                    className="flex items-center gap-2"
-                                  >
-                                    <Check
-                                      className={`mr-2 h-4 w-4 ${
-                                        field.value === project.id ? "opacity-100" : "opacity-0"
-                                      }`}
-                                    />
-                                    <div className="flex items-center gap-2 flex-1">
-                                      <span className="flex-1">{project.name} ({project.team?.name || 'No Team'})</span>
-                                      {isGeneral && <Badge variant="secondary" className="text-xs">General</Badge>}
-                                      {isSameProduct && !isGeneral && <Badge variant="outline" className="text-xs">Same Product</Badge>}
-                                    </div>
-                                  </CommandItem>
-                                );
-                              }).filter(Boolean)}
-                            </CommandGroup>
-                          </Command>
-                        ) : (
-                          <div className="p-4 text-center text-sm text-muted-foreground">
-                            Loading projects...
-                          </div>
-                        )}
-                      </PopoverContent>
-                    </Popover>
+                              return (
+                                <SelectItem key={project.id} value={project.id}>
+                                  <div className="flex items-center gap-2 w-full">
+                                    <span className="flex-1">{project.name} ({project.team?.name || 'No Team'})</span>
+                                    {isGeneral && <Badge variant="secondary" className="text-xs">General</Badge>}
+                                    {isSameProduct && !isGeneral && <Badge variant="outline" className="text-xs">Same Product</Badge>}
+                                  </div>
+                                </SelectItem>
+                              );
+                            })
+                          ) : (
+                            <SelectItem value="no-projects" disabled>
+                              {projectSearchTerm ? 'No projects match your search' : 'No projects available'}
+                            </SelectItem>
+                          )}
+                        </SelectContent>
+                      </Select>
+                    </div>
                     <FormMessage />
                   </FormItem>
                 )}
