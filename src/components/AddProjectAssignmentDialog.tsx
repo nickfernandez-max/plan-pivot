@@ -124,6 +124,40 @@ export function AddProjectAssignmentDialog({
     setAssignments(updated);
   };
 
+  // Get currently selected team member's product for project sorting
+  const getSelectedMemberProduct = () => {
+    const selectedMember = assignments.find(a => a.memberId)?.memberId;
+    if (!selectedMember) return null;
+    
+    const member = teamMembers.find(tm => tm.id === selectedMember);
+    if (!member?.team) return null;
+    
+    return member.team.product_id;
+  };
+
+  // Sort projects to prioritize those matching the selected member's product
+  const getSortedProjects = () => {
+    const selectedProductId = getSelectedMemberProduct();
+    if (!selectedProductId) return projects;
+
+    const projectsWithProduct = projects.filter(p => 
+      p.products?.some(prod => prod.id === selectedProductId)
+    );
+    const projectsWithoutProduct = projects.filter(p => 
+      !p.products?.some(prod => prod.id === selectedProductId)
+    );
+
+    return [
+      ...projectsWithProduct.sort((a, b) => a.name.localeCompare(b.name)),
+      ...projectsWithoutProduct.sort((a, b) => a.name.localeCompare(b.name))
+    ];
+  };
+
+  // Get product name for a project to show in dropdown
+  const getProjectProductNames = (project: Project) => {
+    return project.products?.map(p => p.name).join(', ') || '';
+  };
+
   const onSubmit = async (data: AssignmentFormData) => {
     try {
       let projectId: string;
@@ -220,11 +254,34 @@ export function AddProjectAssignmentDialog({
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        {projects.map((project) => (
-                          <SelectItem key={project.id} value={project.id}>
-                            {project.name} ({project.team?.name})
-                          </SelectItem>
-                        ))}
+                        {getSortedProjects().map((project) => {
+                          const selectedProductId = getSelectedMemberProduct();
+                          const hasMatchingProduct = selectedProductId && 
+                            project.products?.some(p => p.id === selectedProductId);
+                          const productNames = getProjectProductNames(project);
+                          
+                          return (
+                            <SelectItem key={project.id} value={project.id}>
+                              <div className="flex items-center justify-between w-full">
+                                <div className="flex flex-col">
+                                  <span className="flex items-center gap-2">
+                                    {project.name} ({project.team?.name})
+                                    {hasMatchingProduct && (
+                                      <Badge variant="secondary" className="text-xs">
+                                        Related
+                                      </Badge>
+                                    )}
+                                  </span>
+                                  {productNames && (
+                                    <span className="text-xs text-muted-foreground">
+                                      Products: {productNames}
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                            </SelectItem>
+                          );
+                        })}
                       </SelectContent>
                     </Select>
                     <FormMessage />
