@@ -100,6 +100,10 @@ export function AddProjectAssignmentDialog({
 
   // Sort projects based on selected team member's relevance
   const sortedProjects = useMemo(() => {
+    // Add defensive checks for all dependencies
+    if (!projects || !Array.isArray(projects)) return [];
+    if (!teamMembers || !Array.isArray(teamMembers)) return projects;
+    if (!teams || !Array.isArray(teams)) return projects;
     if (!selectedMemberId) return projects;
     
     const selectedMember = teamMembers.find(m => m.id === selectedMemberId);
@@ -108,28 +112,33 @@ export function AddProjectAssignmentDialog({
     const memberTeam = teams.find(t => t.id === selectedMember.team_id);
     const memberProductId = memberTeam?.product_id;
 
-    // Categorize projects
+    // Categorize projects with null checks
     const generalProjects = projects.filter(p => 
-      p.name.toLowerCase().includes('support') || 
-      p.name.toLowerCase().includes('queue') ||
-      p.name.toLowerCase().includes('maintenance') ||
-      p.name.toLowerCase().includes('ops')
+      p && p.name && (
+        p.name.toLowerCase().includes('support') || 
+        p.name.toLowerCase().includes('queue') ||
+        p.name.toLowerCase().includes('maintenance') ||
+        p.name.toLowerCase().includes('ops')
+      )
     );
     
     const sameProductProjects = memberProductId 
       ? projects.filter(p => 
-          !generalProjects.includes(p) && 
+          p && !generalProjects.includes(p) && 
           (p.team?.product_id === memberProductId || 
-           p.products?.some(prod => prod.id === memberProductId))
+           (p.products && Array.isArray(p.products) && p.products.some(prod => prod && prod.id === memberProductId)))
         )
       : [];
     
     const otherProjects = projects.filter(p => 
-      !generalProjects.includes(p) && !sameProductProjects.includes(p)
+      p && !generalProjects.includes(p) && !sameProductProjects.includes(p)
     );
 
-    // Sort each category alphabetically
-    const sortAlphabetically = (a: Project, b: Project) => a.name.localeCompare(b.name);
+    // Sort each category alphabetically with null checks
+    const sortAlphabetically = (a: Project, b: Project) => {
+      if (!a?.name || !b?.name) return 0;
+      return a.name.localeCompare(b.name);
+    };
     
     return [
       ...generalProjects.sort(sortAlphabetically),
@@ -292,7 +301,9 @@ export function AddProjectAssignmentDialog({
                           <CommandInput placeholder="Search projects..." className="h-9" />
                           <CommandEmpty>No projects found.</CommandEmpty>
                           <CommandGroup className="max-h-64 overflow-auto">
-                            {sortedProjects.map((project) => {
+                            {sortedProjects && sortedProjects.length > 0 ? sortedProjects.map((project) => {
+                              if (!project || !project.id || !project.name) return null;
+                              
                               const isGeneral = project.name.toLowerCase().includes('support') || 
                                               project.name.toLowerCase().includes('queue') ||
                                               project.name.toLowerCase().includes('maintenance') ||
@@ -302,12 +313,12 @@ export function AddProjectAssignmentDialog({
                               const memberTeam = teams.find(t => t.id === selectedMember?.team_id);
                               const isSameProduct = memberTeam?.product_id && 
                                 (project.team?.product_id === memberTeam.product_id || 
-                                 project.products?.some(p => p.id === memberTeam.product_id));
+                                 (project.products && Array.isArray(project.products) && project.products.some(p => p && p.id === memberTeam.product_id)));
 
                               return (
                                 <CommandItem
                                   key={project.id}
-                                  value={`${project.name} ${project.team?.name}`}
+                                  value={`${project.name} ${project.team?.name || ''}`}
                                   onSelect={() => {
                                     field.onChange(project.id);
                                     setProjectSearchOpen(false);
@@ -320,13 +331,15 @@ export function AddProjectAssignmentDialog({
                                     }`}
                                   />
                                   <div className="flex items-center gap-2 flex-1">
-                                    <span className="flex-1">{project.name} ({project.team?.name})</span>
+                                    <span className="flex-1">{project.name} ({project.team?.name || 'No Team'})</span>
                                     {isGeneral && <Badge variant="secondary" className="text-xs">General</Badge>}
                                     {isSameProduct && !isGeneral && <Badge variant="outline" className="text-xs">Same Product</Badge>}
                                   </div>
                                 </CommandItem>
                               );
-                            })}
+                            }).filter(Boolean) : (
+                              <CommandItem disabled>No projects available</CommandItem>
+                            )}
                           </CommandGroup>
                         </Command>
                       </PopoverContent>
