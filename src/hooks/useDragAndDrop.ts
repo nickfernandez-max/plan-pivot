@@ -38,12 +38,24 @@ export function useDragAndDrop({
   const [dragOverData, setDragOverData] = useState<{
     memberId: string | null;
     newStartDate: Date | null;
-    targetSlot: number | null;
-  }>({ memberId: null, newStartDate: null, targetSlot: null });
+    isValidDrop: boolean;
+  }>({ memberId: null, newStartDate: null, isValidDrop: false });
+  
+  // Cache timeline dimensions for performance
+  const [timelineDimensions, setTimelineDimensions] = useState({ width: 0, pixelsPerDay: 0 });
 
   const handleDragStart = useCallback((event: DragStartEvent) => {
     const { active } = event;
     if (active.data.current) {
+      // Cache timeline dimensions at drag start for performance
+      const containerElement = document.querySelector('.timeline-container');
+      const containerWidth = containerElement?.clientWidth || 1200;
+      const sidebarWidth = 192;
+      const effectiveWidth = containerWidth - sidebarWidth;
+      const pixelsPerDay = effectiveWidth / totalDays;
+      
+      setTimelineDimensions({ width: effectiveWidth, pixelsPerDay });
+      
       // Find the current allocation for this project and member
       const assignment = assignments.find(a => 
         a.project_id === active.data.current.projectId && 
@@ -58,61 +70,46 @@ export function useDragAndDrop({
         originalAllocation: assignment?.percent_allocation || 25,
       });
     }
-  }, [assignments]);
+  }, [assignments, totalDays]);
 
   const handleDragOver = useCallback((event: DragOverEvent) => {
     const { over, delta } = event;
     
-    if (!over || !activeDrag) return;
+    if (!over || !activeDrag || timelineDimensions.pixelsPerDay === 0) return;
 
     // Calculate new position based on drag offset
     let newMemberId: string | null = null;
     let newStartDate: Date | null = null;
-    let targetSlot: number | null = null;
+    let isValidDrop = false;
 
     if (over.data.current?.type === 'member-row') {
       newMemberId = over.data.current.memberId;
-      
-      // Calculate target slot based on vertical position
-      const SLOT_HEIGHT = 22; // Updated to match new compact size
-      if (delta.y !== 0) {
-        const slotIndex = Math.floor(Math.abs(delta.y) / SLOT_HEIGHT);
-        targetSlot = Math.max(0, Math.min(3, slotIndex)); // Clamp to 0-3 slots
-      }
+      isValidDrop = true;
     }
 
-    // Calculate horizontal position change with weekly snapping
+    // Simplified horizontal position calculation with day-level snapping
     if (delta.x !== 0) {
-      const containerElement = document.querySelector('.timeline-container');
-      const containerWidth = containerElement?.clientWidth || 1;
-      const sidebarWidth = 192; // 48 * 4 = 192px for the fixed sidebar
-      const effectiveTimelineWidth = containerWidth - sidebarWidth;
-      const pixelsPerWeek = (effectiveTimelineWidth * 7) / totalDays; // 7 days per week
-      const weekOffset = Math.round(delta.x / pixelsPerWeek);
-      
+      const dayOffset = Math.round(delta.x / timelineDimensions.pixelsPerDay);
       const originalStart = new Date(activeDrag.originalStartDate);
-      const weekStartOfOriginal = startOfWeek(originalStart, { weekStartsOn: 1 }); // Monday start
-      newStartDate = addWeeks(weekStartOfOriginal, weekOffset);
+      newStartDate = addDays(originalStart, dayOffset);
       
       // Constrain to timeline bounds
       if (newStartDate < timelineBounds.start) {
-        newStartDate = startOfWeek(timelineBounds.start, { weekStartsOn: 1 });
+        newStartDate = new Date(timelineBounds.start);
       } else if (newStartDate > timelineBounds.end) {
-        // Find the last week that fits within timeline
-        const weeksInTimeline = Math.floor(differenceInDays(timelineBounds.end, timelineBounds.start) / 7);
-        newStartDate = addWeeks(startOfWeek(timelineBounds.start, { weekStartsOn: 1 }), weeksInTimeline);
+        newStartDate = new Date(timelineBounds.end);
       }
     }
 
-    setDragOverData({ memberId: newMemberId, newStartDate, targetSlot });
-  }, [activeDrag, totalDays, timelineBounds]);
+    setDragOverData({ memberId: newMemberId, newStartDate, isValidDrop });
+  }, [activeDrag, timelineBounds, timelineDimensions]);
 
   const handleDragEnd = useCallback(async (event: DragEndEvent) => {
     const { over, delta } = event;
     
     if (!over || !activeDrag) {
       setActiveDrag(null);
-      setDragOverData({ memberId: null, newStartDate: null, targetSlot: null });
+      setDragOverData({ memberId: null, newStartDate: null, isValidDrop: false });
       return;
     }
 
@@ -126,37 +123,23 @@ export function useDragAndDrop({
         newMemberId = over.data.current.memberId;
       }
 
-      // Handle date changes with weekly snapping
-      if (delta.x !== 0) {
-        const containerElement = document.querySelector('.timeline-container');
-        const containerWidth = containerElement?.clientWidth || 1;
-        const sidebarWidth = 192; // 48 * 4 = 192px for the fixed sidebar
-        const effectiveTimelineWidth = containerWidth - sidebarWidth;
-        const pixelsPerWeek = (effectiveTimelineWidth * 7) / totalDays; // 7 days per week
-        const weekOffset = Math.round(delta.x / pixelsPerWeek);
-        
+      // Handle date changes with day-level precision
+      if (delta.x !== 0 && timelineDimensions.pixelsPerDay > 0) {
+        const dayOffset = Math.round(delta.x / timelineDimensions.pixelsPerDay);
         const originalStart = new Date(activeDrag.originalStartDate);
         const originalEnd = new Date(activeDrag.originalEndDate);
         const projectDuration = differenceInDays(originalEnd, originalStart);
         
-        // Snap to week boundaries
-        const weekStartOfOriginal = startOfWeek(originalStart, { weekStartsOn: 1 });
-        newStartDate = addWeeks(weekStartOfOriginal, weekOffset);
+        newStartDate = addDays(originalStart, dayOffset);
         newEndDate = addDays(newStartDate, projectDuration);
         
         // Constrain to timeline bounds
         if (newStartDate < timelineBounds.start) {
-          newStartDate = startOfWeek(timelineBounds.start, { weekStartsOn: 1 });
+          newStartDate = new Date(timelineBounds.start);
           newEndDate = addDays(newStartDate, projectDuration);
         } else if (newEndDate > timelineBounds.end) {
-          // Move both dates back to fit within timeline
-          const overflow = differenceInDays(newEndDate, timelineBounds.end);
-          newStartDate = addDays(newStartDate, -overflow);
-          newEndDate = addDays(newEndDate, -overflow);
-          
-          // Ensure start is still on week boundary
-          newStartDate = startOfWeek(newStartDate, { weekStartsOn: 1 });
-          newEndDate = addDays(newStartDate, projectDuration);
+          newEndDate = new Date(timelineBounds.end);
+          newStartDate = addDays(newEndDate, -projectDuration);
         }
       }
 
@@ -264,31 +247,28 @@ export function useDragAndDrop({
     }
 
     setActiveDrag(null);
-    setDragOverData({ memberId: null, newStartDate: null, targetSlot: null });
+    setDragOverData({ memberId: null, newStartDate: null, isValidDrop: false });
   }, [activeDrag, totalDays, timelineBounds, assignments, onUpdateProject, onUpdateProjectAssignees, onUpdateProjectAssignments]);
 
   const calculatePreviewPosition = useCallback((project: Project, delta: { x: number; y: number }) => {
-    if (!activeDrag || project.id !== activeDrag.projectId) return null;
+    if (!activeDrag || project.id !== activeDrag.projectId || timelineDimensions.pixelsPerDay === 0) {
+      return null;
+    }
 
-    const containerElement = document.querySelector('.timeline-container');
-    const containerWidth = containerElement?.clientWidth || 1;
-    const sidebarWidth = 192; // 48 * 4 = 192px for the fixed sidebar
-    const effectiveTimelineWidth = containerWidth - sidebarWidth;
-    const pixelsPerWeek = (effectiveTimelineWidth * 7) / totalDays; // 7 days per week
-    const weekOffset = Math.round(delta.x / pixelsPerWeek);
-    
+    const dayOffset = Math.round(delta.x / timelineDimensions.pixelsPerDay);
     const originalStart = new Date(activeDrag.originalStartDate);
-    const weekStartOfOriginal = startOfWeek(originalStart, { weekStartsOn: 1 });
-    const newStartDate = addWeeks(weekStartOfOriginal, weekOffset);
+    const newStartDate = addDays(originalStart, dayOffset);
+    
+    // Calculate position as percentage of timeline
     const daysFromTimelineStart = differenceInDays(newStartDate, timelineBounds.start);
     const newLeftPercentage = Math.max(0, Math.min(100, (daysFromTimelineStart / totalDays) * 100));
 
     return {
       left: newLeftPercentage,
-      opacity: 0.7,
-      transform: `translateY(${delta.y}px)`,
+      opacity: dragOverData.isValidDrop ? 0.9 : 0.5,
+      transform: `scale(1.02)`,
     };
-  }, [activeDrag, totalDays, timelineBounds]);
+  }, [activeDrag, totalDays, timelineBounds, timelineDimensions, dragOverData.isValidDrop]);
 
   return {
     activeDrag,

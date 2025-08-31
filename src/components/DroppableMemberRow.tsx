@@ -35,7 +35,7 @@ export function DroppableMemberRow({
     >
       {children}
       {isOver && (
-        <div className="absolute top-0 left-0 right-0 h-0.5 bg-primary rounded-full shadow-sm" />
+        <div className="absolute inset-0 bg-primary/10 border-2 border-primary/30 rounded-md animate-pulse" />
       )}
     </div>
   );
