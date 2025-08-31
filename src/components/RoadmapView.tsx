@@ -1108,13 +1108,17 @@ export function RoadmapView({
       onUpdateProjectAssignments={onUpdateProjectAssignments}
     />
 
-    <DragOverlay dropAnimation={null}>
+    <DragOverlay 
+      dropAnimation={null}
+      style={{ zIndex: 9999 }}
+      className="z-[9999]"
+    >
       {activeDrag && (() => {
         const draggedProject = visibleProjects.find(p => p.id === activeDrag.projectId);
         if (!draggedProject) return null;
 
         return (
-          <div className="pointer-events-none transform-gpu">
+          <div className="pointer-events-none transform-gpu z-[9999] opacity-100">
             <CompactDragOverlay project={draggedProject} />
           </div>
         );
