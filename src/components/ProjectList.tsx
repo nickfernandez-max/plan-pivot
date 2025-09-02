@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
-import { Plus, Edit, Save, X, ChevronUp, ChevronDown } from "lucide-react";
+import { Plus, Edit, Save, X, ChevronUp, ChevronDown, ExternalLink } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -592,7 +592,23 @@ export function ProjectList({ projects, teams, products, onAddProject, onUpdateP
                       </>
                     ) : (
                       <>
-                        <TableCell className="font-medium text-sm py-2">{project.name}</TableCell>
+                        <TableCell className="font-medium text-sm py-2">
+                          <div className="flex items-center gap-2">
+                            <span>{project.name}</span>
+                            {project.link && (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  window.open(project.link, '_blank', 'noopener,noreferrer');
+                                }}
+                                className="text-muted-foreground hover:text-primary transition-colors"
+                                title={`Open ${project.name} link`}
+                              >
+                                <ExternalLink className="w-3 h-3" />
+                              </button>
+                            )}
+                          </div>
+                        </TableCell>
                         <TableCell className="py-2">
                           <div className="flex flex-wrap gap-1">
                             {project.products && project.products.length > 0 ? (
