@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { User, Edit2, Settings, Users, ChevronLeft, ChevronRight, Calendar } from 'lucide-react';
+import { User, Edit2, Settings, Users, ChevronLeft, ChevronRight, Calendar, ArrowUp, ArrowDown, ArrowUpDown } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -13,6 +13,7 @@ import { TeamMember, Team, Product, TeamMembership, Role } from '@/types/roadmap
 import { EditTeamMemberDialog } from '@/components/EditTeamMemberDialog';
 import { EditTeamDialog } from '@/components/EditTeamDialog';
 import { EditProductDialog } from '@/components/EditProductDialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 interface TeamMembersViewProps {
   teamMembers: TeamMember[];
@@ -39,6 +40,9 @@ const teamMemberSchema = z.object({
   start_date: z.string().min(1, "Start date is required"),
 });
 
+type SortField = 'name' | 'role' | 'start_date';
+type SortDirection = 'asc' | 'desc';
+
 export function TeamMembersView({ 
   teamMembers, 
   teams, 
@@ -61,6 +65,12 @@ export function TeamMembersView({
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [activeTab, setActiveTab] = useState<string>('');
   const [timelineStartDate, setTimelineStartDate] = useState(() => startOfMonth(new Date()));
+  
+  // Sorting state
+  const [primarySort, setPrimarySort] = useState<SortField>('role');
+  const [primaryDirection, setPrimaryDirection] = useState<SortDirection>('asc');
+  const [secondarySort, setSecondarySort] = useState<SortField>('name');
+  const [secondaryDirection, setSecondaryDirection] = useState<SortDirection>('asc');
 
   const form = useForm<z.infer<typeof teamMemberSchema>>({
     resolver: zodResolver(teamMemberSchema),
@@ -83,6 +93,76 @@ export function TeamMembersView({
 
   const resetToToday = () => {
     setTimelineStartDate(startOfMonth(new Date()));
+  };
+
+  // Sorting function
+  const sortMembers = (members: TeamMember[]) => {
+    return [...members].sort((a, b) => {
+      // Primary sort
+      let primaryCompare = 0;
+      switch (primarySort) {
+        case 'name':
+          primaryCompare = a.name.localeCompare(b.name);
+          break;
+        case 'role':
+          primaryCompare = (a.role?.name || '').localeCompare(b.role?.name || '');
+          break;
+        case 'start_date':
+          primaryCompare = new Date(a.start_date).getTime() - new Date(b.start_date).getTime();
+          break;
+      }
+      
+      if (primaryDirection === 'desc') primaryCompare *= -1;
+      if (primaryCompare !== 0) return primaryCompare;
+      
+      // Secondary sort
+      let secondaryCompare = 0;
+      switch (secondarySort) {
+        case 'name':
+          secondaryCompare = a.name.localeCompare(b.name);
+          break;
+        case 'role':
+          secondaryCompare = (a.role?.name || '').localeCompare(b.role?.name || '');
+          break;
+        case 'start_date':
+          secondaryCompare = new Date(a.start_date).getTime() - new Date(b.start_date).getTime();
+          break;
+      }
+      
+      if (secondaryDirection === 'desc') secondaryCompare *= -1;
+      return secondaryCompare;
+    });
+  };
+
+  // Handle header click for quick sorting
+  const handleHeaderClick = (field: SortField) => {
+    if (primarySort === field) {
+      // Toggle primary direction
+      setPrimaryDirection(prev => prev === 'asc' ? 'desc' : 'asc');
+    } else if (secondarySort === field) {
+      // Move secondary to primary
+      setPrimarySort(field);
+      setPrimaryDirection(secondaryDirection);
+      setSecondarySort(primarySort);
+      setSecondaryDirection(primaryDirection);
+    } else {
+      // Set as secondary sort
+      setSecondarySort(field);
+      setSecondaryDirection('asc');
+    }
+  };
+
+  // Get sort indicator for table headers
+  const getSortIndicator = (field: SortField) => {
+    if (primarySort === field) {
+      return primaryDirection === 'asc' ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />;
+    } else if (secondarySort === field) {
+      return <div className="flex items-center">
+        <span className="text-xs mr-1">2</span>
+        {secondaryDirection === 'asc' ? <ArrowUp className="w-2.5 h-2.5" /> : <ArrowDown className="w-2.5 h-2.5" />}
+      </div>;
+    }
+    return <ArrowUpDown className="w-3 h-3 opacity-30" />;
   };
 
   // Generate timeline (9 months from timelineStartDate)
@@ -126,29 +206,17 @@ export function TeamMembersView({
       product,
       teams: teams.filter(team => team.product_id === product.id).map(team => ({
         team,
-        members: getTimelineMembers(team.id).sort((a, b) => {
-          const roleA = a.role?.name || '';
-          const roleB = b.role?.name || '';
-          const roleCompare = roleA.localeCompare(roleB);
-          if (roleCompare !== 0) return roleCompare;
-          return a.name.localeCompare(b.name);
-        })
+        members: sortMembers(getTimelineMembers(team.id))
       }))
     })).filter(group => group.teams.length > 0);
 
     const teamsWithoutProduct = teams.filter(team => !team.product_id).map(team => ({
       team,
-      members: getTimelineMembers(team.id).sort((a, b) => {
-        const roleA = a.role?.name || '';
-        const roleB = b.role?.name || '';
-        const roleCompare = roleA.localeCompare(roleB);
-        if (roleCompare !== 0) return roleCompare;
-        return a.name.localeCompare(b.name);
-      })
+      members: sortMembers(getTimelineMembers(team.id))
     }));
 
     return { productsWithTeams, teamsWithoutProduct };
-  }, [teams, teamMembers, products, memberships]);
+  }, [teams, teamMembers, products, memberships, primarySort, primaryDirection, secondarySort, secondaryDirection]);
 
   // Set default active tab
   React.useEffect(() => {
@@ -211,8 +279,24 @@ export function TeamMembersView({
         <TableHeader>
           <TableRow className="h-8">
             <TableHead className="w-36 text-xs">Team / Member</TableHead>
-            <TableHead className="w-28 text-xs">Role</TableHead>
-            <TableHead className="w-24 text-xs">Start Date</TableHead>
+            <TableHead 
+              className="w-28 text-xs cursor-pointer hover:bg-muted/50 select-none"
+              onClick={() => handleHeaderClick('role')}
+            >
+              <div className="flex items-center gap-1">
+                Role
+                {getSortIndicator('role')}
+              </div>
+            </TableHead>
+            <TableHead 
+              className="w-24 text-xs cursor-pointer hover:bg-muted/50 select-none"
+              onClick={() => handleHeaderClick('start_date')}
+            >
+              <div className="flex items-center gap-1">
+                Start Date
+                {getSortIndicator('start_date')}
+              </div>
+            </TableHead>
             {timelineMonths.map((month) => (
               <TableHead key={month.label} className="text-center w-8 px-0">
                 <div className="text-xs leading-tight">
@@ -278,10 +362,15 @@ export function TeamMembersView({
                 <TableRow key={member.id} className="h-8">
                   <TableCell className="font-medium text-sm py-2">
                     <div className="flex items-center justify-between gap-2">
-                      <div className="flex items-center gap-3">
-                        <User className="w-3.5 h-3.5 text-muted-foreground ml-2" />
-                        <span className="truncate text-sm">{member.name}</span>
-                      </div>
+                     <div className="flex items-center gap-3">
+                         <User className="w-3.5 h-3.5 text-muted-foreground ml-2" />
+                         <span 
+                           className="truncate text-sm cursor-pointer hover:text-primary"
+                           onClick={() => handleHeaderClick('name')}
+                         >
+                           {member.name}
+                         </span>
+                       </div>
                       <Button
                         variant="ghost"
                         size="sm"
@@ -335,6 +424,57 @@ export function TeamMembersView({
 
   return (
     <div className="space-y-3">
+      {/* Sorting Controls */}
+      <Card>
+        <CardContent className="p-3">
+          <div className="flex items-center gap-4 flex-wrap">
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-medium text-muted-foreground">Primary Sort:</span>
+              <Select value={primarySort} onValueChange={(value: SortField) => setPrimarySort(value)}>
+                <SelectTrigger className="w-24">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="name">Name</SelectItem>
+                  <SelectItem value="role">Role</SelectItem>
+                  <SelectItem value="start_date">Start Date</SelectItem>
+                </SelectContent>
+              </Select>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setPrimaryDirection(prev => prev === 'asc' ? 'desc' : 'asc')}
+                className="px-2"
+              >
+                {primaryDirection === 'asc' ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />}
+              </Button>
+            </div>
+            
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-medium text-muted-foreground">Secondary Sort:</span>
+              <Select value={secondarySort} onValueChange={(value: SortField) => setSecondarySort(value)}>
+                <SelectTrigger className="w-24">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="name">Name</SelectItem>
+                  <SelectItem value="role">Role</SelectItem>
+                  <SelectItem value="start_date">Start Date</SelectItem>
+                </SelectContent>
+              </Select>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setSecondaryDirection(prev => prev === 'asc' ? 'desc' : 'asc')}
+                className="px-2"
+              >
+                {secondaryDirection === 'asc' ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />}
+              </Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Timeline Navigation */}
       <Card>
         <CardContent className="p-3">
