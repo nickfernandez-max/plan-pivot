@@ -154,8 +154,9 @@ export function useProjectExport() {
       }));
       worksheet['!cols'] = columnWidths;
 
-      // Add worksheet to workbook
-      const sheetName = `Projects Export - ${new Date().toLocaleDateString('en-US')}`;
+      // Add worksheet to workbook with sanitized sheet name
+      const dateStr = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
+      const sheetName = `Projects Export - ${dateStr}`;
       XLSX.utils.book_append_sheet(workbook, worksheet, sheetName);
 
       // Generate filename with current date
