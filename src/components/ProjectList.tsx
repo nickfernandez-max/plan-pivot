@@ -14,6 +14,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
+import { InlineEditableField } from "./InlineEditableField";
 import { Project, Team, Product, SortField, SortDirection, ProjectStatus } from "@/types/roadmap";
 import { useProjectExport } from "@/hooks/useProjectExport";
 
@@ -683,7 +684,12 @@ export function ProjectList({ projects, teams, products, onAddProject, onUpdateP
                       <>
                         <TableCell className="font-medium text-sm py-2">
                           <div className="flex items-center gap-2">
-                            <span>{project.name}</span>
+                            <InlineEditableField
+                              value={project.name}
+                              onSave={(newValue) => onUpdateProject(project.id, { name: newValue })}
+                              type="text"
+                              className="font-medium"
+                            />
                             {project.link && (
                               <button
                                 onClick={(e) => {
@@ -715,28 +721,66 @@ export function ProjectList({ projects, teams, products, onAddProject, onUpdateP
                           </div>
                         </TableCell>
                         <TableCell className="py-2">
-                          <Badge variant="secondary" className="text-xs">
-                            {project.team?.name}
-                          </Badge>
+                          <InlineEditableField
+                            value={project.team?.name || 'Unassigned'}
+                            onSave={(newTeamName) => {
+                              const team = teams.find(t => t.name === newTeamName);
+                              if (team) {
+                                onUpdateProject(project.id, { team_id: team.id });
+                              }
+                            }}
+                            type="select"
+                            options={teams.map(team => ({ value: team.name, label: team.name }))}
+                            variant="badge"
+                          />
                         </TableCell>
-                        <TableCell className="text-xs text-muted-foreground py-2">{new Date(project.start_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</TableCell>
-                        <TableCell className="text-xs text-muted-foreground py-2">{new Date(project.end_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</TableCell>
-                        <TableCell className="py-2">
-                          <Badge variant={project.value_score >= 8 ? "default" : project.value_score >= 6 ? "secondary" : "outline"} className="text-xs">
-                            {project.value_score}
-                          </Badge>
+                        <TableCell className="text-xs text-muted-foreground py-2">
+                          <InlineEditableField
+                            value={project.start_date}
+                            onSave={(newValue) => onUpdateProject(project.id, { start_date: newValue })}
+                            type="date"
+                          />
+                        </TableCell>
+                        <TableCell className="text-xs text-muted-foreground py-2">
+                          <InlineEditableField
+                            value={project.end_date}
+                            onSave={(newValue) => onUpdateProject(project.id, { end_date: newValue })}
+                            type="date"
+                          />
                         </TableCell>
                         <TableCell className="py-2">
-                          {project.is_rd ? (
-                            <Badge variant="outline" className="text-xs">R&D</Badge>
-                          ) : (
-                            <span className="text-muted-foreground text-xs">—</span>
-                          )}
+                          <InlineEditableField
+                            value={project.value_score}
+                            onSave={(newValue) => onUpdateProject(project.id, { value_score: newValue })}
+                            type="number"
+                            min={1}
+                            max={10}
+                            variant="badge"
+                          />
                         </TableCell>
                         <TableCell className="py-2">
-                          <Badge variant={getStatusBadgeVariant(project.status)} className="text-xs">
-                            {project.status}
-                          </Badge>
+                          <InlineEditableField
+                            value={project.is_rd}
+                            onSave={(newValue) => onUpdateProject(project.id, { is_rd: newValue })}
+                            type="boolean"
+                            variant="badge"
+                          />
+                        </TableCell>
+                        <TableCell className="py-2">
+                          <InlineEditableField
+                            value={project.status}
+                            onSave={(newValue) => onUpdateProject(project.id, { status: newValue })}
+                            type="select"
+                            options={[
+                              { value: 'Logged', label: 'Logged' },
+                              { value: 'Planned', label: 'Planned' },
+                              { value: 'In Progress', label: 'In Progress' },
+                              { value: 'Blocked', label: 'Blocked' },
+                              { value: 'On Hold', label: 'On Hold' },
+                              { value: 'Complete', label: 'Complete' }
+                            ]}
+                            variant="badge"
+                          />
                         </TableCell>
                         <TableCell className="py-2">
                           <TooltipProvider delayDuration={300}>
