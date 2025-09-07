@@ -26,6 +26,8 @@ export interface Team {
   product?: Product;
 }
 
+export type ProjectStatus = 'Logged' | 'Planned' | 'In Progress' | 'Blocked' | 'On Hold' | 'Complete';
+
 export interface Project {
   id: string;
   name: string;
@@ -34,6 +36,7 @@ export interface Project {
   end_date: string;
   value_score: number;
   is_rd: boolean;
+  status: ProjectStatus;
   color?: string;
   description?: string;
   link?: string;

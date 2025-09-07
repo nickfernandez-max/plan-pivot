@@ -24,7 +24,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { Plus, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { Project, TeamMember, Team, Product } from '@/types/roadmap';
+import { Project, TeamMember, Team, Product, ProjectStatus } from '@/types/roadmap';
 
 interface Assignment {
   memberId: string;
@@ -182,6 +182,7 @@ export function AddProjectAssignmentDialog({
           end_date: data.newProjectEndDate!,
           value_score: data.newProjectValueScore!,
           is_rd: data.newProjectIsRD || false,
+          status: 'Logged' as ProjectStatus,
         };
         
         await onAddProject(newProject);

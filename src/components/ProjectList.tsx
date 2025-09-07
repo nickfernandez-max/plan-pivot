@@ -14,7 +14,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { Project, Team, Product, SortField, SortDirection } from "@/types/roadmap";
+import { Project, Team, Product, SortField, SortDirection, ProjectStatus } from "@/types/roadmap";
 import { useProjectExport } from "@/hooks/useProjectExport";
 
 interface ProjectListProps {
@@ -33,6 +33,7 @@ const projectSchema = z.object({
   end_date: z.string().min(1, "End date is required"),
   value_score: z.number().min(1).max(10),
   is_rd: z.boolean(),
+  status: z.enum(['Logged', 'Planned', 'In Progress', 'Blocked', 'On Hold', 'Complete']),
   description: z.string().optional(),
   link: z.string().optional(),
   
@@ -55,6 +56,7 @@ export function ProjectList({ projects, teams, products, onAddProject, onUpdateP
       end_date: "",
       value_score: 5,
       is_rd: false,
+      status: "Logged" as ProjectStatus,
       description: "",
       link: "",
       
@@ -121,6 +123,7 @@ export function ProjectList({ projects, teams, products, onAddProject, onUpdateP
       end_date: project.end_date,
       value_score: project.value_score,
       is_rd: project.is_rd,
+      status: project.status,
       description: project.description || "",
       link: project.link || "",
     });
@@ -158,6 +161,21 @@ export function ProjectList({ projects, teams, products, onAddProject, onUpdateP
     handleSaveEdit(values);
   };
 
+  const getStatusBadgeVariant = (status: ProjectStatus) => {
+    switch (status) {
+      case 'Complete':
+        return 'default';
+      case 'In Progress':
+        return 'secondary';
+      case 'Blocked':
+        return 'destructive';
+      case 'On Hold':
+        return 'outline';
+      default:
+        return 'outline';
+    }
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
@@ -182,60 +200,22 @@ export function ProjectList({ projects, teams, products, onAddProject, onUpdateP
               </Button>
             </DialogTrigger>
             <DialogContent className="sm:max-w-md max-h-[85vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>Add New Project</DialogTitle>
-              <DialogDescription>
-                Create a new project and assign it to a team.
-              </DialogDescription>
-            </DialogHeader>
-            <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-3">
-                <FormField
-                  control={form.control}
-                  name="name"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Project Name</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Enter project name" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="team_id"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Team</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select a team" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {teams.map((team) => (
-                            <SelectItem key={team.id} value={team.id}>
-                              {team.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <div className="grid grid-cols-2 gap-4">
+              <DialogHeader>
+                <DialogTitle>Add New Project</DialogTitle>
+                <DialogDescription>
+                  Create a new project and assign it to a team.
+                </DialogDescription>
+              </DialogHeader>
+              <Form {...form}>
+                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-3">
                   <FormField
                     control={form.control}
-                    name="start_date"
+                    name="name"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Start Date</FormLabel>
+                        <FormLabel>Project Name</FormLabel>
                         <FormControl>
-                          <Input type="date" {...field} />
+                          <Input placeholder="Enter project name" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -243,32 +223,130 @@ export function ProjectList({ projects, teams, products, onAddProject, onUpdateP
                   />
                   <FormField
                     control={form.control}
-                    name="end_date"
+                    name="team_id"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>End Date</FormLabel>
-                        <FormControl>
-                          <Input type="date" {...field} />
-                        </FormControl>
+                        <FormLabel>Team</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select a team" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {teams.map((team) => (
+                              <SelectItem key={team.id} value={team.id}>
+                                {team.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                         <FormMessage />
                       </FormItem>
                     )}
                   />
-                </div>
-                <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="start_date"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Start Date</FormLabel>
+                          <FormControl>
+                            <Input type="date" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="end_date"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>End Date</FormLabel>
+                          <FormControl>
+                            <Input type="date" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                  <div className="grid grid-cols-3 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="value_score"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Value Score (1-10)</FormLabel>
+                          <FormControl>
+                            <Input
+                              type="number"
+                              min="1"
+                              max="10"
+                              {...field}
+                              onChange={(e) => field.onChange(parseInt(e.target.value))}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="is_rd"
+                      render={({ field }) => (
+                        <FormItem className="flex flex-col justify-end">
+                          <div className="flex items-center justify-between rounded-lg border p-3 shadow-sm">
+                            <FormLabel className="text-sm">R&D Project</FormLabel>
+                            <FormControl>
+                              <Switch
+                                checked={field.value}
+                                onCheckedChange={field.onChange}
+                              />
+                            </FormControl>
+                          </div>
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="status"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Status</FormLabel>
+                          <Select onValueChange={field.onChange} value={field.value}>
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select status" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              <SelectItem value="Logged">Logged</SelectItem>
+                              <SelectItem value="Planned">Planned</SelectItem>
+                              <SelectItem value="In Progress">In Progress</SelectItem>
+                              <SelectItem value="Blocked">Blocked</SelectItem>
+                              <SelectItem value="On Hold">On Hold</SelectItem>
+                              <SelectItem value="Complete">Complete</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
                   <FormField
                     control={form.control}
-                    name="value_score"
+                    name="description"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Value Score (1-10)</FormLabel>
+                        <FormLabel>Description (Optional)</FormLabel>
                         <FormControl>
-                          <Input
-                            type="number"
-                            min="1"
-                            max="10"
+                          <Textarea 
+                            placeholder="Enter project description"
+                            className="resize-none"
                             {...field}
-                            onChange={(e) => field.onChange(parseInt(e.target.value))}
                           />
                         </FormControl>
                         <FormMessage />
@@ -277,97 +355,62 @@ export function ProjectList({ projects, teams, products, onAddProject, onUpdateP
                   />
                   <FormField
                     control={form.control}
-                    name="is_rd"
+                    name="link"
                     render={({ field }) => (
-                      <FormItem className="flex flex-col justify-end">
-                        <div className="flex items-center justify-between rounded-lg border p-3 shadow-sm">
-                          <FormLabel className="text-sm">R&D Project</FormLabel>
-                          <FormControl>
-                            <Switch
-                              checked={field.value}
-                              onCheckedChange={field.onChange}
-                            />
-                          </FormControl>
-                        </div>
+                      <FormItem>
+                        <FormLabel>Link (Optional)</FormLabel>
+                        <FormControl>
+                          <Input 
+                            placeholder="Enter project link or URL"
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
                       </FormItem>
                     )}
                   />
-                </div>
-                <FormField
-                  control={form.control}
-                  name="description"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Description (Optional)</FormLabel>
-                      <FormControl>
-                        <Textarea 
-                          placeholder="Enter project description"
-                          className="resize-none"
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="link"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Link (Optional)</FormLabel>
-                      <FormControl>
-                        <Input 
-                          placeholder="Enter project link or URL"
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="product_ids"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Products (Optional)</FormLabel>
-                      <FormControl>
-                        <div className="grid grid-cols-2 gap-2 max-h-32 overflow-y-auto border rounded-md p-2">
-                          {products.map((product) => (
-                            <label key={product.id} className="flex items-center space-x-2 cursor-pointer">
-                              <input
-                                type="checkbox"
-                                className="rounded"
-                                checked={field.value?.includes(product.id) || false}
-                                onChange={(e) => {
-                                  const currentIds = field.value || [];
-                                  if (e.target.checked) {
-                                    field.onChange([...currentIds, product.id]);
-                                  } else {
-                                    field.onChange(currentIds.filter(id => id !== product.id));
-                                  }
-                                }}
-                              />
-                              <span className="text-sm">{product.name}</span>
-                            </label>
-                          ))}
-                        </div>
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <div className="flex justify-end space-x-2">
-                  <Button type="button" variant="outline" onClick={() => setIsAddDialogOpen(false)}>
-                    Cancel
-                  </Button>
-                  <Button type="submit">Create Project</Button>
-                </div>
-              </form>
-            </Form>
-          </DialogContent>
-        </Dialog>
+                  <FormField
+                    control={form.control}
+                    name="product_ids"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Products (Optional)</FormLabel>
+                        <FormControl>
+                          <div className="grid grid-cols-2 gap-2 max-h-32 overflow-y-auto border rounded-md p-2">
+                            {products.map((product) => (
+                              <label key={product.id} className="flex items-center space-x-2 cursor-pointer">
+                                <input
+                                  type="checkbox"
+                                  className="rounded"
+                                  checked={field.value?.includes(product.id) || false}
+                                  onChange={(e) => {
+                                    const currentIds = field.value || [];
+                                    if (e.target.checked) {
+                                      field.onChange([...currentIds, product.id]);
+                                    } else {
+                                      field.onChange(currentIds.filter(id => id !== product.id));
+                                    }
+                                  }}
+                                />
+                                <span className="text-sm">{product.name}</span>
+                              </label>
+                            ))}
+                          </div>
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <div className="flex justify-end space-x-2">
+                    <Button type="button" variant="outline" onClick={() => setIsAddDialogOpen(false)}>
+                      Cancel
+                    </Button>
+                    <Button type="submit">Create Project</Button>
+                  </div>
+                </form>
+              </Form>
+            </DialogContent>
+          </Dialog>
         </div>
       </div>
 
@@ -440,6 +483,15 @@ export function ProjectList({ projects, teams, products, onAddProject, onUpdateP
                       {getSortIcon('is_rd')}
                     </div>
                   </TableHead>
+                  <TableHead 
+                    className="cursor-pointer select-none h-10 text-xs font-semibold"
+                    onClick={() => handleSort('status')}
+                  >
+                    <div className="flex items-center space-x-1">
+                      <span>Status</span>
+                      {getSortIcon('status')}
+                    </div>
+                  </TableHead>
                   <TableHead className="h-10 text-xs font-semibold">Assignees</TableHead>
                   <TableHead className="h-10 text-xs font-semibold w-16"></TableHead>
                 </TableRow>
@@ -449,7 +501,7 @@ export function ProjectList({ projects, teams, products, onAddProject, onUpdateP
                   <TableRow key={project.id} className="h-12">
                     {editingProject?.id === project.id ? (
                       <>
-                        <TableCell colSpan={9} className="p-4">
+                        <TableCell colSpan={10} className="p-4">
                           <Form {...editForm}>
                             <form onSubmit={editForm.handleSubmit(onEditSubmit)} className="space-y-3">
                               <div className="grid grid-cols-3 gap-3">
@@ -511,7 +563,7 @@ export function ProjectList({ projects, teams, products, onAddProject, onUpdateP
                                   )}
                                 />
                               </div>
-                              <div className="grid grid-cols-3 gap-3">
+                              <div className="grid grid-cols-4 gap-3">
                                 <FormField
                                   control={editForm.control}
                                   name="start_date"
@@ -555,6 +607,31 @@ export function ProjectList({ projects, teams, products, onAddProject, onUpdateP
                                           </span>
                                         </div>
                                       </FormControl>
+                                      <FormMessage />
+                                    </FormItem>
+                                  )}
+                                />
+                                <FormField
+                                  control={editForm.control}
+                                  name="status"
+                                  render={({ field }) => (
+                                    <FormItem>
+                                      <FormLabel className="text-xs">Status</FormLabel>
+                                      <Select onValueChange={field.onChange} value={field.value}>
+                                        <FormControl>
+                                          <SelectTrigger className="h-8">
+                                            <SelectValue />
+                                          </SelectTrigger>
+                                        </FormControl>
+                                        <SelectContent>
+                                          <SelectItem value="Logged">Logged</SelectItem>
+                                          <SelectItem value="Planned">Planned</SelectItem>
+                                          <SelectItem value="In Progress">In Progress</SelectItem>
+                                          <SelectItem value="Blocked">Blocked</SelectItem>
+                                          <SelectItem value="On Hold">On Hold</SelectItem>
+                                          <SelectItem value="Complete">Complete</SelectItem>
+                                        </SelectContent>
+                                      </Select>
                                       <FormMessage />
                                     </FormItem>
                                   )}
@@ -655,6 +732,11 @@ export function ProjectList({ projects, teams, products, onAddProject, onUpdateP
                           ) : (
                             <span className="text-muted-foreground text-xs">—</span>
                           )}
+                        </TableCell>
+                        <TableCell className="py-2">
+                          <Badge variant={getStatusBadgeVariant(project.status)} className="text-xs">
+                            {project.status}
+                          </Badge>
                         </TableCell>
                         <TableCell className="py-2">
                           <TooltipProvider delayDuration={300}>

@@ -35,10 +35,10 @@ const exportFieldConfig: Record<keyof Project | string, ExportFieldConfig> = {
     formatter: (value) => value ? new Date(value).toLocaleDateString('en-US') : ''
   },
   value_score: { displayName: 'Value Score', type: 'number' },
-  is_rd: { 
-    displayName: 'R&D Project', 
-    type: 'boolean',
-    formatter: (value) => value ? 'Yes' : 'No'
+  status: { 
+    displayName: 'Status', 
+    type: 'string',
+    formatter: (value) => value || 'Logged'
   },
   color: { displayName: 'Color', type: 'string', optional: true },
   // Handle relationship fields
