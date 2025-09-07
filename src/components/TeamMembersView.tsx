@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { User, Edit2, Settings, Users } from 'lucide-react';
+import { User, Edit2, Settings, Users, ChevronLeft, ChevronRight, Calendar } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -60,6 +60,7 @@ export function TeamMembersView({
   const [editingTeam, setEditingTeam] = useState<Team | null>(null);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [activeTab, setActiveTab] = useState<string>('');
+  const [timelineStartDate, setTimelineStartDate] = useState(() => startOfMonth(new Date()));
 
   const form = useForm<z.infer<typeof teamMemberSchema>>({
     resolver: zodResolver(teamMemberSchema),
@@ -71,13 +72,25 @@ export function TeamMembersView({
     },
   });
 
-  // Generate timeline (9 months from now)
+  // Navigation functions
+  const navigateForward = () => {
+    setTimelineStartDate(prev => addMonths(prev, 3));
+  };
+
+  const navigateBackward = () => {
+    setTimelineStartDate(prev => addMonths(prev, -3));
+  };
+
+  const resetToToday = () => {
+    setTimelineStartDate(startOfMonth(new Date()));
+  };
+
+  // Generate timeline (9 months from timelineStartDate)
   const timelineMonths = useMemo(() => {
     const months = [];
-    const startDate = startOfMonth(new Date());
     
     for (let i = 0; i < 9; i++) {
-      const monthDate = addMonths(startDate, i);
+      const monthDate = addMonths(timelineStartDate, i);
       months.push({
         date: monthDate,
         label: format(monthDate, 'MMM yyyy'),
@@ -86,7 +99,7 @@ export function TeamMembersView({
     }
     
     return months;
-  }, []);
+  }, [timelineStartDate]);
 
   // Group teams by product, then team members by team based on timeline memberships
   const groupedData = useMemo(() => {
@@ -317,8 +330,52 @@ export function TeamMembersView({
     </div>
   );
 
+  // Get timeline range display
+  const timelineRange = `${format(timelineMonths[0].date, 'MMM yyyy')} - ${format(timelineMonths[timelineMonths.length - 1].date, 'MMM yyyy')}`;
+
   return (
     <div className="space-y-3">
+      {/* Timeline Navigation */}
+      <Card>
+        <CardContent className="p-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Calendar className="w-4 h-4 text-muted-foreground" />
+              <span className="text-sm font-medium text-muted-foreground">Timeline:</span>
+              <span className="text-sm font-semibold">{timelineRange}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={navigateBackward}
+                className="flex items-center gap-1"
+              >
+                <ChevronLeft className="w-3 h-3" />
+                3 Months
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={resetToToday}
+                className="text-xs"
+              >
+                Today
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={navigateForward}
+                className="flex items-center gap-1"
+              >
+                3 Months
+                <ChevronRight className="w-3 h-3" />
+              </Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       <Card>
         <CardContent className="p-3">
           {teamMembers.length === 0 ? (
