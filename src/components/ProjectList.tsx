@@ -9,12 +9,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
-import { Plus, Edit, Save, X, ChevronUp, ChevronDown, ExternalLink } from "lucide-react";
+import { Plus, Edit, Save, X, ChevronUp, ChevronDown, ExternalLink, Download } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Project, Team, Product, SortField, SortDirection } from "@/types/roadmap";
+import { useProjectExport } from "@/hooks/useProjectExport";
 
 interface ProjectListProps {
   projects: Project[];
@@ -43,6 +44,7 @@ export function ProjectList({ projects, teams, products, onAddProject, onUpdateP
   const [editingProject, setEditingProject] = useState<Project | null>(null);
   const [sortField, setSortField] = useState<SortField>('start_date');
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
+  const { exportToExcel, isExporting } = useProjectExport();
 
   const form = useForm<z.infer<typeof projectSchema>>({
     resolver: zodResolver(projectSchema),
@@ -157,20 +159,29 @@ export function ProjectList({ projects, teams, products, onAddProject, onUpdateP
   };
 
   return (
-      <div className="space-y-4">
+    <div className="space-y-4">
       <div className="flex justify-between items-center">
         <div>
           <h2 className="text-2xl font-bold">Projects</h2>
           <p className="text-muted-foreground">Manage your project portfolio</p>
         </div>
-        <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="w-4 h-4 mr-2" />
-              Add Project
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="sm:max-w-md max-h-[85vh] overflow-y-auto">
+        <div className="flex gap-2">
+          <Button 
+            variant="outline" 
+            onClick={() => exportToExcel(projects)}
+            disabled={isExporting || projects.length === 0}
+          >
+            <Download className="w-4 h-4 mr-2" />
+            {isExporting ? 'Exporting...' : 'Export to Excel'}
+          </Button>
+          <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+            <DialogTrigger asChild>
+              <Button>
+                <Plus className="w-4 h-4 mr-2" />
+                Add Project
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-md max-h-[85vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Add New Project</DialogTitle>
               <DialogDescription>
@@ -357,6 +368,7 @@ export function ProjectList({ projects, teams, products, onAddProject, onUpdateP
             </Form>
           </DialogContent>
         </Dialog>
+        </div>
       </div>
 
       <Card>
