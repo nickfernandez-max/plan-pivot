@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { User, Edit2, Settings, Users, ChevronLeft, ChevronRight, Calendar, ArrowUp, ArrowDown, ArrowUpDown } from 'lucide-react';
+import { User, Edit2, Settings, Users, ChevronLeft, ChevronRight, Calendar, ArrowUp, ArrowDown, ArrowUpDown, Star, StarOff } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -71,6 +71,24 @@ export function TeamMembersView({
   const [primaryDirection, setPrimaryDirection] = useState<SortDirection>('asc');
   const [secondarySort, setSecondarySort] = useState<SortField>('name');
   const [secondaryDirection, setSecondaryDirection] = useState<SortDirection>('asc');
+
+  // Default tab preference state
+  const [defaultTab, setDefaultTab] = useState<string | null>(null);
+
+  // localStorage functions
+  const saveDefaultTab = (tabId: string) => {
+    localStorage.setItem('team-members-default-tab', tabId);
+    setDefaultTab(tabId);
+  };
+
+  const clearDefaultTab = () => {
+    localStorage.removeItem('team-members-default-tab');
+    setDefaultTab(null);
+  };
+
+  const getSavedDefaultTab = (): string | null => {
+    return localStorage.getItem('team-members-default-tab');
+  };
 
   const form = useForm<z.infer<typeof teamMemberSchema>>({
     resolver: zodResolver(teamMemberSchema),
@@ -218,12 +236,33 @@ export function TeamMembersView({
     return { productsWithTeams, teamsWithoutProduct };
   }, [teams, teamMembers, products, memberships, primarySort, primaryDirection, secondarySort, secondaryDirection]);
 
+  // Load default tab preference on mount
+  React.useEffect(() => {
+    const savedDefault = getSavedDefaultTab();
+    setDefaultTab(savedDefault);
+  }, []);
+
   // Set default active tab
   React.useEffect(() => {
-    if (!activeTab && groupedData.productsWithTeams.length > 0) {
-      setActiveTab(groupedData.productsWithTeams[0].product.id);
-    } else if (!activeTab && groupedData.teamsWithoutProduct.length > 0) {
-      setActiveTab('unassigned');
+    if (!activeTab && (groupedData.productsWithTeams.length > 0 || groupedData.teamsWithoutProduct.length > 0)) {
+      const savedDefault = getSavedDefaultTab();
+      
+      // Check if saved default still exists
+      const availableTabs = [
+        ...groupedData.productsWithTeams.map(g => g.product.id),
+        ...(groupedData.teamsWithoutProduct.length > 0 ? ['unassigned'] : [])
+      ];
+      
+      if (savedDefault && availableTabs.includes(savedDefault)) {
+        setActiveTab(savedDefault);
+      } else {
+        // Fall back to first available tab
+        if (groupedData.productsWithTeams.length > 0) {
+          setActiveTab(groupedData.productsWithTeams[0].product.id);
+        } else if (groupedData.teamsWithoutProduct.length > 0) {
+          setActiveTab('unassigned');
+        }
+      }
     }
   }, [groupedData, activeTab]);
 
@@ -525,32 +564,69 @@ export function TeamMembersView({
             </div>
           ) : (
             <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-              <TabsList className="grid w-full" style={{ gridTemplateColumns: `repeat(${groupedData.productsWithTeams.length + (groupedData.teamsWithoutProduct.length > 0 ? 1 : 0)}, 1fr)` }}>
-                {groupedData.productsWithTeams.map(({ product }) => (
-                  <TabsTrigger key={product.id} value={product.id} className="text-sm group">
-                    <div className="flex items-center gap-2">
-                      {product.name}
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-4 w-4 p-0 opacity-0 group-hover:opacity-100 group-data-[state=active]:opacity-100 transition-opacity"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setEditingProduct(product);
-                        }}
-                        title="Edit product"
-                      >
-                        <Settings className="w-2.5 h-2.5" />
-                      </Button>
-                    </div>
-                  </TabsTrigger>
-                ))}
-                {groupedData.teamsWithoutProduct.length > 0 && (
-                  <TabsTrigger value="unassigned" className="text-sm">
-                    Unassigned Teams
-                  </TabsTrigger>
-                )}
-              </TabsList>
+              <div className="flex items-center justify-between gap-4 mb-3">
+                <TabsList className="grid flex-1" style={{ gridTemplateColumns: `repeat(${groupedData.productsWithTeams.length + (groupedData.teamsWithoutProduct.length > 0 ? 1 : 0)}, 1fr)` }}>
+                  {groupedData.productsWithTeams.map(({ product }) => (
+                    <TabsTrigger key={product.id} value={product.id} className="text-sm group relative">
+                      <div className="flex items-center gap-2">
+                        {defaultTab === product.id && (
+                          <Star className="w-3 h-3 text-yellow-500 fill-current" />
+                        )}
+                        {product.name}
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-4 w-4 p-0 opacity-0 group-hover:opacity-100 group-data-[state=active]:opacity-100 transition-opacity"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setEditingProduct(product);
+                          }}
+                          title="Edit product"
+                        >
+                          <Settings className="w-2.5 h-2.5" />
+                        </Button>
+                      </div>
+                    </TabsTrigger>
+                  ))}
+                  {groupedData.teamsWithoutProduct.length > 0 && (
+                    <TabsTrigger value="unassigned" className="text-sm group relative">
+                      <div className="flex items-center gap-2">
+                        {defaultTab === 'unassigned' && (
+                          <Star className="w-3 h-3 text-yellow-500 fill-current" />
+                        )}
+                        Unassigned Teams
+                      </div>
+                    </TabsTrigger>
+                  )}
+                </TabsList>
+                
+                {/* Default Tab Controls */}
+                <div className="flex items-center gap-2">
+                  {defaultTab === activeTab ? (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={clearDefaultTab}
+                      className="flex items-center gap-1 text-xs"
+                      title="Clear default tab"
+                    >
+                      <StarOff className="w-3 h-3" />
+                      Clear Default
+                    </Button>
+                  ) : (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => saveDefaultTab(activeTab)}
+                      className="flex items-center gap-1 text-xs"
+                      title="Set current tab as default"
+                    >
+                      <Star className="w-3 h-3" />
+                      Set Default
+                    </Button>
+                  )}
+                </div>
+              </div>
 
               {groupedData.productsWithTeams.map(({ product, teams: productTeams }) => (
                 <TabsContent key={product.id} value={product.id} className="space-y-0">
