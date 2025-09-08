@@ -298,7 +298,6 @@ export function useDragAndDrop({
     return {
       left: newLeftPercentage,
       opacity: dragOverData.isValidDrop ? 0.9 : 0.5,
-      transform: `scale(1.02)`,
     };
   }, [activeDrag, totalDays, timelineBounds, timelineDimensions, dragOverData.isValidDrop]);
 
