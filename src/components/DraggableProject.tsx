@@ -39,6 +39,7 @@ export function DraggableProject({
       memberId,
       startDate: project.start_date,
       endDate: project.end_date,
+      onClick: onClick, // Pass click handler to drag data
     },
     disabled: isPreview,
   });

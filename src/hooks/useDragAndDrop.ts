@@ -110,9 +110,26 @@ export function useDragAndDrop({
   }, [activeDrag, timelineBounds, timelineDimensions]);
 
   const handleDragEnd = useCallback(async (event: DragEndEvent) => {
-    const { over, delta } = event;
+    const { over, delta, active } = event;
     
-    if (!over || !activeDrag) {
+    if (!activeDrag) {
+      setActiveDrag(null);
+      setDragOverData({ memberId: null, newStartDate: null, isValidDrop: false });
+      return;
+    }
+
+    // Check if this was a click rather than a drag (minimal movement)
+    const isClick = Math.abs(delta.x) < 5 && Math.abs(delta.y) < 5;
+    
+    if (isClick && active.data.current?.onClick) {
+      // Trigger the click handler
+      active.data.current.onClick();
+      setActiveDrag(null);
+      setDragOverData({ memberId: null, newStartDate: null, isValidDrop: false });
+      return;
+    }
+
+    if (!over) {
       setActiveDrag(null);
       setDragOverData({ memberId: null, newStartDate: null, isValidDrop: false });
       return;
