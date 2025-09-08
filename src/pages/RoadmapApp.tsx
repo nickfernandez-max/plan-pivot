@@ -63,13 +63,28 @@ export default function RoadmapApp() {
   } = useSupabaseData();
 
   // Generate filter options
-  const teamNames = useMemo(() => {
-    return Array.from(new Set(teams.map(team => team.name))).sort();
-  }, [teams]);
-
   const productNames = useMemo(() => {
     return Array.from(new Set(products.map(product => product.name))).sort();
   }, [products]);
+
+  // Filter teams based on selected product
+  const filteredTeams = useMemo(() => {
+    if (selectedProduct === 'all') {
+      return teams;
+    }
+    return teams.filter(team => team.product?.name === selectedProduct);
+  }, [teams, selectedProduct]);
+
+  const teamNames = useMemo(() => {
+    return Array.from(new Set(filteredTeams.map(team => team.name))).sort();
+  }, [filteredTeams]);
+
+  // Reset selected team when product changes and team is no longer available
+  useMemo(() => {
+    if (selectedTeam !== 'all' && !teamNames.includes(selectedTeam)) {
+      setSelectedTeam('all');
+    }
+  }, [selectedTeam, teamNames]);
 
   // Filter data based on selected filters
   const filteredProjects = useMemo(() => {
@@ -214,20 +229,6 @@ export default function RoadmapApp() {
           </h1>
           
           <div className="flex gap-4">
-            <Select value={selectedTeam} onValueChange={setSelectedTeam}>
-              <SelectTrigger className="w-48">
-                <SelectValue placeholder="Filter by team" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Teams</SelectItem>
-                {teamNames.map((teamName) => (
-                  <SelectItem key={teamName} value={teamName}>
-                    {teamName}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            
             <Select value={selectedProduct} onValueChange={setSelectedProduct}>
               <SelectTrigger className="w-48">
                 <SelectValue placeholder="Filter by product" />
@@ -237,6 +238,20 @@ export default function RoadmapApp() {
                 {productNames.map((productName) => (
                   <SelectItem key={productName} value={productName}>
                     {productName}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            
+            <Select value={selectedTeam} onValueChange={setSelectedTeam}>
+              <SelectTrigger className="w-48">
+                <SelectValue placeholder="Filter by team" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Teams</SelectItem>
+                {teamNames.map((teamName) => (
+                  <SelectItem key={teamName} value={teamName}>
+                    {teamName}
                   </SelectItem>
                 ))}
               </SelectContent>
