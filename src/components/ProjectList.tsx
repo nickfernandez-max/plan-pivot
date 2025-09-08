@@ -17,7 +17,6 @@ import * as z from "zod";
 import { InlineEditableField } from "./InlineEditableField";
 import { Project, Team, Product, SortField, SortDirection, ProjectStatus } from "@/types/roadmap";
 import { useProjectExport } from "@/hooks/useProjectExport";
-import { usePermissions } from "@/hooks/usePermissions";
 
 interface ProjectListProps {
   projects: Project[];
@@ -48,7 +47,6 @@ export function ProjectList({ projects, teams, products, onAddProject, onUpdateP
   const [sortField, setSortField] = useState<SortField>('start_date');
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
   const { exportToExcel, isExporting } = useProjectExport();
-  const { canEdit } = usePermissions();
 
   const form = useForm<z.infer<typeof projectSchema>>({
     resolver: zodResolver(projectSchema),
@@ -195,14 +193,13 @@ export function ProjectList({ projects, teams, products, onAddProject, onUpdateP
             <Download className="w-4 h-4 mr-2" />
             {isExporting ? 'Exporting...' : 'Export to Excel'}
           </Button>
-          {canEdit && (
-            <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-              <DialogTrigger asChild>
-                <Button>
-                  <Plus className="w-4 h-4 mr-2" />
-                  Add Project
-                </Button>
-              </DialogTrigger>
+          <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+            <DialogTrigger asChild>
+              <Button>
+                <Plus className="w-4 h-4 mr-2" />
+                Add Project
+              </Button>
+            </DialogTrigger>
             <DialogContent className="sm:max-w-md max-h-[85vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>Add New Project</DialogTitle>
@@ -415,7 +412,6 @@ export function ProjectList({ projects, teams, products, onAddProject, onUpdateP
               </Form>
             </DialogContent>
           </Dialog>
-          )}
         </div>
       </div>
 
@@ -424,12 +420,10 @@ export function ProjectList({ projects, teams, products, onAddProject, onUpdateP
           {projects.length === 0 ? (
             <div className="text-center py-8">
               <p className="text-muted-foreground mb-4">No projects found</p>
-              {canEdit && (
-                <Button onClick={() => setIsAddDialogOpen(true)}>
-                  <Plus className="w-4 h-4 mr-2" />
-                  Add Your First Project
-                </Button>
-              )}
+              <Button onClick={() => setIsAddDialogOpen(true)}>
+                <Plus className="w-4 h-4 mr-2" />
+                Add Your First Project
+              </Button>
             </div>
           ) : (
             <Table>
@@ -695,7 +689,6 @@ export function ProjectList({ projects, teams, products, onAddProject, onUpdateP
                               onSave={(newValue) => onUpdateProject(project.id, { name: newValue })}
                               type="text"
                               className="font-medium"
-                              disabled={!canEdit}
                             />
                             {project.link && (
                               <button
@@ -739,7 +732,6 @@ export function ProjectList({ projects, teams, products, onAddProject, onUpdateP
                             type="select"
                             options={teams.map(team => ({ value: team.name, label: team.name }))}
                             variant="badge"
-                            disabled={!canEdit}
                           />
                         </TableCell>
                         <TableCell className="text-xs text-muted-foreground py-2">
@@ -747,7 +739,6 @@ export function ProjectList({ projects, teams, products, onAddProject, onUpdateP
                             value={project.start_date}
                             onSave={(newValue) => onUpdateProject(project.id, { start_date: newValue })}
                             type="date"
-                            disabled={!canEdit}
                           />
                         </TableCell>
                         <TableCell className="text-xs text-muted-foreground py-2">
@@ -755,7 +746,6 @@ export function ProjectList({ projects, teams, products, onAddProject, onUpdateP
                             value={project.end_date}
                             onSave={(newValue) => onUpdateProject(project.id, { end_date: newValue })}
                             type="date"
-                            disabled={!canEdit}
                           />
                         </TableCell>
                         <TableCell className="py-2">
@@ -766,7 +756,6 @@ export function ProjectList({ projects, teams, products, onAddProject, onUpdateP
                             min={1}
                             max={10}
                             variant="badge"
-                            disabled={!canEdit}
                           />
                         </TableCell>
                         <TableCell className="py-2">
@@ -775,7 +764,6 @@ export function ProjectList({ projects, teams, products, onAddProject, onUpdateP
                             onSave={(newValue) => onUpdateProject(project.id, { is_rd: newValue })}
                             type="boolean"
                             variant="badge"
-                            disabled={!canEdit}
                           />
                         </TableCell>
                         <TableCell className="py-2">
@@ -792,7 +780,6 @@ export function ProjectList({ projects, teams, products, onAddProject, onUpdateP
                               { value: 'Complete', label: 'Complete' }
                             ]}
                             variant="badge"
-                            disabled={!canEdit}
                           />
                         </TableCell>
                         <TableCell className="py-2">

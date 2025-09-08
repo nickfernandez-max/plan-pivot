@@ -17,7 +17,6 @@ interface InlineEditableFieldProps {
   className?: string;
   displayValue?: string;
   variant?: 'default' | 'badge';
-  disabled?: boolean;
 }
 
 export function InlineEditableField({
@@ -29,8 +28,7 @@ export function InlineEditableField({
   max,
   className = '',
   displayValue,
-  variant = 'default',
-  disabled = false
+  variant = 'default'
 }: InlineEditableFieldProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [editValue, setEditValue] = useState(value);
@@ -146,9 +144,9 @@ export function InlineEditableField({
 
   return (
     <div
-      className={`group relative ${disabled ? 'cursor-default' : 'cursor-pointer'} transition-colors ${className}`}
-      onClick={disabled ? undefined : () => setIsEditing(true)}
-      onMouseEnter={() => !disabled && setIsHovered(true)}
+      className={`group relative cursor-pointer transition-colors ${className}`}
+      onClick={() => setIsEditing(true)}
+      onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
       {variant === 'badge' ? (
@@ -173,7 +171,7 @@ export function InlineEditableField({
           ) : (
             <span className="text-xs">{displayText}</span>
           )}
-          {isHovered && !disabled && (
+          {isHovered && (
             <Edit2 className="h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
           )}
         </div>
@@ -185,7 +183,7 @@ export function InlineEditableField({
               : displayText
             }
           </span>
-          {isHovered && !disabled && (
+          {isHovered && (
             <Edit2 className="h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
           )}
         </div>
