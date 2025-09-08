@@ -11,6 +11,7 @@ import { ReportsView } from '@/components/ReportsView';
 import { AddProductDialog } from '@/components/AddProductDialog';
 import { AddTeamDialog } from '@/components/AddTeamDialog';
 import { AddPersonDialog } from '@/components/AddPersonDialog';
+import { UserMenu } from '@/components/UserMenu';
 import { useToast } from '@/hooks/use-toast';
 
 export default function RoadmapApp() {
@@ -213,7 +214,9 @@ export default function RoadmapApp() {
             Project Roadmap
           </h1>
           
-          <div className="flex gap-4">
+          <div className="flex items-center gap-4">
+            <UserMenu />
+            <div className="flex gap-4">
             <Select value={selectedTeam} onValueChange={setSelectedTeam}>
               <SelectTrigger className="w-48">
                 <SelectValue placeholder="Filter by team" />
@@ -242,6 +245,7 @@ export default function RoadmapApp() {
               </SelectContent>
             </Select>
             </div>
+          </div>
         </div>
 
         <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-6">
