@@ -218,6 +218,7 @@ export function RoadmapView({
   const [isAssignmentDialogOpen, setIsAssignmentDialogOpen] = useState(false);
   const [isWorkAssignmentDialogOpen, setIsWorkAssignmentDialogOpen] = useState(false);
   const [selectedMember, setSelectedMember] = useState<{ id: string; name: string } | null>(null);
+  const [frontProject, setFrontProject] = useState<string | null>(null);
   
   // State for number of months to display
   const [monthsToShow, setMonthsToShow] = useState<number>(9);
@@ -964,6 +965,8 @@ export function RoadmapView({
                                 team={team}
                                 memberId={member.id}
                                 onEdit={() => setEditingProject(project)}
+                                onClick={() => setFrontProject(project.id)}
+                                isFront={frontProject === project.id}
                                 style={{
                                   left: `${project.left}%`,
                                   width: `${project.width}%`,
@@ -1087,6 +1090,8 @@ export function RoadmapView({
                                  team={team}
                                  memberId={member.id}
                                  onEdit={() => setEditingProject(project)}
+                                 onClick={() => setFrontProject(project.id)}
+                                 isFront={frontProject === project.id}
                                  style={{
                                    left: `${project.left}%`,
                                    width: `${project.width}%`,

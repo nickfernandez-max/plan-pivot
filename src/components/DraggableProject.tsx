@@ -11,6 +11,8 @@ interface DraggableProjectProps {
   memberId: string;
   isPreview?: boolean;
   onEdit?: () => void;
+  onClick?: () => void;
+  isFront?: boolean;
 }
 
 export function DraggableProject({ 
@@ -19,7 +21,9 @@ export function DraggableProject({
   style, 
   memberId, 
   isPreview = false,
-  onEdit
+  onEdit,
+  onClick,
+  isFront = false
 }: DraggableProjectProps) {
   const {
     attributes,
@@ -42,19 +46,25 @@ export function DraggableProject({
   const dragStyle = {
     transform: CSS.Transform.toString(transform),
     opacity: isDragging ? 0.3 : 1,
-    zIndex: isDragging ? 1000 : 1,
+    zIndex: isDragging ? 1000 : (isFront ? 10 : 1),
     cursor: isDragging ? 'grabbing' : 'grab',
   };
 
   return (
     <div
       ref={setNodeRef}
-      className="absolute rounded-md shadow-sm border transition-all hover:shadow-md group animate-fade-in"
+      className="absolute rounded-md shadow-sm border transition-all hover:shadow-md group animate-fade-in cursor-pointer"
       style={{
         ...style,
         ...dragStyle,
         backgroundColor: project.color || 'hsl(var(--primary))',
         borderColor: project.color || 'hsl(var(--primary))',
+      }}
+      onClick={(e) => {
+        if (!isDragging && onClick) {
+          e.stopPropagation();
+          onClick();
+        }
       }}
     >
       <div className="h-full flex items-center overflow-hidden">
