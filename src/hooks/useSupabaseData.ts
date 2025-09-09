@@ -207,9 +207,6 @@ export function useSupabaseData() {
       // Update local state immediately for responsive UI
       setProjects(prev => prev.map(p => p.id === id ? { ...p, ...updates } : p));
       
-      // Trigger full data refetch to ensure consistency
-      await fetchData();
-      
       return data;
     } catch (err) {
       console.error('Error updating project:', err);
@@ -497,8 +494,21 @@ export function useSupabaseData() {
         }
       }
 
-      // Refetch data to update UI
-      await fetchData();
+      // Update local assignments state immediately for responsive UI
+      setAssignments(prev => {
+        const filtered = prev.filter(a => a.project_id !== projectId);
+        const newAssignments = assignments.map(assignment => ({
+          id: `temp-${Date.now()}-${Math.random()}`, // Temporary ID
+          project_id: projectId,
+          team_member_id: assignment.teamMemberId,
+          percent_allocation: assignment.percentAllocation,
+          start_date: assignment.startDate || fallbackStartDate || '',
+          end_date: assignment.endDate || fallbackEndDate || '',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        }));
+        return [...filtered, ...newAssignments];
+      });
     } catch (err) {
       console.error('Error updating project assignments:', err);
       throw err;
