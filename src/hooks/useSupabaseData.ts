@@ -494,21 +494,19 @@ export function useSupabaseData() {
         }
       }
 
-      // Update local assignments state immediately for responsive UI
-      setAssignments(prev => {
-        const filtered = prev.filter(a => a.project_id !== projectId);
-        const newAssignments = assignments.map(assignment => ({
-          id: `temp-${Date.now()}-${Math.random()}`, // Temporary ID
-          project_id: projectId,
-          team_member_id: assignment.teamMemberId,
-          percent_allocation: assignment.percentAllocation,
-          start_date: assignment.startDate || fallbackStartDate || '',
-          end_date: assignment.endDate || fallbackEndDate || '',
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        }));
-        return [...filtered, ...newAssignments];
-      });
+      // Fetch updated assignments for immediate UI update
+      const { data: updatedAssignments } = await supabase
+        .from('project_assignees')
+        .select('*')
+        .eq('project_id', projectId);
+      
+      if (updatedAssignments) {
+        // Update assignments state with fresh data
+        setAssignments(prev => [
+          ...prev.filter(a => a.project_id !== projectId),
+          ...updatedAssignments
+        ]);
+      }
     } catch (err) {
       console.error('Error updating project assignments:', err);
       throw err;
