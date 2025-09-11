@@ -24,6 +24,7 @@ export function EditRoleDialog({ role, onSave }: EditRoleDialogProps) {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
+    name: role.name,
     display_name: role.display_name || role.name,
     hourly_rate: role.hourly_rate?.toString() || '',
   });
@@ -50,6 +51,7 @@ export function EditRoleDialog({ role, onSave }: EditRoleDialogProps) {
     if (newOpen) {
       // Reset form data when opening
       setFormData({
+        name: role.name,
         display_name: role.display_name || role.name,
         hourly_rate: role.hourly_rate?.toString() || '',
       });
@@ -73,6 +75,16 @@ export function EditRoleDialog({ role, onSave }: EditRoleDialogProps) {
         </DialogHeader>
         <form onSubmit={handleSubmit}>
           <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label htmlFor="name">Role Name</Label>
+              <Input
+                id="name"
+                value={formData.name}
+                onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                placeholder="Role name"
+                required
+              />
+            </div>
             <div className="grid gap-2">
               <Label htmlFor="display_name">Display Name</Label>
               <Input
