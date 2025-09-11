@@ -39,21 +39,9 @@ export function DraggableProject({
       memberId,
       startDate: project.start_date,
       endDate: project.end_date,
-      onClick: onClick, // Pass click handler to drag data
+      onClick: onClick,
     },
     disabled: isPreview,
-  });
-
-  // Debug logging for drag setup
-  console.log('🎨 DraggableProject rendered:', { 
-    projectId: project.id, 
-    projectName: project.name,
-    memberId, 
-    isPreview, 
-    isDragging,
-    hasListeners: !!listeners,
-    startDate: project.start_date,
-    endDate: project.end_date
   });
 
   const dragStyle = {
