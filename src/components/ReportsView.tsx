@@ -1,12 +1,12 @@
 import { useState, useMemo } from 'react';
-import { format, parseISO, isWithinInterval } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Search, Download, Filter } from 'lucide-react';
+import { Search, Download } from 'lucide-react';
 import { Project, TeamMember, ProjectAssignment } from '@/types/roadmap';
 
 interface ReportsViewProps {
@@ -28,15 +28,17 @@ interface AssignmentReport {
   totalHours: number;
   projectStatus: string;
   isRnD: boolean;
+  projectId: string;
+  teamMemberId: string;
 }
 
 export function ReportsView({ projects, teamMembers, assignments }: ReportsViewProps) {
   const [searchQuery, setSearchQuery] = useState('');
-  const [projectSearch, setProjectSearch] = useState('');
-  const [productFilter, setProductFilter] = useState<string>('all');
-  const [statusFilter, setStatusFilter] = useState<string>('all');
-  const [assigneeFilter, setAssigneeFilter] = useState<string>('all');
-  const [typeFilter, setTypeFilter] = useState<string>('all'); // rd, non-rd, all
+  const [projectSearchTerm, setProjectSearchTerm] = useState('');
+  const [productFilterValue, setProductFilterValue] = useState<string>('all');
+  const [statusFilterValue, setStatusFilterValue] = useState<string>('all');
+  const [assigneeFilterValue, setAssigneeFilterValue] = useState<string>('all');
+  const [typeFilterValue, setTypeFilterValue] = useState<string>('all');
 
   const STANDARD_WORK_HOURS_PER_WEEK = 40;
 
@@ -71,7 +73,9 @@ export function ReportsView({ projects, teamMembers, assignments }: ReportsViewP
         weeklyHours,
         totalHours,
         projectStatus: project.status,
-        isRnD: project.is_rd
+        isRnD: project.is_rd,
+        projectId: project.id,
+        teamMemberId: teamMember.id
       });
     });
 
@@ -81,7 +85,7 @@ export function ReportsView({ projects, teamMembers, assignments }: ReportsViewP
   // Filter data based on search and filters
   const filteredData = useMemo(() => {
     return reportData.filter(report => {
-      // Search query filter
+      // General search query filter
       const searchLower = searchQuery.toLowerCase();
       const matchesSearch = !searchQuery || 
         report.projectName.toLowerCase().includes(searchLower) ||
@@ -90,32 +94,31 @@ export function ReportsView({ projects, teamMembers, assignments }: ReportsViewP
         report.roleName.toLowerCase().includes(searchLower);
 
       // Project search filter
-      const matchesProject = !projectSearch || 
-        report.projectName.toLowerCase().includes(projectSearch.toLowerCase());
+      const matchesProjectSearch = !projectSearchTerm || 
+        report.projectName.toLowerCase().includes(projectSearchTerm.toLowerCase());
 
       // Product filter
-      const project = projects.find(p => p.id === assignments.find(a => a.id === report.id)?.project_id);
-      const matchesProduct = productFilter === 'all' || 
-        project?.products?.some(p => p.id === productFilter);
+      const project = projects.find(p => p.id === report.projectId);
+      const matchesProduct = productFilterValue === 'all' || 
+        project?.products?.some(p => p.id === productFilterValue);
 
       // Status filter  
-      const matchesStatus = statusFilter === 'all' || report.projectStatus === statusFilter;
+      const matchesStatus = statusFilterValue === 'all' || report.projectStatus === statusFilterValue;
 
       // Assignee filter
-      const matchesAssignee = assigneeFilter === 'all' || 
-        teamMembers.find(tm => tm.name === assigneeFilter)?.id === assignments.find(a => a.id === report.id)?.team_member_id;
+      const matchesAssignee = assigneeFilterValue === 'all' || report.teamMemberId === assigneeFilterValue;
 
       // Type filter (R&D vs Product)
-      const matchesType = typeFilter === 'all' || 
-        (typeFilter === 'rd' && report.isRnD) ||
-        (typeFilter === 'product' && !report.isRnD);
+      const matchesType = typeFilterValue === 'all' || 
+        (typeFilterValue === 'rd' && report.isRnD) ||
+        (typeFilterValue === 'product' && !report.isRnD);
 
-      return matchesSearch && matchesProject && matchesProduct && matchesStatus && matchesAssignee && matchesType;
+      return matchesSearch && matchesProjectSearch && matchesProduct && matchesStatus && matchesAssignee && matchesType;
     });
-  }, [reportData, searchQuery, projectSearch, productFilter, statusFilter, assigneeFilter, typeFilter, projects, teamMembers, assignments]);
+  }, [reportData, searchQuery, projectSearchTerm, productFilterValue, statusFilterValue, assigneeFilterValue, typeFilterValue, projects]);
 
   // Get unique values for filters
-  const uniqueProducts = useMemo(() => {
+  const availableProducts = useMemo(() => {
     const productSet = new Set<{id: string, name: string}>();
     projects.forEach(project => {
       project.products?.forEach(product => {
@@ -125,8 +128,8 @@ export function ReportsView({ projects, teamMembers, assignments }: ReportsViewP
     return Array.from(productSet);
   }, [projects]);
   
-  const uniqueStatuses = [...new Set(projects.map(p => p.status))];
-  const uniqueAssignees = [...new Set(teamMembers.map(tm => tm.name))];
+  const availableStatuses = [...new Set(projects.map(p => p.status))];
+  const availableAssignees = teamMembers.map(tm => ({ id: tm.id, name: tm.name }));
 
   // Summary statistics
   const totalHours = filteredData.reduce((sum, item) => sum + item.totalHours, 0);
@@ -183,19 +186,19 @@ export function ReportsView({ projects, teamMembers, assignments }: ReportsViewP
               <div className="min-w-[140px]">
                 <Input
                   placeholder="Search projects..."
-                  value={projectSearch}
-                  onChange={(e) => setProjectSearch(e.target.value)}
+                  value={projectSearchTerm}
+                  onChange={(e) => setProjectSearchTerm(e.target.value)}
                 />
               </div>
 
               <div className="min-w-[120px]">
-                <Select value={productFilter} onValueChange={setProductFilter}>
+                <Select value={productFilterValue} onValueChange={setProductFilterValue}>
                   <SelectTrigger>
                     <SelectValue placeholder="Product: All" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">Product: All</SelectItem>
-                    {uniqueProducts.map(product => (
+                    {availableProducts.map(product => (
                       <SelectItem key={product.id} value={product.id}>
                         {product.name}
                       </SelectItem>
@@ -205,7 +208,7 @@ export function ReportsView({ projects, teamMembers, assignments }: ReportsViewP
               </div>
 
               <div className="min-w-[120px]">
-                <Select value={typeFilter} onValueChange={setTypeFilter}>
+                <Select value={typeFilterValue} onValueChange={setTypeFilterValue}>
                   <SelectTrigger>
                     <SelectValue placeholder="Type: All" />
                   </SelectTrigger>
@@ -218,13 +221,13 @@ export function ReportsView({ projects, teamMembers, assignments }: ReportsViewP
               </div>
 
               <div className="min-w-[120px]">
-                <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <Select value={statusFilterValue} onValueChange={setStatusFilterValue}>
                   <SelectTrigger>
                     <SelectValue placeholder="Status: All" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">Status: All</SelectItem>
-                    {uniqueStatuses.map(status => (
+                    {availableStatuses.map(status => (
                       <SelectItem key={status} value={status}>
                         {status}
                       </SelectItem>
@@ -234,15 +237,15 @@ export function ReportsView({ projects, teamMembers, assignments }: ReportsViewP
               </div>
 
               <div className="min-w-[120px]">
-                <Select value={assigneeFilter} onValueChange={setAssigneeFilter}>
+                <Select value={assigneeFilterValue} onValueChange={setAssigneeFilterValue}>
                   <SelectTrigger>
                     <SelectValue placeholder="Assignee: All" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">Assignee: All</SelectItem>
-                    {uniqueAssignees.map(assignee => (
-                      <SelectItem key={assignee} value={assignee}>
-                        {assignee}
+                    {availableAssignees.map(assignee => (
+                      <SelectItem key={assignee.id} value={assignee.id}>
+                        {assignee.name}
                       </SelectItem>
                     ))}
                   </SelectContent>
