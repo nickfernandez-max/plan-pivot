@@ -6,8 +6,11 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Search, Download } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
+import { Search, Download, DollarSign } from 'lucide-react';
 import { Project, TeamMember, ProjectAssignment } from '@/types/roadmap';
+import { useUserRole } from '@/hooks/useUserRole';
 
 interface ReportsViewProps {
   projects: Project[];
@@ -21,11 +24,13 @@ interface AssignmentReport {
   teamMemberName: string;
   teamName: string;
   roleName: string;
+  hourlyRate: number | null;
   startDate: string;
   endDate: string;
   percentAllocation: number;
   weeklyHours: number;
   totalHours: number;
+  totalCost: number;
   projectStatus: string;
   isRnD: boolean;
   projectId: string;
@@ -33,6 +38,7 @@ interface AssignmentReport {
 }
 
 export function ReportsView({ projects, teamMembers, assignments }: ReportsViewProps) {
+  const { isAdmin } = useUserRole();
   const [searchQuery, setSearchQuery] = useState('');
   const [projectSearchTerm, setProjectSearchTerm] = useState('');
   const [selectedProjectId, setSelectedProjectId] = useState<string>('');
@@ -41,6 +47,7 @@ export function ReportsView({ projects, teamMembers, assignments }: ReportsViewP
   const [statusFilterValue, setStatusFilterValue] = useState<string>('all');
   const [assigneeFilterValue, setAssigneeFilterValue] = useState<string>('all');
   const [typeFilterValue, setTypeFilterValue] = useState<string>('all');
+  const [showFinancials, setShowFinancials] = useState(false);
 
   const projectSearchRef = useRef<HTMLDivElement>(null);
 
@@ -76,6 +83,8 @@ export function ReportsView({ projects, teamMembers, assignments }: ReportsViewP
       const durationInDays = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
       const durationInWeeks = Math.ceil(durationInDays / 7);
       const totalHours = weeklyHours * durationInWeeks;
+      const hourlyRate = teamMember.role?.hourly_rate || 0;
+      const totalCost = totalHours * hourlyRate;
 
       reports.push({
         id: assignment.id,
@@ -83,11 +92,13 @@ export function ReportsView({ projects, teamMembers, assignments }: ReportsViewP
         teamMemberName: teamMember.name,
         teamName: teamMember.team?.name || 'Unknown Team',
         roleName: teamMember.role?.display_name || teamMember.role?.name || 'Unknown Role',
+        hourlyRate,
         startDate: assignment.start_date,
         endDate: assignment.end_date,
         percentAllocation: assignment.percent_allocation,
         weeklyHours,
-        totalHours,
+        totalHours,  
+        totalCost,
         projectStatus: project.status,
         isRnD: project.is_rd,
         projectId: project.id,
@@ -180,28 +191,54 @@ export function ReportsView({ projects, teamMembers, assignments }: ReportsViewP
 
   // Summary statistics
   const totalHours = filteredData.reduce((sum, item) => sum + item.totalHours, 0);
+  const totalCost = filteredData.reduce((sum, item) => sum + item.totalCost, 0);
   const rdHours = filteredData.filter(item => item.isRnD).reduce((sum, item) => sum + item.totalHours, 0);
+  const rdCost = filteredData.filter(item => item.isRnD).reduce((sum, item) => sum + item.totalCost, 0);
   const productHours = filteredData.filter(item => !item.isRnD).reduce((sum, item) => sum + item.totalHours, 0);
+  const productCost = filteredData.filter(item => !item.isRnD).reduce((sum, item) => sum + item.totalCost, 0);
 
   const exportToCSV = () => {
-    const headers = [
-      'Project', 'Team Member', 'Team', 'Role', 'Start Date', 'End Date', 
-      'Allocation %', 'Weekly Hours', 'Total Hours', 'Status', 'Type'
-    ];
+    const headers = showFinancials && isAdmin
+      ? [
+          'Project', 'Team Member', 'Team', 'Role', 'Hourly Rate', 'Start Date', 'End Date', 
+          'Allocation %', 'Weekly Hours', 'Total Hours', 'Total Cost', 'Status', 'Type'
+        ]
+      : [
+          'Project', 'Team Member', 'Team', 'Role', 'Start Date', 'End Date', 
+          'Allocation %', 'Weekly Hours', 'Total Hours', 'Status', 'Type'
+        ];
     
-    const rows = filteredData.map(item => [
-      item.projectName,
-      item.teamMemberName,
-      item.teamName,
-      item.roleName,
-      item.startDate,
-      item.endDate,
-      item.percentAllocation,
-      item.weeklyHours.toFixed(1),
-      item.totalHours.toFixed(1),
-      item.projectStatus,
-      item.isRnD ? 'R&D' : 'Product'
-    ]);
+    const rows = filteredData.map(item => {
+      const baseRow = [
+        item.projectName,
+        item.teamMemberName,
+        item.teamName,
+        item.roleName
+      ];
+
+      if (showFinancials && isAdmin) {
+        baseRow.push(`$${item.hourlyRate?.toFixed(2) || '0.00'}`);
+      }
+
+      baseRow.push(
+        item.startDate,
+        item.endDate,
+        item.percentAllocation.toString(),
+        item.weeklyHours.toFixed(1),
+        item.totalHours.toFixed(1)
+      );
+
+      if (showFinancials && isAdmin) {
+        baseRow.push(`$${item.totalCost.toFixed(2)}`);
+      }
+
+      baseRow.push(
+        item.projectStatus,
+        item.isRnD ? 'R&D' : 'Product'
+      );
+
+      return baseRow;
+    });
 
     const csvContent = [headers, ...rows]
       .map(row => row.map(cell => `"${cell}"`).join(','))
@@ -221,10 +258,23 @@ export function ReportsView({ projects, teamMembers, assignments }: ReportsViewP
       {/* Search and Filters */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Search className="w-5 h-5" />
-            Project Assignment Hours Report
-          </CardTitle>
+          <div className="flex items-center justify-between">
+            <CardTitle className="flex items-center gap-2">
+              <Search className="w-5 h-5" />
+              Project Assignment Hours Report
+            </CardTitle>
+            {isAdmin && (
+              <div className="flex items-center space-x-2">
+                <DollarSign className="w-4 h-4" />
+                <Label htmlFor="show-financials">Show Financials</Label>
+                <Switch
+                  id="show-financials"
+                  checked={showFinancials}
+                  onCheckedChange={setShowFinancials}
+                />
+              </div>
+            )}
+          </div>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
@@ -353,14 +403,23 @@ export function ReportsView({ projects, teamMembers, assignments }: ReportsViewP
               <div className="text-center">
                 <div className="text-2xl font-bold">{totalHours.toFixed(0)}h</div>
                 <div className="text-sm text-muted-foreground">Total Hours</div>
+                {showFinancials && isAdmin && (
+                  <div className="text-xs text-green-600 font-medium">${totalCost.toFixed(0)}</div>
+                )}
               </div>
               <div className="text-center">
                 <div className="text-2xl font-bold text-blue-600">{rdHours.toFixed(0)}h</div>
                 <div className="text-sm text-muted-foreground">R&D Hours</div>
+                {showFinancials && isAdmin && (
+                  <div className="text-xs text-blue-600 font-medium">${rdCost.toFixed(0)}</div>
+                )}
               </div>
               <div className="text-center">
                 <div className="text-2xl font-bold text-green-600">{productHours.toFixed(0)}h</div>
                 <div className="text-sm text-muted-foreground">Product Hours</div>
+                {showFinancials && isAdmin && (
+                  <div className="text-xs text-green-600 font-medium">${productCost.toFixed(0)}</div>
+                )}
               </div>
             </div>
           </div>
@@ -378,11 +437,17 @@ export function ReportsView({ projects, teamMembers, assignments }: ReportsViewP
                   <TableHead>Assignee</TableHead>
                   <TableHead>Team</TableHead>
                   <TableHead>Role</TableHead>
+                  {showFinancials && isAdmin && (
+                    <TableHead className="text-right">Hourly Rate</TableHead>
+                  )}
                   <TableHead>Start Date</TableHead>
                   <TableHead>End Date</TableHead>
                   <TableHead className="text-right">Allocation %</TableHead>
                   <TableHead className="text-right">Weekly Hours</TableHead>
                   <TableHead className="text-right">Total Hours</TableHead>
+                  {showFinancials && isAdmin && (
+                    <TableHead className="text-right">Total Cost</TableHead>
+                  )}
                   <TableHead>Status</TableHead>
                   <TableHead>Type</TableHead>
                 </TableRow>
@@ -394,11 +459,21 @@ export function ReportsView({ projects, teamMembers, assignments }: ReportsViewP
                     <TableCell>{assignment.teamMemberName}</TableCell>
                     <TableCell>{assignment.teamName}</TableCell>
                     <TableCell>{assignment.roleName}</TableCell>
+                    {showFinancials && isAdmin && (
+                      <TableCell className="text-right font-mono">
+                        ${assignment.hourlyRate?.toFixed(2) || '0.00'}
+                      </TableCell>
+                    )}
                     <TableCell>{format(parseISO(assignment.startDate), 'MMM dd, yyyy')}</TableCell>
                     <TableCell>{format(parseISO(assignment.endDate), 'MMM dd, yyyy')}</TableCell>
                     <TableCell className="text-right">{assignment.percentAllocation}%</TableCell>
                     <TableCell className="text-right">{assignment.weeklyHours.toFixed(1)}h</TableCell>
                     <TableCell className="text-right font-medium">{assignment.totalHours.toFixed(0)}h</TableCell>
+                    {showFinancials && isAdmin && (
+                      <TableCell className="text-right font-medium font-mono text-green-600">
+                        ${assignment.totalCost.toFixed(2)}
+                      </TableCell>
+                    )}
                     <TableCell>
                       <Badge variant="outline">{assignment.projectStatus}</Badge>
                     </TableCell>
@@ -411,7 +486,10 @@ export function ReportsView({ projects, teamMembers, assignments }: ReportsViewP
                 ))}
                 {filteredData.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={11} className="text-center text-muted-foreground py-8">
+                    <TableCell 
+                      colSpan={showFinancials && isAdmin ? 13 : 11} 
+                      className="text-center text-muted-foreground py-8"
+                    >
                       No assignments found matching your filters
                     </TableCell>
                   </TableRow>
