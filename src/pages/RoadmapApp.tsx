@@ -440,6 +440,7 @@ export default function RoadmapApp() {
               products={products}
               roles={roles}
               memberships={memberships}
+              selectedProduct={selectedProduct}
               timelineStartDate={timelineStartDate}
               onTimelineNavigateForward={navigateTimelineForward}
               onTimelineNavigateBackward={navigateTimelineBackward}

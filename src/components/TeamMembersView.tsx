@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { User, Edit2, Settings, Users, ChevronLeft, ChevronRight, Calendar, ArrowUp, ArrowDown, ArrowUpDown, Star, StarOff } from 'lucide-react';
+import { User, Edit2, Settings, Users, ChevronLeft, ChevronRight, Calendar, ArrowUp, ArrowDown, ArrowUpDown } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -21,6 +21,7 @@ interface TeamMembersViewProps {
   products: Product[];
   roles: Role[];
   memberships: TeamMembership[];
+  selectedProduct: string;
   timelineStartDate: Date;
   onTimelineNavigateForward: () => void;
   onTimelineNavigateBackward: () => void;
@@ -53,6 +54,7 @@ export function TeamMembersView({
   products, 
   roles, 
   memberships,
+  selectedProduct,
   timelineStartDate,
   onTimelineNavigateForward,
   onTimelineNavigateBackward,
@@ -79,23 +81,6 @@ export function TeamMembersView({
   const [secondarySort, setSecondarySort] = useState<SortField>('name');
   const [secondaryDirection, setSecondaryDirection] = useState<SortDirection>('asc');
 
-  // Default tab preference state
-  const [defaultTab, setDefaultTab] = useState<string | null>(null);
-
-  // localStorage functions
-  const saveDefaultTab = (tabId: string) => {
-    localStorage.setItem('team-members-default-tab', tabId);
-    setDefaultTab(tabId);
-  };
-
-  const clearDefaultTab = () => {
-    localStorage.removeItem('team-members-default-tab');
-    setDefaultTab(null);
-  };
-
-  const getSavedDefaultTab = (): string | null => {
-    return localStorage.getItem('team-members-default-tab');
-  };
 
   const form = useForm<z.infer<typeof teamMemberSchema>>({
     resolver: zodResolver(teamMemberSchema),
@@ -235,35 +220,30 @@ export function TeamMembersView({
     return { productsWithTeams, teamsWithoutProduct };
   }, [teams, teamMembers, products, memberships, primarySort, primaryDirection, secondarySort, secondaryDirection]);
 
-  // Load default tab preference on mount
-  React.useEffect(() => {
-    const savedDefault = getSavedDefaultTab();
-    setDefaultTab(savedDefault);
-  }, []);
 
-  // Set default active tab
+  // Set active tab based on selected product
   React.useEffect(() => {
-    if (!activeTab && (groupedData.productsWithTeams.length > 0 || groupedData.teamsWithoutProduct.length > 0)) {
-      const savedDefault = getSavedDefaultTab();
-      
-      // Check if saved default still exists
+    if (groupedData.productsWithTeams.length > 0 || groupedData.teamsWithoutProduct.length > 0) {
       const availableTabs = [
         ...groupedData.productsWithTeams.map(g => g.product.id),
         ...(groupedData.teamsWithoutProduct.length > 0 ? ['unassigned'] : [])
       ];
       
-      if (savedDefault && availableTabs.includes(savedDefault)) {
-        setActiveTab(savedDefault);
-      } else {
-        // Fall back to first available tab
-        if (groupedData.productsWithTeams.length > 0) {
-          setActiveTab(groupedData.productsWithTeams[0].product.id);
-        } else if (groupedData.teamsWithoutProduct.length > 0) {
-          setActiveTab('unassigned');
+      if (selectedProduct !== 'all') {
+        // Find the product ID that matches the selected product name
+        const matchingProduct = groupedData.productsWithTeams.find(g => g.product.name === selectedProduct);
+        if (matchingProduct && availableTabs.includes(matchingProduct.product.id)) {
+          setActiveTab(matchingProduct.product.id);
+          return;
         }
       }
+      
+      // Default to first available tab if no matching product or selectedProduct is 'all'
+      if (!activeTab || !availableTabs.includes(activeTab)) {
+        setActiveTab(availableTabs[0] || '');
+      }
     }
-  }, [groupedData, activeTab]);
+  }, [groupedData, selectedProduct]);
 
   // Calculate actual member count for a team in a specific month using memberships data
   const getActualMemberCount = (teamId: string, monthDate: Date) => {
@@ -568,9 +548,6 @@ export function TeamMembersView({
                   {groupedData.productsWithTeams.map(({ product }) => (
                     <TabsTrigger key={product.id} value={product.id} className="text-sm group relative">
                       <div className="flex items-center gap-2">
-                        {defaultTab === product.id && (
-                          <Star className="w-3 h-3 text-yellow-500 fill-current" />
-                        )}
                         {product.name}
                         <Button
                           variant="ghost"
@@ -590,41 +567,12 @@ export function TeamMembersView({
                   {groupedData.teamsWithoutProduct.length > 0 && (
                     <TabsTrigger value="unassigned" className="text-sm group relative">
                       <div className="flex items-center gap-2">
-                        {defaultTab === 'unassigned' && (
-                          <Star className="w-3 h-3 text-yellow-500 fill-current" />
-                        )}
                         Unassigned Teams
                       </div>
                     </TabsTrigger>
                   )}
                 </TabsList>
                 
-                {/* Default Tab Controls */}
-                <div className="flex items-center gap-2">
-                  {defaultTab === activeTab ? (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={clearDefaultTab}
-                      className="flex items-center gap-1 text-xs"
-                      title="Clear default tab"
-                    >
-                      <StarOff className="w-3 h-3" />
-                      Clear Default
-                    </Button>
-                  ) : (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => saveDefaultTab(activeTab)}
-                      className="flex items-center gap-1 text-xs"
-                      title="Set current tab as default"
-                    >
-                      <Star className="w-3 h-3" />
-                      Set Default
-                    </Button>
-                  )}
-                </div>
               </div>
 
               {groupedData.productsWithTeams.map(({ product, teams: productTeams }) => (
