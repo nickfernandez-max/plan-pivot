@@ -694,9 +694,14 @@ export function ProjectList({ projects, teams, products, onAddProject, onUpdateP
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  window.open(project.link, '_blank', 'noopener,noreferrer');
+                                  e.preventDefault();
+                                  let url = project.link;
+                                  if (url && !url.startsWith('http://') && !url.startsWith('https://')) {
+                                    url = 'https://' + url;
+                                  }
+                                  window.open(url, '_blank', 'noopener,noreferrer');
                                 }}
-                                className="text-muted-foreground hover:text-primary transition-colors"
+                                className="text-muted-foreground hover:text-primary transition-colors p-1 -m-1 rounded hover:bg-muted"
                                 title={`Open ${project.name} link`}
                               >
                                 <ExternalLink className="w-3 h-3" />
