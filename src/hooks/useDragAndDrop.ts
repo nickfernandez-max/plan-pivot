@@ -46,6 +46,7 @@ export function useDragAndDrop({
 
   const handleDragStart = useCallback((event: DragStartEvent) => {
     const { active } = event;
+    console.log('🚀 DRAG START:', { active: active.data.current });
     if (!active.data.current) return;
 
     // Cache timeline dimensions for smooth calculations
@@ -74,6 +75,14 @@ export function useDragAndDrop({
 
   const handleDragOver = useCallback((event: DragOverEvent) => {
     const { over, delta, active } = event;
+    
+    console.log('🔄 DRAG OVER:', { 
+      overId: over?.id, 
+      overType: over?.data.current?.type, 
+      delta, 
+      activeDrag: !!activeDrag,
+      timelinePixelsPerDay 
+    });
     
     if (!over || !activeDrag || timelinePixelsPerDay === 0) return;
 
@@ -116,7 +125,16 @@ export function useDragAndDrop({
   const handleDragEnd = useCallback(async (event: DragEndEvent) => {
     const { over, delta, active } = event;
     
+    console.log('🎯 DRAG END:', { 
+      overId: over?.id, 
+      overType: over?.data.current?.type,
+      delta, 
+      activeDrag,
+      dragOverData
+    });
+    
     if (!activeDrag) {
+      console.log('❌ No active drag');
       setActiveDrag(null);
       setDragOverData({ memberId: null, newStartDate: null, isValidDrop: false });
       return;
@@ -175,6 +193,14 @@ export function useDragAndDrop({
         newEndDate.toISOString().split('T')[0] !== activeDrag.originalEndDate;
       
       const memberChanged = newMemberId !== activeDrag.originalMemberId;
+
+      console.log('📊 CHANGES:', { 
+        datesChanged, 
+        memberChanged, 
+        newStartDate: newStartDate.toISOString().split('T')[0],
+        newEndDate: newEndDate.toISOString().split('T')[0],
+        newMemberId 
+      });
 
       // Single operation approach - reduces complexity and database calls
       if (datesChanged || memberChanged) {
