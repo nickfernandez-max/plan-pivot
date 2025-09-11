@@ -34,7 +34,7 @@ export function AddWorkAssignmentDialog({
     name: '',
     description: '',
     type: 'support' as 'support' | 'queue_work' | 'other',
-    percent_allocation: 100,
+    percent_allocation: '100',
     start_date: new Date().toISOString().split('T')[0],
     end_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
     color: '#EF4444'
@@ -55,6 +55,7 @@ export function AddWorkAssignmentDialog({
     try {
       await onAddWorkAssignment({
         ...formData,
+        percent_allocation: parseInt(formData.percent_allocation) || 100,
         team_member_id: teamMemberId
       });
       
@@ -68,7 +69,7 @@ export function AddWorkAssignmentDialog({
         name: '',
         description: '',
         type: 'support',
-        percent_allocation: 100,
+        percent_allocation: '100',
         start_date: new Date().toISOString().split('T')[0],
         end_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
         color: '#EF4444'
@@ -91,7 +92,7 @@ export function AddWorkAssignmentDialog({
       name: '',
       description: '',
       type: 'support',
-      percent_allocation: 100,
+      percent_allocation: '100',
       start_date: new Date().toISOString().split('T')[0],
       end_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
       color: '#EF4444'
@@ -151,7 +152,7 @@ export function AddWorkAssignmentDialog({
               min="1"
               max="100"
               value={formData.percent_allocation}
-              onChange={(e) => setFormData(prev => ({ ...prev, percent_allocation: parseInt(e.target.value) || 100 }))}
+              onChange={(e) => setFormData(prev => ({ ...prev, percent_allocation: e.target.value }))}
               required
             />
           </div>

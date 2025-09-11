@@ -25,7 +25,7 @@ export function EditRoleDialog({ role, onSave }: EditRoleDialogProps) {
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     display_name: role.display_name || role.name,
-    hourly_rate: role.hourly_rate || 0,
+    hourly_rate: role.hourly_rate?.toString() || '',
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -33,7 +33,11 @@ export function EditRoleDialog({ role, onSave }: EditRoleDialogProps) {
     setLoading(true);
     
     try {
-      await onSave(formData);
+      const updates = {
+        ...formData,
+        hourly_rate: formData.hourly_rate ? parseFloat(formData.hourly_rate) : 0
+      };
+      await onSave(updates);
       setOpen(false);
     } catch (error) {
       console.error('Error saving role:', error);
@@ -47,7 +51,7 @@ export function EditRoleDialog({ role, onSave }: EditRoleDialogProps) {
       // Reset form data when opening
       setFormData({
         display_name: role.display_name || role.name,
-        hourly_rate: role.hourly_rate || 0,
+        hourly_rate: role.hourly_rate?.toString() || '',
       });
     }
     setOpen(newOpen);
@@ -86,7 +90,7 @@ export function EditRoleDialog({ role, onSave }: EditRoleDialogProps) {
                 step="0.01"
                 min="0"
                 value={formData.hourly_rate}
-                onChange={(e) => setFormData(prev => ({ ...prev, hourly_rate: parseFloat(e.target.value) || 0 }))}
+                onChange={(e) => setFormData(prev => ({ ...prev, hourly_rate: e.target.value }))}
                 placeholder="0.00"
               />
             </div>
