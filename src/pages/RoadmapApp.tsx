@@ -142,12 +142,30 @@ export default function RoadmapApp() {
   }, [projects, selectedTeam, selectedProduct]);
 
   const filteredTeamMembers = useMemo(() => {
-    return teamMembers.filter(member => {
-      const teamMatches = selectedTeam === 'all' || teams.find(t => t.id === member.team_id)?.name === selectedTeam;
+    const result = teamMembers.filter(member => {
+      const memberTeam = teams.find(t => t.id === member.team_id);
+      const teamMatches = selectedTeam === 'all' || memberTeam?.name === selectedTeam;
       const productMatches = selectedProduct === 'all' || 
-        teams.find(t => t.id === member.team_id)?.product?.name === selectedProduct;
+        memberTeam?.product?.name === selectedProduct;
+      
+      // Debug logging
+      if (member.name === 'Bob Smith') {
+        console.log('Bob Smith filtering debug:', {
+          selectedProduct,
+          selectedTeam,
+          memberTeam: memberTeam?.name,
+          memberTeamProduct: memberTeam?.product?.name,
+          teamMatches,
+          productMatches,
+          finalResult: teamMatches && productMatches
+        });
+      }
+      
       return teamMatches && productMatches;
     });
+    
+    console.log('Filtered team members:', result.map(m => m.name));
+    return result;
   }, [teamMembers, teams, selectedTeam, selectedProduct]);
 
   // Event handlers for data manipulation
