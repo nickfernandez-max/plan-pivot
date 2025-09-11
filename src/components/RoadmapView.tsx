@@ -221,6 +221,7 @@ export function RoadmapView({
   const [isWorkAssignmentDialogOpen, setIsWorkAssignmentDialogOpen] = useState(false);
   const [selectedMember, setSelectedMember] = useState<{ id: string; name: string } | null>(null);
   const [frontProject, setFrontProject] = useState<string | null>(null);
+  const [preSelectedMember, setPreSelectedMember] = useState<{ id: string; startDate: string } | null>(null);
   
   // State for number of months to display
   const [monthsToShow, setMonthsToShow] = useState<number>(9);
@@ -429,6 +430,23 @@ export function RoadmapView({
     
     return { weeks, weekBackgrounds };
   }, [timelineBounds, totalDays]);
+
+  // Handle double-click on member row to add assignment
+  const handleMemberRowDoubleClick = (memberId: string, clickedDate: Date) => {
+    setPreSelectedMember({
+      id: memberId,
+      startDate: clickedDate.toISOString().split('T')[0]
+    });
+    setIsAssignmentDialogOpen(true);
+  };
+
+  // Handle close of assignment dialog
+  const handleAssignmentDialogClose = (open: boolean) => {
+    setIsAssignmentDialogOpen(open);
+    if (!open) {
+      setPreSelectedMember(null);
+    }
+  };
 
   // Group teams by product and calculate member rows with allocation slots
   const productGroups = useMemo(() => {
@@ -927,6 +945,9 @@ export function RoadmapView({
                           rowHeight={rowHeight}
                           top={currentMemberTop}
                           isOver={isDropTarget}
+                          timelineBounds={timelineBounds}
+                          totalDays={totalDays}
+                          onDoubleClick={handleMemberRowDoubleClick}
                         >
                           {/* Week grid lines for better alignment during drag */}
                           {activeDrag && dragOverData.memberId === member.id && (
@@ -1040,6 +1061,9 @@ export function RoadmapView({
                           rowHeight={rowHeight}
                           top={currentMemberTop}
                           isOver={isDropTarget}
+                          timelineBounds={timelineBounds}
+                          totalDays={totalDays}
+                          onDoubleClick={handleMemberRowDoubleClick}
                         >
                           {/* Week grid lines for better alignment during drag */}
                           {activeDrag && dragOverData.memberId === member.id && (
@@ -1177,8 +1201,10 @@ export function RoadmapView({
       products={products}
       selectedTeam={selectedTeam}
       selectedProduct={selectedProduct}
+      preSelectedMemberId={preSelectedMember?.id}
+      preSelectedStartDate={preSelectedMember?.startDate}
       open={isAssignmentDialogOpen}
-      onOpenChange={setIsAssignmentDialogOpen}
+      onOpenChange={handleAssignmentDialogClose}
       onAddProject={onAddProject}
       onUpdateProjectAssignments={onUpdateProjectAssignments}
     />

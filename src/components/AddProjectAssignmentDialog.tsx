@@ -65,6 +65,8 @@ interface AddProjectAssignmentDialogProps {
   products: Product[];
   selectedTeam?: string;
   selectedProduct?: string;
+  preSelectedMemberId?: string;
+  preSelectedStartDate?: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onAddProject: (project: Omit<Project, 'id' | 'created_at' | 'updated_at'>) => Promise<any>;
@@ -78,6 +80,8 @@ export function AddProjectAssignmentDialog({
   products,
   selectedTeam = 'all',
   selectedProduct = 'all',
+  preSelectedMemberId,
+  preSelectedStartDate,
   open,
   onOpenChange,
   onAddProject,
@@ -92,12 +96,39 @@ export function AddProjectAssignmentDialog({
       newProjectValueScore: 5,
       newProjectIsRD: false,
       allocation: 25,
+      memberId: preSelectedMemberId || '',
+      startDate: preSelectedStartDate || '',
     },
   });
 
   const projectType = form.watch('projectType');
   const selectedProjectId = form.watch('existingProjectId');
   const selectedMemberId = form.watch('memberId');
+
+  // Handle pre-selected values when dialog opens
+  useEffect(() => {
+    if (open && preSelectedMemberId) {
+      form.setValue('memberId', preSelectedMemberId);
+    }
+    if (open && preSelectedStartDate) {
+      form.setValue('startDate', preSelectedStartDate);
+    }
+  }, [open, preSelectedMemberId, preSelectedStartDate, form]);
+
+  // Reset form when dialog closes
+  useEffect(() => {
+    if (!open) {
+      form.reset({
+        projectType: 'existing',
+        newProjectValueScore: 5,
+        newProjectIsRD: false,
+        allocation: 25,
+        memberId: '',
+        startDate: '',
+      });
+      setProjectSearchTerm('');
+    }
+  }, [open, form]);
 
   // Filter team members based on page filters
   const filteredTeamMembers = useMemo(() => {

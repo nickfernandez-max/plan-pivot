@@ -1,5 +1,6 @@
 import { useDroppable } from '@dnd-kit/core';
 import { TeamMember } from '@/types/roadmap';
+import { addDays, startOfWeek } from 'date-fns';
 
 interface DroppableMemberRowProps {
   member: TeamMember;
@@ -7,6 +8,12 @@ interface DroppableMemberRowProps {
   top: number;
   children: React.ReactNode;
   isOver: boolean;
+  timelineBounds?: {
+    start: Date;
+    end: Date;
+  };
+  totalDays?: number;
+  onDoubleClick?: (memberId: string, clickedDate: Date) => void;
 }
 
 export function DroppableMemberRow({ 
@@ -14,7 +21,10 @@ export function DroppableMemberRow({
   rowHeight, 
   top, 
   children, 
-  isOver 
+  isOver,
+  timelineBounds,
+  totalDays = 0,
+  onDoubleClick
 }: DroppableMemberRowProps) {
   const { setNodeRef } = useDroppable({
     id: `member-row-${member.id}`,
@@ -24,14 +34,38 @@ export function DroppableMemberRow({
     },
   });
 
+  const handleDoubleClick = (event: React.MouseEvent) => {
+    if (!onDoubleClick || !timelineBounds || totalDays === 0) return;
+    
+    // Calculate the clicked date based on mouse position
+    const rect = event.currentTarget.getBoundingClientRect();
+    const sidebarWidth = 192; // Same as used in drag calculations
+    const timelineWidth = rect.width - sidebarWidth;
+    const clickX = event.clientX - rect.left - sidebarWidth;
+    
+    if (clickX < 0) return; // Clicked in sidebar area
+    
+    // Calculate which day was clicked
+    const pixelsPerDay = timelineWidth / totalDays;
+    const dayOffset = Math.floor(clickX / pixelsPerDay);
+    const clickedDate = addDays(timelineBounds.start, dayOffset);
+    
+    // Snap to start of week for better UX
+    const weekStartDate = startOfWeek(clickedDate, { weekStartsOn: 1 }); // Monday start
+    
+    onDoubleClick(member.id, weekStartDate);
+  };
+
   return (
     <div
       ref={setNodeRef}
-      className="absolute w-full border-b border-border/50 transition-all duration-150"
+      className="absolute w-full border-b border-border/50 transition-all duration-150 cursor-pointer hover:bg-muted/20"
       style={{
         top: `${top}px`,
         height: `${rowHeight}px`,
       }}
+      onDoubleClick={handleDoubleClick}
+      title="Double-click to add assignment"
     >
       {children}
       {isOver && (
