@@ -123,7 +123,7 @@ export function TeamMembersView({
           primaryCompare = a.name.localeCompare(b.name);
           break;
         case 'role':
-          primaryCompare = (a.role?.name || '').localeCompare(b.role?.name || '');
+          primaryCompare = (a.role?.display_name || a.role?.name || '').localeCompare(b.role?.display_name || b.role?.name || '');
           break;
         case 'start_date':
           primaryCompare = new Date(a.start_date).getTime() - new Date(b.start_date).getTime();
@@ -140,7 +140,7 @@ export function TeamMembersView({
           secondaryCompare = a.name.localeCompare(b.name);
           break;
         case 'role':
-          secondaryCompare = (a.role?.name || '').localeCompare(b.role?.name || '');
+          secondaryCompare = (a.role?.display_name || a.role?.name || '').localeCompare(b.role?.display_name || b.role?.name || '');
           break;
         case 'start_date':
           secondaryCompare = new Date(a.start_date).getTime() - new Date(b.start_date).getTime();
@@ -422,7 +422,7 @@ export function TeamMembersView({
                     </div>
                   </TableCell>
                   <TableCell className="text-muted-foreground text-sm py-2">
-                    {member.role?.name}
+                    {member.role?.display_name || member.role?.name}
                   </TableCell>
                   <TableCell className="text-sm py-2">{format(new Date(member.start_date), 'MMM d, yy')}</TableCell>
                   {timelineMonths.map((month) => {

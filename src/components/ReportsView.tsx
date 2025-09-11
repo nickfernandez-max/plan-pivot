@@ -82,7 +82,7 @@ export function ReportsView({ projects, teamMembers, assignments }: ReportsViewP
         projectName: project.name,
         teamMemberName: teamMember.name,
         teamName: teamMember.team?.name || 'Unknown Team',
-        roleName: teamMember.role?.name || 'Unknown Role',
+        roleName: teamMember.role?.display_name || teamMember.role?.name || 'Unknown Role',
         startDate: assignment.start_date,
         endDate: assignment.end_date,
         percentAllocation: assignment.percent_allocation,

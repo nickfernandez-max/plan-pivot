@@ -138,7 +138,7 @@ export function EditTeamMemberDialog({
         <DialogHeader>
           <DialogTitle>Edit Member</DialogTitle>
           <DialogDescription>
-            {member ? `${member.name} — ${member.role?.name}` : ''}
+            {member ? `${member.name} — ${member.role?.display_name || member.role?.name}` : ''}
           </DialogDescription>
         </DialogHeader>
 
@@ -161,7 +161,7 @@ export function EditTeamMemberDialog({
                 <SelectContent>
                   {availableRoles.map(role => (
                     <SelectItem key={role.id} value={role.id}>
-                      {role.name}
+                      {role.display_name || role.name}
                     </SelectItem>
                   ))}
                 </SelectContent>

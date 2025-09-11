@@ -150,6 +150,7 @@ export function AddProjectAssignmentDialog({
       filtered = filtered.filter(member => 
         member.name.toLowerCase().includes(searchLower) ||
         member.team?.name?.toLowerCase().includes(searchLower) ||
+        member.role?.display_name?.toLowerCase().includes(searchLower) ||
         member.role?.name?.toLowerCase().includes(searchLower)
       );
     }
@@ -390,9 +391,9 @@ export function AddProjectAssignmentDialog({
                                   </div>
                                   <div className="flex gap-1 flex-shrink-0">
                                     <Badge variant="outline" className="text-xs">{member.team?.name}</Badge>
-                                    {member.role?.name && (
-                                      <Badge variant="secondary" className="text-xs">{member.role.name}</Badge>
-                                    )}
+                                     {member.role?.display_name && (
+                                       <Badge variant="secondary" className="text-xs">{member.role.display_name || member.role.name}</Badge>
+                                     )}
                                   </div>
                                 </div>
                               );
@@ -420,9 +421,9 @@ export function AddProjectAssignmentDialog({
                                   <span className="flex-1">{member.name}</span>
                                   <div className="flex gap-1">
                                     <Badge variant="outline" className="text-xs">{member.team?.name}</Badge>
-                                    {member.role?.name && (
-                                      <Badge variant="secondary" className="text-xs">{member.role.name}</Badge>
-                                    )}
+                                     {member.role?.display_name && (
+                                       <Badge variant="secondary" className="text-xs">{member.role.display_name || member.role.name}</Badge>
+                                     )}
                                   </div>
                                 </div>
                               </SelectItem>

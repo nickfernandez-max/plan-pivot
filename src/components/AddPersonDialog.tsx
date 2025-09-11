@@ -113,7 +113,7 @@ export function AddPersonDialog({ open, onOpenChange, onAddPerson, onAddRole, te
                   <SelectContent className="bg-background border border-border shadow-lg z-50">
                     {roles.map((role) => (
                       <SelectItem key={role.id} value={role.id}>
-                        {role.name}
+                        {role.display_name || role.name}
                       </SelectItem>
                     ))}
                   </SelectContent>

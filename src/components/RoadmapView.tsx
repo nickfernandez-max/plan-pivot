@@ -744,7 +744,7 @@ export function RoadmapView({
                         >
                           <div className="flex-1 min-w-0">
                             <div className="font-medium truncate text-sm">{member.name}</div>
-                            <div className="text-xs text-muted-foreground truncate">{member.role?.name}</div>
+                            <div className="text-xs text-muted-foreground truncate">{member.role?.display_name || member.role?.name}</div>
                           </div>
                         </div>
                       ))}
@@ -796,7 +796,7 @@ export function RoadmapView({
                         >
                           <div className="flex-1 min-w-0">
                             <div className="font-medium truncate text-sm">{member.name}</div>
-                            <div className="text-xs text-muted-foreground truncate">{member.role?.name}</div>
+                            <div className="text-xs text-muted-foreground truncate">{member.role?.display_name || member.role?.name}</div>
                           </div>
                         </div>
                       ))}
