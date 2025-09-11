@@ -44,6 +44,18 @@ export function DraggableProject({
     disabled: isPreview,
   });
 
+  // Debug logging for drag setup
+  console.log('🎨 DraggableProject rendered:', { 
+    projectId: project.id, 
+    projectName: project.name,
+    memberId, 
+    isPreview, 
+    isDragging,
+    hasListeners: !!listeners,
+    startDate: project.start_date,
+    endDate: project.end_date
+  });
+
   const dragStyle = {
     transform: transform ? `translate3d(${transform.x}px, ${transform.y}px, 0)` : undefined,
     opacity: isDragging ? 0.5 : 1,

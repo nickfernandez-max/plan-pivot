@@ -66,14 +66,27 @@ export function useDragAndDrop({
 
   const handleDragStart = useCallback((event: DragStartEvent) => {
     const { active } = event;
-    console.log('🚀 DRAG START:', { active: active.data.current });
-    if (!active.data.current) return;
+    
+    // Immediate console log to verify the function is called
+    console.log('🚀 DRAG START CALLED!');
+    console.log('🚀 DRAG START DATA:', { 
+      activeId: active.id,
+      activeData: active.data.current,
+      event: event 
+    });
+    
+    if (!active.data.current) {
+      console.log('❌ No active data found');
+      return;
+    }
 
     // Find the current assignment
     const assignment = assignments.find(a => 
       a.project_id === active.data.current.projectId && 
       a.team_member_id === active.data.current.memberId
     );
+    
+    console.log('🔍 Found assignment:', assignment);
     
     setActiveDrag({
       projectId: active.data.current.projectId,
@@ -82,6 +95,8 @@ export function useDragAndDrop({
       originalEndDate: active.data.current.endDate,
       originalAllocation: assignment?.percent_allocation || 25,
     });
+    
+    console.log('✅ Active drag set successfully');
   }, [assignments]);
 
   const handleDragOver = useCallback((event: DragOverEvent) => {
