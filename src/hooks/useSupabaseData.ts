@@ -320,6 +320,25 @@ export function useSupabaseData() {
     return data;
   };
 
+  const updateRole = async (id: string, updates: Partial<Role>) => {
+    const { data, error } = await supabase
+      .from('roles')
+      .update(updates)
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error updating role:', error);
+      throw error;
+    }
+
+    setRoles(prev => prev.map(role => 
+      role.id === id ? { ...role, ...updates } : role
+    ));
+    return data;
+  };
+
   const addTeam = async (newTeam: Omit<Team, 'id' | 'created_at' | 'updated_at'> & { product_id: string }) => {
     try {
       const { data, error } = await supabase
@@ -725,6 +744,7 @@ export function useSupabaseData() {
     addTeamMember,
     updateTeamMember,
     addRole,
+    updateRole,
     addTeam,
     updateTeam,
     updateProjectAssignees,

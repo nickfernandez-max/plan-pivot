@@ -8,6 +8,7 @@ import { ProjectList } from '@/components/ProjectList';
 import { RoadmapView } from '@/components/RoadmapView';
 import { TeamMembersView } from '@/components/TeamMembersView';
 import { ReportsView } from '@/components/ReportsView';
+import { FinancialsView } from '@/components/FinancialsView';
 import { AddProductDialog } from '@/components/AddProductDialog';
 import { AddTeamDialog } from '@/components/AddTeamDialog';
 import { AddPersonDialog } from '@/components/AddPersonDialog';
@@ -49,6 +50,7 @@ export default function RoadmapApp() {
     addRole,
     addTeam,
     updateTeam,
+    updateRole,
     updateProjectAssignees,
     updateProjectAssignments,
     addProduct,
@@ -260,7 +262,7 @@ export default function RoadmapApp() {
         </div>
 
         <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4 max-w-2xl">
+          <TabsList className="grid w-full grid-cols-5 max-w-3xl">
             <TabsTrigger value="projects" className="text-sm font-medium">
               Projects
             </TabsTrigger>
@@ -272,6 +274,9 @@ export default function RoadmapApp() {
             </TabsTrigger>
             <TabsTrigger value="reports" className="text-sm font-medium">
               Reports
+            </TabsTrigger>
+            <TabsTrigger value="financials" className="text-sm font-medium">
+              Financials
             </TabsTrigger>
           </TabsList>
 
@@ -351,6 +356,13 @@ export default function RoadmapApp() {
               projects={projects} 
               teamMembers={teamMembers} 
               assignments={assignments}
+            />
+          </TabsContent>
+
+          <TabsContent value="financials">
+            <FinancialsView 
+              roles={roles} 
+              onUpdateRole={updateRole}
             />
           </TabsContent>
         </Tabs>
