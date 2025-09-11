@@ -41,22 +41,33 @@ export function useDragAndDrop({
     isValidDrop: boolean;
   }>({ memberId: null, newStartDate: null, isValidDrop: false });
   
-  // Cache for performance
-  const [timelinePixelsPerDay, setTimelinePixelsPerDay] = useState(0);
+  // Robust timeline calculations with validation
+  const getTimelineMetrics = useCallback(() => {
+    const container = document.querySelector('.timeline-container');
+    if (!container) {
+      console.warn('⚠️ Timeline container not found, using fallback calculations');
+      return { pixelsPerDay: 20, isValid: false }; // Fallback value
+    }
+
+    const containerWidth = container.clientWidth;
+    const sidebarWidth = 192;
+    const timelineWidth = containerWidth - sidebarWidth;
+    
+    if (timelineWidth <= 0 || totalDays <= 0) {
+      console.warn('⚠️ Invalid timeline dimensions:', { containerWidth, timelineWidth, totalDays });
+      return { pixelsPerDay: 20, isValid: false };
+    }
+
+    const pixelsPerDay = timelineWidth / totalDays;
+    console.log('📏 Timeline metrics:', { containerWidth, timelineWidth, totalDays, pixelsPerDay });
+    
+    return { pixelsPerDay, isValid: true };
+  }, [totalDays]);
 
   const handleDragStart = useCallback((event: DragStartEvent) => {
     const { active } = event;
     console.log('🚀 DRAG START:', { active: active.data.current });
     if (!active.data.current) return;
-
-    // Cache timeline dimensions for smooth calculations
-    const container = document.querySelector('.timeline-container');
-    if (container) {
-      const containerWidth = container.clientWidth;
-      const sidebarWidth = 192; // Adjust based on your sidebar width
-      const timelineWidth = containerWidth - sidebarWidth;
-      setTimelinePixelsPerDay(timelineWidth / totalDays);
-    }
 
     // Find the current assignment
     const assignment = assignments.find(a => 
@@ -71,20 +82,21 @@ export function useDragAndDrop({
       originalEndDate: active.data.current.endDate,
       originalAllocation: assignment?.percent_allocation || 25,
     });
-  }, [assignments, totalDays]);
+  }, [assignments]);
 
   const handleDragOver = useCallback((event: DragOverEvent) => {
     const { over, delta, active } = event;
+    const timelineMetrics = getTimelineMetrics();
     
     console.log('🔄 DRAG OVER:', { 
       overId: over?.id, 
       overType: over?.data.current?.type, 
       delta, 
       activeDrag: !!activeDrag,
-      timelinePixelsPerDay 
+      timelineMetrics
     });
     
-    if (!over || !activeDrag || timelinePixelsPerDay === 0) return;
+    if (!over || !activeDrag || !timelineMetrics.isValid) return;
 
     let newMemberId: string | null = null;
     let newStartDate: Date | null = null;
@@ -96,25 +108,33 @@ export function useDragAndDrop({
       isValidDrop = true;
     }
 
-    // Calculate new date position using delta.x (much simpler and more reliable)
+    // Calculate new date position with validation
     if (Math.abs(delta.x) > 5) {
-      const dayOffset = Math.round(delta.x / timelinePixelsPerDay);
+      const dayOffset = Math.round(delta.x / timelineMetrics.pixelsPerDay);
       const originalStart = new Date(activeDrag.originalStartDate);
       newStartDate = addDays(originalStart, dayOffset);
       
-      // Constrain to timeline bounds
+      // Robust bounds checking
       if (newStartDate < timelineBounds.start) {
         newStartDate = new Date(timelineBounds.start);
+        console.log('📍 Constrained to timeline start');
       } else if (newStartDate > timelineBounds.end) {
         newStartDate = new Date(timelineBounds.end);
+        console.log('📍 Constrained to timeline end');
       }
       
-      isValidDrop = true;
-      console.log('📅 NEW DATE CALCULATED:', newStartDate.toISOString().split('T')[0]);
+      // Validate the calculated date is reasonable
+      if (newStartDate >= timelineBounds.start && newStartDate <= timelineBounds.end) {
+        isValidDrop = true;
+        console.log('📅 NEW DATE CALCULATED:', newStartDate.toISOString().split('T')[0]);
+      } else {
+        console.warn('⚠️ Invalid date calculated, rejecting drop');
+        newStartDate = null;
+      }
     }
 
     setDragOverData({ memberId: newMemberId, newStartDate, isValidDrop });
-  }, [activeDrag, timelineBounds, timelinePixelsPerDay, totalDays]);
+  }, [activeDrag, timelineBounds, getTimelineMetrics]);
 
   const handleDragEnd = useCallback(async (event: DragEndEvent) => {
     const { over, delta, active } = event;
@@ -138,6 +158,7 @@ export function useDragAndDrop({
     const isDragAction = Math.abs(delta.x) > 10 || Math.abs(delta.y) > 10;
     
     if (!isDragAction && active.data.current?.onClick) {
+      console.log('🖱️ Processing click action');
       active.data.current.onClick();
       setActiveDrag(null);
       setDragOverData({ memberId: null, newStartDate: null, isValidDrop: false });
@@ -145,6 +166,20 @@ export function useDragAndDrop({
     }
 
     if (!over || !isDragAction) {
+      console.log('🚫 Invalid drop or no drag action');
+      setActiveDrag(null);
+      setDragOverData({ memberId: null, newStartDate: null, isValidDrop: false });
+      return;
+    }
+
+    // Validate drop is actually valid
+    if (!dragOverData.isValidDrop) {
+      console.log('🚫 Drop rejected - invalid drop zone');
+      toast({ 
+        title: "Invalid Drop", 
+        description: "Cannot drop project in this location.", 
+        variant: "destructive" 
+      });
       setActiveDrag(null);
       setDragOverData({ memberId: null, newStartDate: null, isValidDrop: false });
       return;
@@ -159,28 +194,37 @@ export function useDragAndDrop({
       let newStartDate = originalStart;
       let newEndDate = originalEnd;
 
-      // Handle member reassignment
+      // Handle member reassignment with validation
       if (over.data.current?.type === 'member-row' && 
           over.data.current.memberId !== activeDrag.originalMemberId) {
         newMemberId = over.data.current.memberId;
+        console.log('👤 Member reassignment:', { from: activeDrag.originalMemberId, to: newMemberId });
       } else if (dragOverData.memberId && dragOverData.memberId !== activeDrag.originalMemberId) {
         newMemberId = dragOverData.memberId;
+        console.log('👤 Member reassignment via dragOver:', { from: activeDrag.originalMemberId, to: newMemberId });
       }
 
-      // Handle date changes using the calculated position from dragOver
+      // Handle date changes with robust validation
       if (dragOverData.newStartDate) {
         newStartDate = new Date(dragOverData.newStartDate);
         newEndDate = addDays(newStartDate, projectDuration);
         
-        // Constrain end date to timeline bounds
+        // Robust bounds checking with fallback
         if (newEndDate > timelineBounds.end) {
           newEndDate = new Date(timelineBounds.end);
           newStartDate = addDays(newEndDate, -projectDuration);
+          console.log('📅 Adjusted dates due to end bound constraint');
         }
-        // Ensure start date is not before timeline start
+        
         if (newStartDate < timelineBounds.start) {
           newStartDate = new Date(timelineBounds.start);
           newEndDate = addDays(newStartDate, projectDuration);
+          console.log('📅 Adjusted dates due to start bound constraint');
+        }
+
+        // Final validation - ensure dates are still reasonable
+        if (newStartDate >= timelineBounds.end || newEndDate <= timelineBounds.start) {
+          throw new Error('Calculated dates are outside timeline bounds');
         }
       }
 
@@ -190,18 +234,23 @@ export function useDragAndDrop({
       
       const memberChanged = newMemberId !== activeDrag.originalMemberId;
 
-      console.log('📊 CHANGES:', { 
+      console.log('📊 FINAL CHANGES:', { 
         datesChanged, 
         memberChanged, 
         newStartDate: newStartDate.toISOString().split('T')[0],
         newEndDate: newEndDate.toISOString().split('T')[0],
-        newMemberId 
+        newMemberId,
+        projectDuration
       });
 
-      // Single operation approach - reduces complexity and database calls
+      // Atomic operation approach - combined updates for consistency
       if (datesChanged || memberChanged) {
         const currentAssignments = assignments.filter(a => a.project_id === activeDrag.projectId);
         
+        if (currentAssignments.length === 0) {
+          throw new Error('No existing assignments found for project');
+        }
+
         let updatedAssignments;
         if (memberChanged) {
           // Remove from old member, add to new member
@@ -231,51 +280,90 @@ export function useDragAndDrop({
           }));
         }
 
-        // Update project dates first (if changed)
-        if (datesChanged) {
-          await onUpdateProject(activeDrag.projectId, {
-            start_date: newStartDate.toISOString().split('T')[0],
-            end_date: newEndDate.toISOString().split('T')[0],
-          });
-        }
+        console.log('💾 Updating database with:', { updatedAssignments });
 
-        // Update assignments
-        await onUpdateProjectAssignments(activeDrag.projectId, updatedAssignments);
+        // Perform updates with better error handling
+        const updatePromises = [];
+        
+        if (datesChanged) {
+          updatePromises.push(
+            onUpdateProject(activeDrag.projectId, {
+              start_date: newStartDate.toISOString().split('T')[0],
+              end_date: newEndDate.toISOString().split('T')[0],
+            })
+          );
+        }
+        
+        updatePromises.push(
+          onUpdateProjectAssignments(activeDrag.projectId, updatedAssignments)
+        );
+
+        // Execute all updates concurrently for better performance
+        await Promise.all(updatePromises);
         
         const actionText = memberChanged ? 'Project reassigned' : 'Timeline updated';
-        toast({ title: "Success", description: `${actionText} successfully!` });
+        toast({ 
+          title: "Success", 
+          description: `${actionText} successfully!`,
+          duration: 3000
+        });
+        
+        console.log('✅ Drag and drop completed successfully');
+      } else {
+        console.log('ℹ️ No changes detected, skipping update');
       }
     } catch (error) {
-      console.error('Drag and drop error:', error);
+      console.error('💥 Drag and drop error:', error);
+      
+      // More specific error messages
+      let errorMessage = "Failed to update project. Please try again.";
+      if (error instanceof Error) {
+        if (error.message.includes('timeline bounds')) {
+          errorMessage = "Project dates are outside the visible timeline. Please adjust the timeline view.";
+        } else if (error.message.includes('assignments')) {
+          errorMessage = "Failed to update project assignments. Please check the project configuration.";
+        }
+      }
+      
       toast({ 
-        title: "Error", 
-        description: "Failed to update project. Please try again.", 
-        variant: "destructive" 
+        title: "Update Failed", 
+        description: errorMessage, 
+        variant: "destructive",
+        duration: 5000
       });
     }
 
+    // Always clean up state
     setActiveDrag(null);
     setDragOverData({ memberId: null, newStartDate: null, isValidDrop: false });
-  }, [activeDrag, timelineBounds, timelinePixelsPerDay, assignments, onUpdateProject, onUpdateProjectAssignments]);
+  }, [activeDrag, timelineBounds, dragOverData, assignments, onUpdateProject, onUpdateProjectAssignments]);
 
-  // Simplified preview position calculation
+  // Robust preview position calculation with validation
   const calculatePreviewPosition = useCallback((project: Project, delta: { x: number; y: number }) => {
-    if (!activeDrag || project.id !== activeDrag.projectId || timelinePixelsPerDay === 0) {
+    const timelineMetrics = getTimelineMetrics();
+    
+    if (!activeDrag || project.id !== activeDrag.projectId || !timelineMetrics.isValid) {
       return null;
     }
 
-    const dayOffset = Math.round(delta.x / timelinePixelsPerDay);
+    const dayOffset = Math.round(delta.x / timelineMetrics.pixelsPerDay);
     const originalStart = new Date(activeDrag.originalStartDate);
     const newStartDate = addDays(originalStart, dayOffset);
     
-    const daysFromStart = differenceInDays(newStartDate, timelineBounds.start);
+    // Constrain to bounds
+    const boundedStartDate = new Date(Math.max(
+      timelineBounds.start.getTime(),
+      Math.min(timelineBounds.end.getTime(), newStartDate.getTime())
+    ));
+    
+    const daysFromStart = differenceInDays(boundedStartDate, timelineBounds.start);
     const leftPercentage = Math.max(0, Math.min(100, (daysFromStart / totalDays) * 100));
 
     return {
       left: leftPercentage,
       opacity: dragOverData.isValidDrop ? 0.8 : 0.4,
     };
-  }, [activeDrag, totalDays, timelineBounds, timelinePixelsPerDay, dragOverData.isValidDrop]);
+  }, [activeDrag, totalDays, timelineBounds, getTimelineMetrics, dragOverData.isValidDrop]);
 
   return {
     activeDrag,
