@@ -10,9 +10,7 @@ import { useDragAndDrop } from '@/hooks/useDragAndDrop';
 import { DraggableProject } from '@/components/DraggableProject';
 import { DroppableMemberRow } from '@/components/DroppableMemberRow';
 import { EditProjectDialog } from '@/components/EditProjectDialog';
-import { ProportionalDragOverlay } from '@/components/ProportionalDragOverlay';
-import { CompactDragOverlay } from '@/components/CompactDragOverlay';
-import { DragPreviewOverlay } from '@/components/DragPreviewOverlay';
+import { SmoothDragOverlay } from '@/components/SmoothDragOverlay';
 import { Users, ChevronLeft, ChevronRight, Calendar, UserPlus } from 'lucide-react';
 import { AddProjectAssignmentDialog } from '@/components/AddProjectAssignmentDialog';
 import { AddWorkAssignmentDialog } from '@/components/AddWorkAssignmentDialog';
@@ -1005,21 +1003,9 @@ export function RoadmapView({
                             );
                           })}
 
-                          {/* Drag preview overlay */}
-                          {activeDrag && dragOverData.memberId === member.id && dragOverData.newStartDate && (
-                            <DragPreviewOverlay
-                              project={visibleProjects.find(p => p.id === activeDrag.projectId)!}
-                              newStartDate={dragOverData.newStartDate}
-                              newEndDate={(() => {
-                                const originalStart = new Date(activeDrag.originalStartDate);
-                                const originalEnd = new Date(activeDrag.originalEndDate);
-                                const duration = differenceInDays(originalEnd, originalStart);
-                                return addDays(dragOverData.newStartDate, duration);
-                              })()}
-                              timelineBounds={timelineBounds}
-                              totalDays={totalDays}
-                              isValidDrop={dragOverData.isValidDrop}
-                            />
+                          {/* Smooth drop zone indicator */}
+                          {activeDrag && dragOverData.memberId === member.id && dragOverData.isValidDrop && (
+                            <div className="absolute inset-0 bg-primary/10 border-2 border-primary/40 rounded-lg pointer-events-none animate-pulse" />
                           )}
                         </DroppableMemberRow>
                       );
@@ -1130,21 +1116,9 @@ export function RoadmapView({
                             );
                           })}
 
-                          {/* Drag preview overlay */}
-                          {activeDrag && dragOverData.memberId === member.id && dragOverData.newStartDate && (
-                            <DragPreviewOverlay
-                              project={visibleProjects.find(p => p.id === activeDrag.projectId)!}
-                              newStartDate={dragOverData.newStartDate}
-                              newEndDate={(() => {
-                                const originalStart = new Date(activeDrag.originalStartDate);
-                                const originalEnd = new Date(activeDrag.originalEndDate);
-                                const duration = differenceInDays(originalEnd, originalStart);
-                                return addDays(dragOverData.newStartDate, duration);
-                              })()}
-                              timelineBounds={timelineBounds}
-                              totalDays={totalDays}
-                              isValidDrop={dragOverData.isValidDrop}
-                            />
+                          {/* Smooth drop zone indicator */}
+                          {activeDrag && dragOverData.memberId === member.id && dragOverData.isValidDrop && (
+                            <div className="absolute inset-0 bg-primary/10 border-2 border-primary/40 rounded-lg pointer-events-none animate-pulse" />
                           )}
                         </DroppableMemberRow>
                       );
@@ -1185,7 +1159,7 @@ export function RoadmapView({
 
         return (
           <div className="pointer-events-none transform-gpu z-[9999] opacity-100">
-            <CompactDragOverlay project={draggedProject} />
+            <SmoothDragOverlay project={draggedProject} />
           </div>
         );
       })()}

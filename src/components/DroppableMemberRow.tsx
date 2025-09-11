@@ -27,7 +27,7 @@ export function DroppableMemberRow({
   return (
     <div
       ref={setNodeRef}
-      className={`absolute w-full border-b border-border/50 transition-all duration-200`}
+      className="absolute w-full border-b border-border/50 transition-all duration-150"
       style={{
         top: `${top}px`,
         height: `${rowHeight}px`,
@@ -35,7 +35,7 @@ export function DroppableMemberRow({
     >
       {children}
       {isOver && (
-        <div className="absolute inset-0 bg-primary/10 border-2 border-primary/30 rounded-md animate-pulse" />
+        <div className="absolute inset-0 bg-primary/8 border-2 border-primary/25 rounded-md animate-pulse pointer-events-none" />
       )}
     </div>
   );

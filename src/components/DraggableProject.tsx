@@ -46,15 +46,16 @@ export function DraggableProject({
 
   const dragStyle = {
     transform: transform ? `translate3d(${transform.x}px, ${transform.y}px, 0)` : undefined,
-    opacity: isDragging ? 0.3 : 1,
+    opacity: isDragging ? 0.5 : 1,
     zIndex: isDragging ? 1000 : (isFront ? 10 : 1),
     cursor: isDragging ? 'grabbing' : 'grab',
+    transition: isDragging ? 'none' : 'all 0.2s ease-out',
   };
 
   return (
     <div
       ref={setNodeRef}
-      className="absolute rounded-md shadow-sm border transition-all hover:shadow-md group animate-fade-in cursor-pointer"
+      className="absolute rounded-md shadow-sm border transition-all duration-200 hover:shadow-lg group animate-fade-in cursor-grab active:cursor-grabbing"
       style={{
         ...style,
         ...dragStyle,
