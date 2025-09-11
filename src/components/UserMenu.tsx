@@ -12,10 +12,18 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { User, LogOut, Settings } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { UserPreferencesDialog } from './UserPreferencesDialog';
 
-export function UserMenu() {
+interface UserMenuProps {
+  teams?: Array<{ name: string }>;
+  products?: Array<{ name: string }>;
+  onPreferencesUpdate?: () => void;
+}
+
+export function UserMenu({ teams = [], products = [], onPreferencesUpdate }: UserMenuProps) {
   const [userProfile, setUserProfile] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [preferencesOpen, setPreferencesOpen] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -96,11 +104,24 @@ export function UserMenu() {
           </div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
+        <DropdownMenuItem onClick={() => setPreferencesOpen(true)}>
+          <Settings className="mr-2 h-4 w-4" />
+          <span>Preferences</span>
+        </DropdownMenuItem>
         <DropdownMenuItem onClick={handleSignOut}>
           <LogOut className="mr-2 h-4 w-4" />
           <span>Log out</span>
         </DropdownMenuItem>
       </DropdownMenuContent>
+      
+      <UserPreferencesDialog
+        open={preferencesOpen}
+        onOpenChange={setPreferencesOpen}
+        teams={teams}
+        products={products}
+        currentUserId={userProfile?.id}
+        onPreferencesUpdate={onPreferencesUpdate}
+      />
     </DropdownMenu>
   );
 }

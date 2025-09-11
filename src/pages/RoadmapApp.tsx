@@ -1,4 +1,5 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 import { useSupabaseData } from '@/hooks/useSupabaseData';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -22,6 +23,7 @@ export default function RoadmapApp() {
   const [isAddMemberDialogOpen, setIsAddMemberDialogOpen] = useState(false);
   const [isAddProductDialogOpen, setIsAddProductDialogOpen] = useState(false);
   const [isAddTeamDialogOpen, setIsAddTeamDialogOpen] = useState(false);
+  const [userPreferencesLoaded, setUserPreferencesLoaded] = useState(false);
   const [activeTab, setActiveTab] = useState<string>(() => {
     // Persist active tab in sessionStorage to survive data refetches
     return sessionStorage.getItem('roadmapActiveTab') || 'projects';
@@ -64,6 +66,44 @@ export default function RoadmapApp() {
     updateWorkAssignment,
     deleteWorkAssignment,
   } = useSupabaseData();
+
+  // Load user preferences for default filters
+  useEffect(() => {
+    const loadUserPreferences = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user && !userPreferencesLoaded) {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('default_team_filter, default_product_filter')
+            .eq('id', user.id)
+            .single();
+
+          if (profile) {
+            if (profile.default_team_filter) {
+              setSelectedTeam(profile.default_team_filter);
+            }
+            if (profile.default_product_filter) {
+              setSelectedProduct(profile.default_product_filter);
+            }
+          }
+          setUserPreferencesLoaded(true);
+        }
+      } catch (error) {
+        console.error('Error loading user preferences:', error);
+        setUserPreferencesLoaded(true);
+      }
+    };
+
+    if (!loading && !userPreferencesLoaded) {
+      loadUserPreferences();
+    }
+  }, [loading, userPreferencesLoaded]);
+
+  // Reload preferences when they're updated
+  const handlePreferencesUpdate = () => {
+    setUserPreferencesLoaded(false);
+  };
 
   // Generate filter options
   const productNames = useMemo(() => {
@@ -261,7 +301,11 @@ export default function RoadmapApp() {
               </SelectContent>
             </Select>
             </div>
-            <UserMenu />
+            <UserMenu 
+              teams={teams} 
+              products={products} 
+              onPreferencesUpdate={handlePreferencesUpdate}
+            />
           </div>
         </div>
 
