@@ -3,7 +3,7 @@ import { useSupabaseData } from '@/hooks/useSupabaseData';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { InlineEditableField } from '@/components/InlineEditableField';
+import { EditRoleDialog } from '@/components/EditRoleDialog';
 import { useToast } from '@/hooks/use-toast';
 import { Role } from '@/types/roadmap';
 import { Lock } from 'lucide-react';
@@ -41,9 +41,9 @@ export function FinancialsView({ roles, onUpdateRole }: FinancialsViewProps) {
     checkAdminStatus();
   }, []);
 
-  const handleUpdateRole = async (roleId: string, field: string, value: any) => {
+  const handleUpdateRole = async (roleId: string, updates: Partial<Role>) => {
     try {
-      await onUpdateRole(roleId, { [field]: value });
+      await onUpdateRole(roleId, updates);
       toast({ title: "Success", description: "Role updated successfully" });
     } catch (error) {
       console.error('Error updating role:', error);
@@ -89,42 +89,25 @@ export function FinancialsView({ roles, onUpdateRole }: FinancialsViewProps) {
                 <TableHead>Finance Name</TableHead>
                 <TableHead>Hourly Rate ($)</TableHead>
                 <TableHead>Description</TableHead>
+                <TableHead className="w-[100px]">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {roles.map((role) => (
                 <TableRow key={role.id}>
                   <TableCell className="font-medium">{role.name}</TableCell>
+                  <TableCell>{role.display_name || role.name}</TableCell>
+                  <TableCell>{role.finance_name || '—'}</TableCell>
                   <TableCell>
-                    <InlineEditableField
-                      value={role.display_name || role.name}
-                      onSave={(value) => handleUpdateRole(role.id, 'display_name', value)}
-                      type="text"
-                      className="min-w-32"
-                    />
+                    {role.hourly_rate ? `$${role.hourly_rate.toFixed(2)}` : '—'}
+                  </TableCell>
+                  <TableCell className="max-w-xs truncate">
+                    {role.description || '—'}
                   </TableCell>
                   <TableCell>
-                    <InlineEditableField
-                      value={role.finance_name || ''}
-                      onSave={(value) => handleUpdateRole(role.id, 'finance_name', value)}
-                      type="text"
-                      className="min-w-32"
-                    />
-                  </TableCell>
-                  <TableCell>
-                    <InlineEditableField
-                      value={role.hourly_rate || 0}
-                      onSave={(value) => handleUpdateRole(role.id, 'hourly_rate', value)}
-                      type="number"
-                      className="min-w-24"
-                    />
-                  </TableCell>
-                  <TableCell>
-                    <InlineEditableField
-                      value={role.description || ''}
-                      onSave={(value) => handleUpdateRole(role.id, 'description', value)}
-                      type="text"
-                      className="min-w-48"
+                    <EditRoleDialog
+                      role={role}
+                      onSave={(updates) => handleUpdateRole(role.id, updates)}
                     />
                   </TableCell>
                 </TableRow>
