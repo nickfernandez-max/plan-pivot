@@ -294,6 +294,8 @@ export default function RoadmapApp() {
               products={products}
               assignments={assignments}
               workAssignments={workAssignments}
+              selectedTeam={selectedTeam}
+              selectedProduct={selectedProduct}
               onUpdateProject={handleUpdateProject}
               onUpdateProjectAssignees={async (projectId: string, assigneeIds: string[]) => {
                 await updateProjectAssignees(projectId, assigneeIds);

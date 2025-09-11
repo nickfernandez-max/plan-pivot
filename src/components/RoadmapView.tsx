@@ -22,6 +22,8 @@ interface RoadmapViewProps {
   products: Product[];
   assignments: ProjectAssignment[];
   workAssignments: WorkAssignment[];
+  selectedTeam?: string;
+  selectedProduct?: string;
   onUpdateProject: (id: string, updates: Partial<Project>) => Promise<void>;
   onUpdateProjectAssignees: (projectId: string, assigneeIds: string[]) => Promise<void>;
   onUpdateProjectProducts: (projectId: string, productIds: string[]) => Promise<void>;
@@ -203,6 +205,8 @@ export function RoadmapView({
   products,
   assignments,
   workAssignments,
+  selectedTeam = 'all',
+  selectedProduct = 'all',
   onUpdateProject, 
   onUpdateProjectAssignees,
   onUpdateProjectProducts,
