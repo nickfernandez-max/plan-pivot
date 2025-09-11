@@ -73,7 +73,7 @@ export function useDragAndDrop({
   }, [assignments, totalDays]);
 
   const handleDragOver = useCallback((event: DragOverEvent) => {
-    const { over, delta } = event;
+    const { over, delta, active } = event;
     
     if (!over || !activeDrag || timelinePixelsPerDay === 0) return;
 
@@ -87,22 +87,31 @@ export function useDragAndDrop({
       isValidDrop = true;
     }
 
-    // Calculate new date position with day-level precision (much smoother than week-snapping)
-    if (delta.x !== 0) {
-      const dayOffset = Math.round(delta.x / timelinePixelsPerDay);
-      const originalStart = new Date(activeDrag.originalStartDate);
-      newStartDate = addDays(originalStart, dayOffset);
+    // Calculate date position using actual mouse position relative to timeline
+    const container = document.querySelector('.timeline-container');
+    if (container && active.rect.current.translated) {
+      const containerRect = container.getBoundingClientRect();
+      const timelineStart = containerRect.left + 192; // sidebar width
+      const mouseX = active.rect.current.translated.left + (active.rect.current.translated.width / 2);
+      const relativeX = mouseX - timelineStart;
       
-      // Constrain to timeline bounds
-      if (newStartDate < timelineBounds.start) {
-        newStartDate = new Date(timelineBounds.start);
-      } else if (newStartDate > timelineBounds.end) {
-        newStartDate = new Date(timelineBounds.end);
+      if (relativeX >= 0) {
+        const dayPosition = Math.round((relativeX / (containerRect.width - 192)) * totalDays);
+        newStartDate = addDays(timelineBounds.start, dayPosition);
+        
+        // Constrain to timeline bounds
+        if (newStartDate < timelineBounds.start) {
+          newStartDate = new Date(timelineBounds.start);
+        } else if (newStartDate > timelineBounds.end) {
+          newStartDate = new Date(timelineBounds.end);
+        }
+        
+        isValidDrop = true;
       }
     }
 
     setDragOverData({ memberId: newMemberId, newStartDate, isValidDrop });
-  }, [activeDrag, timelineBounds, timelinePixelsPerDay]);
+  }, [activeDrag, timelineBounds, timelinePixelsPerDay, totalDays]);
 
   const handleDragEnd = useCallback(async (event: DragEndEvent) => {
     const { over, delta, active } = event;
@@ -144,19 +153,20 @@ export function useDragAndDrop({
         newMemberId = over.data.current.memberId;
       }
 
-      // Handle date changes with simple day-level positioning
-      if (Math.abs(delta.x) > 10 && timelinePixelsPerDay > 0) {
-        const dayOffset = Math.round(delta.x / timelinePixelsPerDay);
-        newStartDate = addDays(originalStart, dayOffset);
+      // Handle date changes using actual drop position
+      if (dragOverData.newStartDate && Math.abs(delta.x) > 10) {
+        newStartDate = new Date(dragOverData.newStartDate);
         newEndDate = addDays(newStartDate, projectDuration);
         
-        // Constrain to timeline bounds
+        // Constrain end date to timeline bounds
+        if (newEndDate > timelineBounds.end) {
+          newEndDate = new Date(timelineBounds.end);
+          newStartDate = addDays(newEndDate, -projectDuration);
+        }
+        // Ensure start date is not before timeline start
         if (newStartDate < timelineBounds.start) {
           newStartDate = new Date(timelineBounds.start);
           newEndDate = addDays(newStartDate, projectDuration);
-        } else if (newEndDate > timelineBounds.end) {
-          newEndDate = new Date(timelineBounds.end);
-          newStartDate = addDays(newEndDate, -projectDuration);
         }
       }
 
