@@ -88,6 +88,7 @@ export function AddProjectAssignmentDialog({
   onUpdateProjectAssignments,
 }: AddProjectAssignmentDialogProps) {
   const [projectSearchTerm, setProjectSearchTerm] = useState('');
+  const [memberSearchTerm, setMemberSearchTerm] = useState('');
   
   const form = useForm<AssignmentFormData>({
     resolver: zodResolver(assignmentSchema),
@@ -127,12 +128,13 @@ export function AddProjectAssignmentDialog({
         startDate: '',
       });
       setProjectSearchTerm('');
+      setMemberSearchTerm('');
     }
   }, [open, form]);
 
-  // Filter team members based on page filters
+  // Filter team members based on page filters and search term
   const filteredTeamMembers = useMemo(() => {
-    return teamMembers.filter(member => {
+    let filtered = teamMembers.filter(member => {
       const memberTeam = teams.find(t => t.id === member.team_id);
       if (!memberTeam) return false;
       
@@ -141,7 +143,19 @@ export function AddProjectAssignmentDialog({
       
       return teamMatches && productMatches;
     });
-  }, [teamMembers, teams, selectedTeam, selectedProduct]);
+
+    // Apply search filter
+    if (memberSearchTerm.trim()) {
+      const searchLower = memberSearchTerm.toLowerCase();
+      filtered = filtered.filter(member => 
+        member.name.toLowerCase().includes(searchLower) ||
+        member.team?.name?.toLowerCase().includes(searchLower) ||
+        member.role?.name?.toLowerCase().includes(searchLower)
+      );
+    }
+
+    return filtered;
+  }, [teamMembers, teams, selectedTeam, selectedProduct, memberSearchTerm]);
 
   // Filter teams based on page filters (for new project creation)
   const filteredTeams = useMemo(() => {
@@ -155,17 +169,46 @@ export function AddProjectAssignmentDialog({
 
   // Sort and filter projects based on selected team member's relevance and search term
   const filteredAndSortedProjects = useMemo(() => {
+    console.log('🔍 Project filtering debug:', { 
+      projectsCount: projects?.length, 
+      selectedMemberId, 
+      projectSearchTerm,
+      filteredTeamMembersCount: filteredTeamMembers?.length 
+    });
+    
     // Add defensive checks for all dependencies
-    if (!projects || !Array.isArray(projects)) return [];
-    if (!filteredTeamMembers || !Array.isArray(filteredTeamMembers)) return projects;
-    if (!teams || !Array.isArray(teams)) return projects;
-    if (!selectedMemberId) return projects;
+    if (!projects || !Array.isArray(projects)) {
+      console.log('❌ No projects available');
+      return [];
+    }
+    if (!selectedMemberId) {
+      console.log('ℹ️ No member selected, returning all projects');
+      // If no member selected, just apply search filter
+      if (!projectSearchTerm.trim()) return projects;
+      
+      const searchLower = projectSearchTerm.toLowerCase();
+      return projects.filter(project => 
+        project && project.name && 
+        (project.name.toLowerCase().includes(searchLower) || 
+         project.team?.name?.toLowerCase().includes(searchLower) ||
+         project.description?.toLowerCase().includes(searchLower))
+      );
+    }
     
     const selectedMember = filteredTeamMembers.find(m => m.id === selectedMemberId);
-    if (!selectedMember) return projects;
+    if (!selectedMember) {
+      console.log('❌ Selected member not found in filtered list');
+      return [];
+    }
 
     const memberTeam = teams.find(t => t.id === selectedMember.team_id);
     const memberProductId = memberTeam?.product_id;
+
+    console.log('👤 Member info:', { 
+      memberName: selectedMember.name, 
+      teamName: memberTeam?.name, 
+      productId: memberProductId 
+    });
 
     // Categorize projects with null checks
     const generalProjects = projects.filter(p => 
@@ -201,16 +244,34 @@ export function AddProjectAssignmentDialog({
       ...otherProjects.sort(sortAlphabetically)
     ];
 
+    console.log('📊 Project categories:', {
+      general: generalProjects.length,
+      sameProduct: sameProductProjects.length,
+      other: otherProjects.length,
+      total: sortedProjects.length
+    });
+
     // Filter by search term - enhanced search
-    if (!projectSearchTerm.trim()) return sortedProjects;
+    if (!projectSearchTerm.trim()) {
+      console.log('✅ Returning sorted projects without search filter');
+      return sortedProjects;
+    }
     
     const searchLower = projectSearchTerm.toLowerCase();
-    return sortedProjects.filter(project => 
+    const searchFiltered = sortedProjects.filter(project => 
       project && project.name && 
       (project.name.toLowerCase().includes(searchLower) || 
        project.team?.name?.toLowerCase().includes(searchLower) ||
        project.description?.toLowerCase().includes(searchLower))
     );
+    
+    console.log('🔍 Search results:', {
+      searchTerm: projectSearchTerm,
+      matchedProjects: searchFiltered.length,
+      matchedNames: searchFiltered.map(p => p.name)
+    });
+    
+    return searchFiltered;
   }, [projects, selectedMemberId, filteredTeamMembers, teams, projectSearchTerm]);
 
   // Get project dates for assignment defaults
@@ -294,20 +355,42 @@ export function AddProjectAssignmentDialog({
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Select Team Member</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Choose a team member to assign" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {filteredTeamMembers.map((member) => (
-                        <SelectItem key={member.id} value={member.id}>
-                          {member.name} ({member.team?.name})
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <div className="space-y-2">
+                    <Input
+                      placeholder="Search team members..."
+                      value={memberSearchTerm}
+                      onChange={(e) => setMemberSearchTerm(e.target.value)}
+                      className="w-full"
+                    />
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Choose a team member to assign" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent className="max-h-64">
+                        {filteredTeamMembers && filteredTeamMembers.length > 0 ? (
+                          filteredTeamMembers.map((member) => (
+                            <SelectItem key={member.id} value={member.id}>
+                              <div className="flex items-center gap-2 w-full">
+                                <span className="flex-1">{member.name}</span>
+                                <div className="flex gap-1">
+                                  <Badge variant="outline" className="text-xs">{member.team?.name}</Badge>
+                                  {member.role?.name && (
+                                    <Badge variant="secondary" className="text-xs">{member.role.name}</Badge>
+                                  )}
+                                </div>
+                              </div>
+                            </SelectItem>
+                          ))
+                        ) : (
+                          <SelectItem value="no-members" disabled>
+                            {memberSearchTerm ? 'No team members match your search' : 'No team members available'}  
+                          </SelectItem>
+                        )}
+                      </SelectContent>
+                    </Select>
+                  </div>
                   <FormMessage />
                 </FormItem>
               )}
