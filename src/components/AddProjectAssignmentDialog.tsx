@@ -63,6 +63,8 @@ interface AddProjectAssignmentDialogProps {
   teamMembers: TeamMember[];
   teams: Team[];
   products: Product[];
+  selectedTeam?: string;
+  selectedProduct?: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onAddProject: (project: Omit<Project, 'id' | 'created_at' | 'updated_at'>) => Promise<any>;
@@ -74,6 +76,8 @@ export function AddProjectAssignmentDialog({
   teamMembers,
   teams,
   products,
+  selectedTeam = 'all',
+  selectedProduct = 'all',
   open,
   onOpenChange,
   onAddProject,
@@ -95,15 +99,38 @@ export function AddProjectAssignmentDialog({
   const selectedProjectId = form.watch('existingProjectId');
   const selectedMemberId = form.watch('memberId');
 
+  // Filter team members based on page filters
+  const filteredTeamMembers = useMemo(() => {
+    return teamMembers.filter(member => {
+      const memberTeam = teams.find(t => t.id === member.team_id);
+      if (!memberTeam) return false;
+      
+      const teamMatches = selectedTeam === 'all' || memberTeam.name === selectedTeam;
+      const productMatches = selectedProduct === 'all' || memberTeam.product?.name === selectedProduct;
+      
+      return teamMatches && productMatches;
+    });
+  }, [teamMembers, teams, selectedTeam, selectedProduct]);
+
+  // Filter teams based on page filters (for new project creation)
+  const filteredTeams = useMemo(() => {
+    return teams.filter(team => {
+      const teamMatches = selectedTeam === 'all' || team.name === selectedTeam;
+      const productMatches = selectedProduct === 'all' || team.product?.name === selectedProduct;
+      
+      return teamMatches && productMatches;
+    });
+  }, [teams, selectedTeam, selectedProduct]);
+
   // Sort and filter projects based on selected team member's relevance and search term
   const filteredAndSortedProjects = useMemo(() => {
     // Add defensive checks for all dependencies
     if (!projects || !Array.isArray(projects)) return [];
-    if (!teamMembers || !Array.isArray(teamMembers)) return projects;
+    if (!filteredTeamMembers || !Array.isArray(filteredTeamMembers)) return projects;
     if (!teams || !Array.isArray(teams)) return projects;
     if (!selectedMemberId) return projects;
     
-    const selectedMember = teamMembers.find(m => m.id === selectedMemberId);
+    const selectedMember = filteredTeamMembers.find(m => m.id === selectedMemberId);
     if (!selectedMember) return projects;
 
     const memberTeam = teams.find(t => t.id === selectedMember.team_id);
@@ -143,16 +170,17 @@ export function AddProjectAssignmentDialog({
       ...otherProjects.sort(sortAlphabetically)
     ];
 
-    // Filter by search term
+    // Filter by search term - enhanced search
     if (!projectSearchTerm.trim()) return sortedProjects;
     
     const searchLower = projectSearchTerm.toLowerCase();
     return sortedProjects.filter(project => 
       project && project.name && 
       (project.name.toLowerCase().includes(searchLower) || 
-       project.team?.name?.toLowerCase().includes(searchLower))
+       project.team?.name?.toLowerCase().includes(searchLower) ||
+       project.description?.toLowerCase().includes(searchLower))
     );
-  }, [projects, selectedMemberId, teamMembers, teams, projectSearchTerm]);
+  }, [projects, selectedMemberId, filteredTeamMembers, teams, projectSearchTerm]);
 
   // Get project dates for assignment defaults
   const selectedProject = filteredAndSortedProjects.find(p => p.id === selectedProjectId);
@@ -242,7 +270,7 @@ export function AddProjectAssignmentDialog({
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {teamMembers.map((member) => (
+                      {filteredTeamMembers.map((member) => (
                         <SelectItem key={member.id} value={member.id}>
                           {member.name} ({member.team?.name})
                         </SelectItem>
@@ -372,7 +400,7 @@ export function AddProjectAssignmentDialog({
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          {teams.map((team) => (
+                          {filteredTeams.map((team) => (
                             <SelectItem key={team.id} value={team.id}>
                               {team.name}
                             </SelectItem>

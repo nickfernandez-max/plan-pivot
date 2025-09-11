@@ -1171,6 +1171,8 @@ export function RoadmapView({
       teamMembers={teamMembers}  
       teams={teams}
       products={products}
+      selectedTeam={selectedTeam}
+      selectedProduct={selectedProduct}
       open={isAssignmentDialogOpen}
       onOpenChange={setIsAssignmentDialogOpen}
       onAddProject={onAddProject}
