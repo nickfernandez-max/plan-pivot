@@ -9,6 +9,7 @@ import { RoadmapView } from '@/components/RoadmapView';
 import { TeamMembersView } from '@/components/TeamMembersView';
 import { ReportsView } from '@/components/ReportsView';
 import { FinancialsView } from '@/components/FinancialsView';
+import { UserMenu } from '@/components/UserMenu';
 import { AddProductDialog } from '@/components/AddProductDialog';
 import { AddTeamDialog } from '@/components/AddTeamDialog';
 import { AddPersonDialog } from '@/components/AddPersonDialog';
@@ -230,7 +231,8 @@ export default function RoadmapApp() {
             Project Roadmap
           </h1>
           
-          <div className="flex gap-4">
+          <div className="flex items-center gap-4">
+            <div className="flex gap-4">
             <Select value={selectedProduct} onValueChange={setSelectedProduct}>
               <SelectTrigger className="w-48">
                 <SelectValue placeholder="Filter by product" />
@@ -259,6 +261,8 @@ export default function RoadmapApp() {
               </SelectContent>
             </Select>
             </div>
+            <UserMenu />
+          </div>
         </div>
 
         <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-6">
