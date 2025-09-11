@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { format, parseISO } from 'date-fns';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -35,10 +35,26 @@ interface AssignmentReport {
 export function ReportsView({ projects, teamMembers, assignments }: ReportsViewProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [projectSearchTerm, setProjectSearchTerm] = useState('');
+  const [selectedProjectId, setSelectedProjectId] = useState<string>('');
+  const [showProjectDropdown, setShowProjectDropdown] = useState(false);
   const [productFilterValue, setProductFilterValue] = useState<string>('all');
   const [statusFilterValue, setStatusFilterValue] = useState<string>('all');
   const [assigneeFilterValue, setAssigneeFilterValue] = useState<string>('all');
   const [typeFilterValue, setTypeFilterValue] = useState<string>('all');
+
+  const projectSearchRef = useRef<HTMLDivElement>(null);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (projectSearchRef.current && !projectSearchRef.current.contains(event.target as Node)) {
+        setShowProjectDropdown(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const STANDARD_WORK_HOURS_PER_WEEK = 40;
 
@@ -93,9 +109,8 @@ export function ReportsView({ projects, teamMembers, assignments }: ReportsViewP
         report.teamName.toLowerCase().includes(searchLower) ||
         report.roleName.toLowerCase().includes(searchLower);
 
-      // Project search filter
-      const matchesProjectSearch = !projectSearchTerm || 
-        report.projectName.toLowerCase().includes(projectSearchTerm.toLowerCase());
+      // Selected project filter (takes priority over search term)
+      const matchesProjectSelection = !selectedProjectId || report.projectId === selectedProjectId;
 
       // Product filter
       const project = projects.find(p => p.id === report.projectId);
@@ -113,9 +128,41 @@ export function ReportsView({ projects, teamMembers, assignments }: ReportsViewP
         (typeFilterValue === 'rd' && report.isRnD) ||
         (typeFilterValue === 'product' && !report.isRnD);
 
-      return matchesSearch && matchesProjectSearch && matchesProduct && matchesStatus && matchesAssignee && matchesType;
+      return matchesSearch && matchesProjectSelection && matchesProduct && matchesStatus && matchesAssignee && matchesType;
     });
-  }, [reportData, searchQuery, projectSearchTerm, productFilterValue, statusFilterValue, assigneeFilterValue, typeFilterValue, projects]);
+  }, [reportData, searchQuery, selectedProjectId, productFilterValue, statusFilterValue, assigneeFilterValue, typeFilterValue, projects]);
+
+  // Filtered projects for dropdown
+  const filteredProjects = useMemo(() => {
+    if (!projectSearchTerm) return projects.slice(0, 10);
+    return projects.filter(project =>
+      project.name.toLowerCase().includes(projectSearchTerm.toLowerCase())
+    ).slice(0, 10);
+  }, [projects, projectSearchTerm]);
+
+  // Get the selected project name for display
+  const selectedProjectName = selectedProjectId ? 
+    projects.find(p => p.id === selectedProjectId)?.name || '' : '';
+
+  const handleProjectSelect = (project: Project) => {
+    setSelectedProjectId(project.id);
+    setProjectSearchTerm(project.name);
+    setShowProjectDropdown(false);
+  };
+
+  const handleProjectSearchChange = (value: string) => {
+    setProjectSearchTerm(value);
+    if (!value) {
+      setSelectedProjectId('');
+    }
+    setShowProjectDropdown(value.length > 0);
+  };
+
+  const clearProjectSelection = () => {
+    setProjectSearchTerm('');
+    setSelectedProjectId('');
+    setShowProjectDropdown(false);
+  };
 
   // Get unique values for filters
   const availableProducts = useMemo(() => {
@@ -183,12 +230,42 @@ export function ReportsView({ projects, teamMembers, assignments }: ReportsViewP
           <div className="space-y-4">
             {/* Filter Row */}
             <div className="flex flex-wrap gap-4 items-end">
-              <div className="min-w-[140px]">
-                <Input
-                  placeholder="Search projects..."
-                  value={projectSearchTerm}
-                  onChange={(e) => setProjectSearchTerm(e.target.value)}
-                />
+              <div className="min-w-[140px] relative" ref={projectSearchRef}>
+                <div className="relative">
+                  <Input
+                    placeholder="Search projects..."
+                    value={projectSearchTerm}
+                    onChange={(e) => handleProjectSearchChange(e.target.value)}
+                    onFocus={() => setShowProjectDropdown(projectSearchTerm.length > 0)}
+                  />
+                  {selectedProjectId && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="absolute right-1 top-1/2 -translate-y-1/2 h-6 w-6 p-0"
+                      onClick={clearProjectSelection}
+                    >
+                      ×
+                    </Button>
+                  )}
+                </div>
+                
+                {showProjectDropdown && filteredProjects.length > 0 && (
+                  <div className="absolute top-full left-0 right-0 mt-1 bg-background border border-border rounded-md shadow-lg z-50 max-h-60 overflow-y-auto">
+                    {filteredProjects.map((project) => (
+                      <div
+                        key={project.id}
+                        className="p-2 hover:bg-accent hover:text-accent-foreground cursor-pointer text-sm border-b border-border last:border-b-0"
+                        onClick={() => handleProjectSelect(project)}
+                      >
+                        <div className="font-medium">{project.name}</div>
+                        <div className="text-xs text-muted-foreground">
+                          {project.team?.name} • {project.status}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
 
               <div className="min-w-[120px]">
