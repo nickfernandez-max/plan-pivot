@@ -142,19 +142,41 @@ export default function RoadmapApp() {
   }, [projects, selectedTeam, selectedProduct]);
 
   const filteredTeamMembers = useMemo(() => {
-    const result = teamMembers.filter(member => {
-      const memberTeam = teams.find(t => t.id === member.team_id);
-      const teamMatches = selectedTeam === 'all' || memberTeam?.name === selectedTeam;
-      const productMatches = selectedProduct === 'all' || 
-        memberTeam?.product?.name === selectedProduct;
+    const currentDate = new Date();
+    const currentMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
+    
+    return teamMembers.filter(member => {
+      // Get all active team memberships for this member at current time
+      const activeMemberships = memberships.filter(membership => {
+        const startMonth = new Date(membership.start_month);
+        const endMonth = membership.end_month ? new Date(membership.end_month) : null;
+        
+        return membership.team_member_id === member.id &&
+               startMonth <= currentMonth &&
+               (!endMonth || endMonth >= currentMonth);
+      });
       
-      // Debug logging
+      // Get teams this member is currently active in
+      const activeTeams = activeMemberships
+        .map(membership => teams.find(t => t.id === membership.team_id))
+        .filter(Boolean);
+      
+      // Check if any active team matches the selected team
+      const teamMatches = selectedTeam === 'all' || 
+        activeTeams.some(team => team?.name === selectedTeam);
+      
+      // Check if any active team is assigned to the selected product
+      const productMatches = selectedProduct === 'all' || 
+        activeTeams.some(team => team?.product?.name === selectedProduct);
+      
+      // Debug logging for Bob Smith
       if (member.name === 'Bob Smith') {
         console.log('Bob Smith filtering debug:', {
           selectedProduct,
           selectedTeam,
-          memberTeam: memberTeam?.name,
-          memberTeamProduct: memberTeam?.product?.name,
+          primaryTeam: teams.find(t => t.id === member.team_id)?.name,
+          activeMemberships: activeMemberships.length,
+          activeTeams: activeTeams.map(t => ({ name: t?.name, product: t?.product?.name })),
           teamMatches,
           productMatches,
           finalResult: teamMatches && productMatches
@@ -163,10 +185,7 @@ export default function RoadmapApp() {
       
       return teamMatches && productMatches;
     });
-    
-    console.log('Filtered team members:', result.map(m => m.name));
-    return result;
-  }, [teamMembers, teams, selectedTeam, selectedProduct]);
+  }, [teamMembers, teams, memberships, selectedTeam, selectedProduct]);
 
   // Event handlers for data manipulation
   const handleAddProject = async (projectData: any) => {
