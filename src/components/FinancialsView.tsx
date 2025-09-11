@@ -1,13 +1,14 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useSupabaseData } from '@/hooks/useSupabaseData';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Button } from '@/components/ui/button';
 import { EditRoleDialog } from '@/components/EditRoleDialog';
 import { AddUserDialog } from '@/components/AddUserDialog';
 import { useToast } from '@/hooks/use-toast';
 import { Role } from '@/types/roadmap';
-import { Lock } from 'lucide-react';
+import { Lock, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
 
 interface FinancialsViewProps {
   roles: Role[];
@@ -18,6 +19,56 @@ export function FinancialsView({ roles, onUpdateRole }: FinancialsViewProps) {
   const { toast } = useToast();
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [sortField, setSortField] = useState<'name' | 'display_name' | 'hourly_rate' | null>(null);
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
+
+  const handleSort = (field: 'name' | 'display_name' | 'hourly_rate') => {
+    if (sortField === field) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortDirection('asc');
+    }
+  };
+
+  const getSortIcon = (field: 'name' | 'display_name' | 'hourly_rate') => {
+    if (sortField !== field) {
+      return <ArrowUpDown className="ml-2 h-4 w-4 opacity-50" />;
+    }
+    return sortDirection === 'asc' 
+      ? <ArrowUp className="ml-2 h-4 w-4" />
+      : <ArrowDown className="ml-2 h-4 w-4" />;
+  };
+
+  const sortedRoles = useMemo(() => {
+    if (!sortField) return roles;
+
+    return [...roles].sort((a, b) => {
+      let aValue: string | number;
+      let bValue: string | number;
+
+      switch (sortField) {
+        case 'name':
+          aValue = a.name.toLowerCase();
+          bValue = b.name.toLowerCase();
+          break;
+        case 'display_name':
+          aValue = (a.display_name || a.name).toLowerCase();
+          bValue = (b.display_name || b.name).toLowerCase();
+          break;
+        case 'hourly_rate':
+          aValue = a.hourly_rate || 0;
+          bValue = b.hourly_rate || 0;
+          break;
+        default:
+          return 0;
+      }
+
+      if (aValue < bValue) return sortDirection === 'asc' ? -1 : 1;
+      if (aValue > bValue) return sortDirection === 'asc' ? 1 : -1;
+      return 0;
+    });
+  }, [roles, sortField, sortDirection]);
 
   useEffect(() => {
     const checkAdminStatus = async () => {
@@ -88,14 +139,41 @@ export function FinancialsView({ roles, onUpdateRole }: FinancialsViewProps) {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Role Name</TableHead>
-                <TableHead>Display Name</TableHead>
-                <TableHead>Hourly Rate ($)</TableHead>
+                <TableHead>
+                  <Button
+                    variant="ghost"
+                    className="h-auto p-0 font-medium hover:bg-transparent"
+                    onClick={() => handleSort('name')}
+                  >
+                    Role Name
+                    {getSortIcon('name')}
+                  </Button>
+                </TableHead>
+                <TableHead>
+                  <Button
+                    variant="ghost"
+                    className="h-auto p-0 font-medium hover:bg-transparent"
+                    onClick={() => handleSort('display_name')}
+                  >
+                    Display Name
+                    {getSortIcon('display_name')}
+                  </Button>
+                </TableHead>
+                <TableHead>
+                  <Button
+                    variant="ghost"
+                    className="h-auto p-0 font-medium hover:bg-transparent"
+                    onClick={() => handleSort('hourly_rate')}
+                  >
+                    Hourly Rate ($)
+                    {getSortIcon('hourly_rate')}
+                  </Button>
+                </TableHead>
                 <TableHead className="w-[100px]">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {roles.map((role) => (
+              {sortedRoles.map((role) => (
                 <TableRow key={role.id}>
                   <TableCell className="font-medium">{role.name}</TableCell>
                   <TableCell>{role.display_name || role.name}</TableCell>
