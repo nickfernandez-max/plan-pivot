@@ -21,6 +21,10 @@ interface TeamMembersViewProps {
   products: Product[];
   roles: Role[];
   memberships: TeamMembership[];
+  timelineStartDate: Date;
+  onTimelineNavigateForward: () => void;
+  onTimelineNavigateBackward: () => void;
+  onTimelineResetToToday: () => void;
   onAddTeamMember: (member: Omit<TeamMember, 'id' | 'created_at' | 'updated_at'>) => void;
   onUpdateTeamMember: (id: string, updates: Partial<TeamMember>) => Promise<void>;
   onAddProduct: (product: Omit<Product, 'id' | 'created_at' | 'updated_at'>) => void;
@@ -47,11 +51,15 @@ export function TeamMembersView({
   teamMembers, 
   teams, 
   products, 
-  roles,
+  roles, 
   memberships,
+  timelineStartDate,
+  onTimelineNavigateForward,
+  onTimelineNavigateBackward,
+  onTimelineResetToToday,
   onAddTeamMember, 
-  onUpdateTeamMember, 
-  onAddProduct, 
+  onUpdateTeamMember,
+  onAddProduct,
   onUpdateProduct,
   onAddTeam,
   onUpdateTeam,
@@ -64,7 +72,6 @@ export function TeamMembersView({
   const [editingTeam, setEditingTeam] = useState<Team | null>(null);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [activeTab, setActiveTab] = useState<string>('');
-  const [timelineStartDate, setTimelineStartDate] = useState(() => startOfMonth(new Date()));
   
   // Sorting state
   const [primarySort, setPrimarySort] = useState<SortField>('role');
@@ -100,18 +107,10 @@ export function TeamMembersView({
     },
   });
 
-  // Navigation functions
-  const navigateForward = () => {
-    setTimelineStartDate(prev => addMonths(prev, 3));
-  };
-
-  const navigateBackward = () => {
-    setTimelineStartDate(prev => addMonths(prev, -3));
-  };
-
-  const resetToToday = () => {
-    setTimelineStartDate(startOfMonth(new Date()));
-  };
+  // Navigation functions - now use props
+  const navigateForward = onTimelineNavigateForward;
+  const navigateBackward = onTimelineNavigateBackward;
+  const resetToToday = onTimelineResetToToday;
 
   // Sorting function
   const sortMembers = (members: TeamMember[]) => {

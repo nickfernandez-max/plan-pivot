@@ -15,6 +15,7 @@ import { AddProductDialog } from '@/components/AddProductDialog';
 import { AddTeamDialog } from '@/components/AddTeamDialog';
 import { AddPersonDialog } from '@/components/AddPersonDialog';
 import { useToast } from '@/hooks/use-toast';
+import { startOfMonth, addMonths, format } from 'date-fns';
 
 export default function RoadmapApp() {
   const { toast } = useToast();
@@ -24,11 +25,25 @@ export default function RoadmapApp() {
   const [isAddProductDialogOpen, setIsAddProductDialogOpen] = useState(false);
   const [isAddTeamDialogOpen, setIsAddTeamDialogOpen] = useState(false);
   const [userPreferencesLoaded, setUserPreferencesLoaded] = useState(false);
+  const [timelineStartDate, setTimelineStartDate] = useState(() => startOfMonth(new Date()));
   const [activeTab, setActiveTab] = useState<string>(() => {
     // Persist active tab in sessionStorage to survive data refetches
     return sessionStorage.getItem('roadmapActiveTab') || 'projects';
   });
   
+  // Timeline navigation functions
+  const navigateTimelineForward = () => {
+    setTimelineStartDate(prev => addMonths(prev, 3));
+  };
+
+  const navigateTimelineBackward = () => {
+    setTimelineStartDate(prev => addMonths(prev, -3));
+  };
+
+  const resetTimelineToToday = () => {
+    setTimelineStartDate(startOfMonth(new Date()));
+  };
+
   // Update sessionStorage when tab changes
   const handleTabChange = (value: string) => {
     setActiveTab(value);
@@ -142,21 +157,22 @@ export default function RoadmapApp() {
   }, [projects, selectedTeam, selectedProduct]);
 
   const filteredTeamMembers = useMemo(() => {
-    const currentDate = new Date();
-    const currentMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
+    // Calculate timeline range (9 months from timelineStartDate)
+    const timelineStart = format(timelineStartDate, 'yyyy-MM-01');
+    const timelineEnd = format(addMonths(timelineStartDate, 8), 'yyyy-MM-01');
     
     return teamMembers.filter(member => {
-      // Get all active team memberships for this member at current time
+      // Get all active team memberships for this member during the timeline period
       const activeMemberships = memberships.filter(membership => {
-        const startMonth = new Date(membership.start_month);
-        const endMonth = membership.end_month ? new Date(membership.end_month) : null;
+        const membershipStart = membership.start_month;
+        const membershipEnd = membership.end_month || '9999-12-01'; // Use far future if no end date
         
         return membership.team_member_id === member.id &&
-               startMonth <= currentMonth &&
-               (!endMonth || endMonth >= currentMonth);
+               membershipStart <= timelineEnd &&
+               membershipEnd >= timelineStart;
       });
       
-      // Get teams this member is currently active in
+      // Get teams this member is active in during the timeline
       const activeTeams = activeMemberships
         .map(membership => teams.find(t => t.id === membership.team_id))
         .filter(Boolean);
@@ -174,7 +190,8 @@ export default function RoadmapApp() {
         console.log('Bob Smith filtering debug:', {
           selectedProduct,
           selectedTeam,
-          primaryTeam: teams.find(t => t.id === member.team_id)?.name,
+          timelineStart,
+          timelineEnd,
           activeMemberships: activeMemberships.length,
           activeTeams: activeTeams.map(t => ({ name: t?.name, product: t?.product?.name })),
           teamMatches,
@@ -185,7 +202,7 @@ export default function RoadmapApp() {
       
       return teamMatches && productMatches;
     });
-  }, [teamMembers, teams, memberships, selectedTeam, selectedProduct]);
+  }, [teamMembers, teams, memberships, selectedTeam, selectedProduct, timelineStartDate]);
 
   // Event handlers for data manipulation
   const handleAddProject = async (projectData: any) => {
@@ -423,6 +440,10 @@ export default function RoadmapApp() {
               products={products}
               roles={roles}
               memberships={memberships}
+              timelineStartDate={timelineStartDate}
+              onTimelineNavigateForward={navigateTimelineForward}
+              onTimelineNavigateBackward={navigateTimelineBackward}
+              onTimelineResetToToday={resetTimelineToToday}
               onAddTeamMember={handleAddTeamMember} 
               onUpdateTeamMember={handleUpdateTeamMember}
               onAddProduct={handleAddProduct}
