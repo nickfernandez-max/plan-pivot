@@ -32,7 +32,8 @@ interface AssignmentReport {
 
 export function ReportsView({ projects, teamMembers, assignments }: ReportsViewProps) {
   const [searchQuery, setSearchQuery] = useState('');
-  const [projectFilter, setProjectFilter] = useState<string>('all');
+  const [projectSearch, setProjectSearch] = useState('');
+  const [productFilter, setProductFilter] = useState<string>('all');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [assigneeFilter, setAssigneeFilter] = useState<string>('all');
   const [typeFilter, setTypeFilter] = useState<string>('all'); // rd, non-rd, all
@@ -88,28 +89,42 @@ export function ReportsView({ projects, teamMembers, assignments }: ReportsViewP
         report.teamName.toLowerCase().includes(searchLower) ||
         report.roleName.toLowerCase().includes(searchLower);
 
-      // Project filter
-      const matchesProject = projectFilter === 'all' || 
-        projects.find(p => p.name === projectFilter)?.id === report.id;
+      // Project search filter
+      const matchesProject = !projectSearch || 
+        report.projectName.toLowerCase().includes(projectSearch.toLowerCase());
+
+      // Product filter
+      const project = projects.find(p => p.id === assignments.find(a => a.id === report.id)?.project_id);
+      const matchesProduct = productFilter === 'all' || 
+        project?.products?.some(p => p.id === productFilter);
 
       // Status filter  
       const matchesStatus = statusFilter === 'all' || report.projectStatus === statusFilter;
 
       // Assignee filter
       const matchesAssignee = assigneeFilter === 'all' || 
-        teamMembers.find(tm => tm.name === assigneeFilter)?.id === report.id;
+        teamMembers.find(tm => tm.name === assigneeFilter)?.id === assignments.find(a => a.id === report.id)?.team_member_id;
 
       // Type filter (R&D vs Product)
       const matchesType = typeFilter === 'all' || 
         (typeFilter === 'rd' && report.isRnD) ||
         (typeFilter === 'product' && !report.isRnD);
 
-      return matchesSearch && matchesProject && matchesStatus && matchesAssignee && matchesType;
+      return matchesSearch && matchesProject && matchesProduct && matchesStatus && matchesAssignee && matchesType;
     });
-  }, [reportData, searchQuery, projectFilter, statusFilter, assigneeFilter, typeFilter, projects, teamMembers]);
+  }, [reportData, searchQuery, projectSearch, productFilter, statusFilter, assigneeFilter, typeFilter, projects, teamMembers, assignments]);
 
   // Get unique values for filters
-  const uniqueProjects = [...new Set(projects.map(p => p.name))];
+  const uniqueProducts = useMemo(() => {
+    const productSet = new Set<{id: string, name: string}>();
+    projects.forEach(project => {
+      project.products?.forEach(product => {
+        productSet.add({id: product.id, name: product.name});
+      });
+    });
+    return Array.from(productSet);
+  }, [projects]);
+  
   const uniqueStatuses = [...new Set(projects.map(p => p.status))];
   const uniqueAssignees = [...new Set(teamMembers.map(tm => tm.name))];
 
@@ -165,16 +180,24 @@ export function ReportsView({ projects, teamMembers, assignments }: ReportsViewP
           <div className="space-y-4">
             {/* Filter Row */}
             <div className="flex flex-wrap gap-4 items-end">
+              <div className="min-w-[140px]">
+                <Input
+                  placeholder="Search projects..."
+                  value={projectSearch}
+                  onChange={(e) => setProjectSearch(e.target.value)}
+                />
+              </div>
+
               <div className="min-w-[120px]">
-                <Select value={projectFilter} onValueChange={setProjectFilter}>
+                <Select value={productFilter} onValueChange={setProductFilter}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Project: All" />
+                    <SelectValue placeholder="Product: All" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">Project: All</SelectItem>
-                    {uniqueProjects.map(project => (
-                      <SelectItem key={project} value={project}>
-                        {project}
+                    <SelectItem value="all">Product: All</SelectItem>
+                    {uniqueProducts.map(product => (
+                      <SelectItem key={product.id} value={product.id}>
+                        {product.name}
                       </SelectItem>
                     ))}
                   </SelectContent>
