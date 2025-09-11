@@ -144,11 +144,25 @@ export default function RoadmapApp() {
   const filteredTeamMembers = useMemo(() => {
     return teamMembers.filter(member => {
       const teamMatches = selectedTeam === 'all' || teams.find(t => t.id === member.team_id)?.name === selectedTeam;
-      const productMatches = selectedProduct === 'all' || 
-        teams.find(t => t.id === member.team_id)?.product?.name === selectedProduct;
+      
+      if (selectedProduct === 'all') {
+        return teamMatches;
+      }
+      
+      // Check if team is directly assigned to the product
+      const directProductMatch = teams.find(t => t.id === member.team_id)?.product?.name === selectedProduct;
+      
+      // Check if team works on projects related to the product
+      const teamProjectsMatch = projects.some(project => 
+        project.team_id === member.team_id && 
+        (project.products?.some(p => p.name === selectedProduct) || 
+         project.team?.product?.name === selectedProduct)
+      );
+      
+      const productMatches = directProductMatch || teamProjectsMatch;
       return teamMatches && productMatches;
     });
-  }, [teamMembers, teams, selectedTeam, selectedProduct]);
+  }, [teamMembers, teams, selectedTeam, selectedProduct, projects]);
 
   // Event handlers for data manipulation
   const handleAddProject = async (projectData: any) => {
