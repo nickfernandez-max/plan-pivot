@@ -86,9 +86,7 @@ export function FinancialsView({ roles, onUpdateRole }: FinancialsViewProps) {
               <TableRow>
                 <TableHead>Role Name</TableHead>
                 <TableHead>Display Name</TableHead>
-                <TableHead>Finance Name</TableHead>
                 <TableHead>Hourly Rate ($)</TableHead>
-                <TableHead>Description</TableHead>
                 <TableHead className="w-[100px]">Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -97,12 +95,8 @@ export function FinancialsView({ roles, onUpdateRole }: FinancialsViewProps) {
                 <TableRow key={role.id}>
                   <TableCell className="font-medium">{role.name}</TableCell>
                   <TableCell>{role.display_name || role.name}</TableCell>
-                  <TableCell>{role.finance_name || '—'}</TableCell>
                   <TableCell>
                     {role.hourly_rate ? `$${role.hourly_rate.toFixed(2)}` : '—'}
-                  </TableCell>
-                  <TableCell className="max-w-xs truncate">
-                    {role.description || '—'}
                   </TableCell>
                   <TableCell>
                     <EditRoleDialog
