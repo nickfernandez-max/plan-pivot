@@ -96,27 +96,21 @@ export function useDragAndDrop({
       isValidDrop = true;
     }
 
-    // Calculate date position using actual mouse position relative to timeline
-    const container = document.querySelector('.timeline-container');
-    if (container && active.rect.current.translated) {
-      const containerRect = container.getBoundingClientRect();
-      const timelineStart = containerRect.left + 192; // sidebar width
-      const mouseX = active.rect.current.translated.left + (active.rect.current.translated.width / 2);
-      const relativeX = mouseX - timelineStart;
+    // Calculate new date position using delta.x (much simpler and more reliable)
+    if (Math.abs(delta.x) > 5) {
+      const dayOffset = Math.round(delta.x / timelinePixelsPerDay);
+      const originalStart = new Date(activeDrag.originalStartDate);
+      newStartDate = addDays(originalStart, dayOffset);
       
-      if (relativeX >= 0) {
-        const dayPosition = Math.round((relativeX / (containerRect.width - 192)) * totalDays);
-        newStartDate = addDays(timelineBounds.start, dayPosition);
-        
-        // Constrain to timeline bounds
-        if (newStartDate < timelineBounds.start) {
-          newStartDate = new Date(timelineBounds.start);
-        } else if (newStartDate > timelineBounds.end) {
-          newStartDate = new Date(timelineBounds.end);
-        }
-        
-        isValidDrop = true;
+      // Constrain to timeline bounds
+      if (newStartDate < timelineBounds.start) {
+        newStartDate = new Date(timelineBounds.start);
+      } else if (newStartDate > timelineBounds.end) {
+        newStartDate = new Date(timelineBounds.end);
       }
+      
+      isValidDrop = true;
+      console.log('📅 NEW DATE CALCULATED:', newStartDate.toISOString().split('T')[0]);
     }
 
     setDragOverData({ memberId: newMemberId, newStartDate, isValidDrop });
@@ -169,10 +163,12 @@ export function useDragAndDrop({
       if (over.data.current?.type === 'member-row' && 
           over.data.current.memberId !== activeDrag.originalMemberId) {
         newMemberId = over.data.current.memberId;
+      } else if (dragOverData.memberId && dragOverData.memberId !== activeDrag.originalMemberId) {
+        newMemberId = dragOverData.memberId;
       }
 
-      // Handle date changes using actual drop position
-      if (dragOverData.newStartDate && Math.abs(delta.x) > 10) {
+      // Handle date changes using the calculated position from dragOver
+      if (dragOverData.newStartDate) {
         newStartDate = new Date(dragOverData.newStartDate);
         newEndDate = addDays(newStartDate, projectDuration);
         
