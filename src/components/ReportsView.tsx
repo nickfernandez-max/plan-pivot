@@ -1,13 +1,12 @@
 import { useState, useMemo } from 'react';
-import { format, startOfWeek, endOfWeek, eachWeekOfInterval, parseISO, isWithinInterval } from 'date-fns';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { format, parseISO, isWithinInterval } from 'date-fns';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Calendar, Download } from 'lucide-react';
+import { Search, Download, Filter } from 'lucide-react';
 import { Project, TeamMember, ProjectAssignment } from '@/types/roadmap';
 
 interface ReportsViewProps {
@@ -16,156 +15,127 @@ interface ReportsViewProps {
   assignments: ProjectAssignment[];
 }
 
-interface HoursReport {
+interface AssignmentReport {
+  id: string;
   projectName: string;
   teamMemberName: string;
-  weekOf: string;
-  hoursAllocated: number;
-  percentageAllocation: number;
+  teamName: string;
+  roleName: string;
+  startDate: string;
+  endDate: string;
+  percentAllocation: number;
+  weeklyHours: number;
+  totalHours: number;
+  projectStatus: string;
   isRnD: boolean;
-  projectId: string;
-  teamMemberId: string;
 }
 
 export function ReportsView({ projects, teamMembers, assignments }: ReportsViewProps) {
-  const [reportType, setReportType] = useState<'project' | 'person' | 'initiative'>('project');
-  const [startDate, setStartDate] = useState(format(new Date(), 'yyyy-MM-dd'));
-  const [endDate, setEndDate] = useState(format(new Date(Date.now() + 90 * 24 * 60 * 60 * 1000), 'yyyy-MM-dd'));
-  const [selectedProject, setSelectedProject] = useState<string>('all');
-  const [selectedMember, setSelectedMember] = useState<string>('all');
-  const [initiativeFilter, setInitiativeFilter] = useState<'all' | 'rd' | 'non-rd'>('all');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [projectFilter, setProjectFilter] = useState<string>('all');
+  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [assigneeFilter, setAssigneeFilter] = useState<string>('all');
+  const [typeFilter, setTypeFilter] = useState<string>('all'); // rd, non-rd, all
 
   const STANDARD_WORK_HOURS_PER_WEEK = 40;
 
-  // Calculate hours report data
-  const hoursData = useMemo(() => {
-    const startDateObj = parseISO(startDate);
-    const endDateObj = parseISO(endDate);
-    const weeks = eachWeekOfInterval({ start: startDateObj, end: endDateObj });
-    
-    const reports: HoursReport[] = [];
+  // Process assignment data
+  const reportData = useMemo(() => {
+    const reports: AssignmentReport[] = [];
 
     assignments.forEach(assignment => {
-      if (!assignment.start_date || !assignment.end_date) return;
-
       const project = projects.find(p => p.id === assignment.project_id);
       const teamMember = teamMembers.find(tm => tm.id === assignment.team_member_id);
       
-      if (!project || !teamMember) return;
+      if (!project || !teamMember || !assignment.start_date || !assignment.end_date) return;
 
-      const assignmentStart = parseISO(assignment.start_date);
-      const assignmentEnd = parseISO(assignment.end_date);
+      const startDate = parseISO(assignment.start_date);
+      const endDate = parseISO(assignment.end_date);
+      const weeklyHours = (assignment.percent_allocation / 100) * STANDARD_WORK_HOURS_PER_WEEK;
+      
+      // Calculate total hours based on duration
+      const durationInDays = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
+      const durationInWeeks = Math.ceil(durationInDays / 7);
+      const totalHours = weeklyHours * durationInWeeks;
 
-      weeks.forEach(week => {
-        const weekStart = startOfWeek(week);
-        const weekEnd = endOfWeek(week);
-
-        // Check if this week overlaps with the assignment period
-        const weekOverlapsAssignment = isWithinInterval(weekStart, { start: assignmentStart, end: assignmentEnd }) ||
-                                      isWithinInterval(weekEnd, { start: assignmentStart, end: assignmentEnd }) ||
-                                      isWithinInterval(assignmentStart, { start: weekStart, end: weekEnd });
-
-        if (weekOverlapsAssignment) {
-          const percentageAllocation = assignment.percent_allocation || 100;
-          const hoursAllocated = (percentageAllocation / 100) * STANDARD_WORK_HOURS_PER_WEEK;
-
-          reports.push({
-            projectName: project.name,
-            teamMemberName: teamMember.name,
-            weekOf: format(weekStart, 'yyyy-MM-dd'),
-            hoursAllocated,
-            percentageAllocation,
-            isRnD: project.is_rd,
-            projectId: project.id,
-            teamMemberId: teamMember.id
-          });
-        }
+      reports.push({
+        id: assignment.id,
+        projectName: project.name,
+        teamMemberName: teamMember.name,
+        teamName: teamMember.team?.name || 'Unknown Team',
+        roleName: teamMember.role?.name || 'Unknown Role',
+        startDate: assignment.start_date,
+        endDate: assignment.end_date,
+        percentAllocation: assignment.percent_allocation,
+        weeklyHours,
+        totalHours,
+        projectStatus: project.status,
+        isRnD: project.is_rd
       });
     });
 
-    // Apply filters
-    return reports.filter(report => {
-      const projectMatches = selectedProject === 'all' || report.projectId === selectedProject;
-      const memberMatches = selectedMember === 'all' || report.teamMemberId === selectedMember;
-      const initiativeMatches = initiativeFilter === 'all' || 
-                               (initiativeFilter === 'rd' && report.isRnD) ||
-                               (initiativeFilter === 'non-rd' && !report.isRnD);
-      
-      return projectMatches && memberMatches && initiativeMatches;
+    return reports;
+  }, [projects, teamMembers, assignments]);
+
+  // Filter data based on search and filters
+  const filteredData = useMemo(() => {
+    return reportData.filter(report => {
+      // Search query filter
+      const searchLower = searchQuery.toLowerCase();
+      const matchesSearch = !searchQuery || 
+        report.projectName.toLowerCase().includes(searchLower) ||
+        report.teamMemberName.toLowerCase().includes(searchLower) ||
+        report.teamName.toLowerCase().includes(searchLower) ||
+        report.roleName.toLowerCase().includes(searchLower);
+
+      // Project filter
+      const matchesProject = projectFilter === 'all' || 
+        projects.find(p => p.name === projectFilter)?.id === report.id;
+
+      // Status filter  
+      const matchesStatus = statusFilter === 'all' || report.projectStatus === statusFilter;
+
+      // Assignee filter
+      const matchesAssignee = assigneeFilter === 'all' || 
+        teamMembers.find(tm => tm.name === assigneeFilter)?.id === report.id;
+
+      // Type filter (R&D vs Product)
+      const matchesType = typeFilter === 'all' || 
+        (typeFilter === 'rd' && report.isRnD) ||
+        (typeFilter === 'product' && !report.isRnD);
+
+      return matchesSearch && matchesProject && matchesStatus && matchesAssignee && matchesType;
     });
-  }, [projects, teamMembers, assignments, startDate, endDate, selectedProject, selectedMember, initiativeFilter]);
+  }, [reportData, searchQuery, projectFilter, statusFilter, assigneeFilter, typeFilter, projects, teamMembers]);
 
-  // Aggregate data based on report type
-  const aggregatedData = useMemo(() => {
-    const aggregated = new Map<string, { 
-      key: string; 
-      name: string; 
-      totalHours: number; 
-      rdHours: number; 
-      nonRdHours: number; 
-      projects: Set<string>;
-      weeks: Set<string>;
-    }>();
+  // Get unique values for filters
+  const uniqueProjects = [...new Set(projects.map(p => p.name))];
+  const uniqueStatuses = [...new Set(projects.map(p => p.status))];
+  const uniqueAssignees = [...new Set(teamMembers.map(tm => tm.name))];
 
-    hoursData.forEach(report => {
-      let key: string;
-      let name: string;
-
-      switch (reportType) {
-        case 'project':
-          key = report.projectId;
-          name = report.projectName;
-          break;
-        case 'person':
-          key = report.teamMemberId;
-          name = report.teamMemberName;
-          break;
-        case 'initiative':
-          key = report.isRnD ? 'rd' : 'non-rd';
-          name = report.isRnD ? 'R&D' : 'Product Development';
-          break;
-      }
-
-      if (!aggregated.has(key)) {
-        aggregated.set(key, {
-          key,
-          name,
-          totalHours: 0,
-          rdHours: 0,
-          nonRdHours: 0,
-          projects: new Set(),
-          weeks: new Set()
-        });
-      }
-
-      const item = aggregated.get(key)!;
-      item.totalHours += report.hoursAllocated;
-      item.projects.add(report.projectName);
-      item.weeks.add(report.weekOf);
-
-      if (report.isRnD) {
-        item.rdHours += report.hoursAllocated;
-      } else {
-        item.nonRdHours += report.hoursAllocated;
-      }
-    });
-
-    return Array.from(aggregated.values()).sort((a, b) => b.totalHours - a.totalHours);
-  }, [hoursData, reportType]);
-
-  const totalHours = aggregatedData.reduce((sum, item) => sum + item.totalHours, 0);
-  const totalRdHours = aggregatedData.reduce((sum, item) => sum + item.rdHours, 0);
-  const totalNonRdHours = aggregatedData.reduce((sum, item) => sum + item.nonRdHours, 0);
+  // Summary statistics
+  const totalHours = filteredData.reduce((sum, item) => sum + item.totalHours, 0);
+  const rdHours = filteredData.filter(item => item.isRnD).reduce((sum, item) => sum + item.totalHours, 0);
+  const productHours = filteredData.filter(item => !item.isRnD).reduce((sum, item) => sum + item.totalHours, 0);
 
   const exportToCSV = () => {
-    const headers = ['Name', 'Total Hours', 'R&D Hours', 'Product Hours', 'Projects Count', 'Weeks Count'];
-    const rows = aggregatedData.map(item => [
-      item.name,
+    const headers = [
+      'Project', 'Team Member', 'Team', 'Role', 'Start Date', 'End Date', 
+      'Allocation %', 'Weekly Hours', 'Total Hours', 'Status', 'Type'
+    ];
+    
+    const rows = filteredData.map(item => [
+      item.projectName,
+      item.teamMemberName,
+      item.teamName,
+      item.roleName,
+      item.startDate,
+      item.endDate,
+      item.percentAllocation,
+      item.weeklyHours.toFixed(1),
       item.totalHours.toFixed(1),
-      item.rdHours.toFixed(1),
-      item.nonRdHours.toFixed(1),
-      item.projects.size,
-      item.weeks.size
+      item.projectStatus,
+      item.isRnD ? 'R&D' : 'Product'
     ]);
 
     const csvContent = [headers, ...rows]
@@ -176,186 +146,170 @@ export function ReportsView({ projects, teamMembers, assignments }: ReportsViewP
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `hours-report-${reportType}-${format(new Date(), 'yyyy-MM-dd')}.csv`;
+    a.download = `project-assignments-${format(new Date(), 'yyyy-MM-dd')}.csv`;
     a.click();
     URL.revokeObjectURL(url);
   };
 
   return (
     <div className="space-y-6">
+      {/* Search and Filters */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Calendar className="w-5 h-5" />
-            Hours Reporting
+            <Search className="w-5 h-5" />
+            Project Assignment Hours Report
           </CardTitle>
-          <CardDescription>
-            Analyze time allocation across projects and initiatives based on team member assignments
-          </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-6">
-          {/* Filters */}
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="report-type">Report Type</Label>
-              <Select value={reportType} onValueChange={(value: 'project' | 'person' | 'initiative') => setReportType(value)}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="project">By Project</SelectItem>
-                  <SelectItem value="person">By Person</SelectItem>
-                  <SelectItem value="initiative">By Initiative</SelectItem>
-                </SelectContent>
-              </Select>
+        <CardContent>
+          <div className="space-y-4">
+            {/* Filter Row */}
+            <div className="flex flex-wrap gap-4 items-end">
+              <div className="min-w-[120px]">
+                <Select value={projectFilter} onValueChange={setProjectFilter}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Project: All" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Project: All</SelectItem>
+                    {uniqueProjects.map(project => (
+                      <SelectItem key={project} value={project}>
+                        {project}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="min-w-[120px]">
+                <Select value={typeFilter} onValueChange={setTypeFilter}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Type: All" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Type: All</SelectItem>
+                    <SelectItem value="rd">R&D</SelectItem>
+                    <SelectItem value="product">Product</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="min-w-[120px]">
+                <Select value={statusFilter} onValueChange={setStatusFilter}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Status: All" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Status: All</SelectItem>
+                    {uniqueStatuses.map(status => (
+                      <SelectItem key={status} value={status}>
+                        {status}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="min-w-[120px]">
+                <Select value={assigneeFilter} onValueChange={setAssigneeFilter}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Assignee: All" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Assignee: All</SelectItem>
+                    {uniqueAssignees.map(assignee => (
+                      <SelectItem key={assignee} value={assignee}>
+                        {assignee}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="flex-1 min-w-[200px]">
+                <Input
+                  placeholder="Search assignments..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full"
+                />
+              </div>
+
+              <Button onClick={exportToCSV} variant="outline">
+                <Download className="w-4 h-4 mr-2" />
+                Export
+              </Button>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="start-date">Start Date</Label>
-              <Input 
-                id="start-date"
-                type="date" 
-                value={startDate} 
-                onChange={(e) => setStartDate(e.target.value)} 
-              />
+            {/* Summary Stats */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 pt-4 border-t">
+              <div className="text-center">
+                <div className="text-2xl font-bold">{filteredData.length}</div>
+                <div className="text-sm text-muted-foreground">Assignments</div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold">{totalHours.toFixed(0)}h</div>
+                <div className="text-sm text-muted-foreground">Total Hours</div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-blue-600">{rdHours.toFixed(0)}h</div>
+                <div className="text-sm text-muted-foreground">R&D Hours</div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-green-600">{productHours.toFixed(0)}h</div>
+                <div className="text-sm text-muted-foreground">Product Hours</div>
+              </div>
             </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="end-date">End Date</Label>
-              <Input 
-                id="end-date"
-                type="date" 
-                value={endDate} 
-                onChange={(e) => setEndDate(e.target.value)} 
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="project-filter">Project</Label>
-              <Select value={selectedProject} onValueChange={setSelectedProject}>
-                <SelectTrigger>
-                  <SelectValue placeholder="All Projects" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Projects</SelectItem>
-                  {projects.map(project => (
-                    <SelectItem key={project.id} value={project.id}>
-                      {project.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="member-filter">Team Member</Label>
-              <Select value={selectedMember} onValueChange={setSelectedMember}>
-                <SelectTrigger>
-                  <SelectValue placeholder="All Members" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Members</SelectItem>
-                  {teamMembers.map(member => (
-                    <SelectItem key={member.id} value={member.id}>
-                      {member.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="initiative-filter">Initiative</Label>
-              <Select value={initiativeFilter} onValueChange={(value: 'all' | 'rd' | 'non-rd') => setInitiativeFilter(value)}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Initiatives</SelectItem>
-                  <SelectItem value="rd">R&D Only</SelectItem>
-                  <SelectItem value="non-rd">Product Only</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          {/* Summary Stats */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Card>
-              <CardContent className="pt-6">
-                <div className="text-2xl font-bold">{totalHours.toFixed(1)}</div>
-                <p className="text-xs text-muted-foreground">Total Hours</p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="pt-6">
-                <div className="text-2xl font-bold text-blue-600">{totalRdHours.toFixed(1)}</div>
-                <p className="text-xs text-muted-foreground">R&D Hours</p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="pt-6">
-                <div className="text-2xl font-bold text-green-600">{totalNonRdHours.toFixed(1)}</div>
-                <p className="text-xs text-muted-foreground">Product Hours</p>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Export Button */}
-          <div className="flex justify-end">
-            <Button onClick={exportToCSV} variant="outline" size="sm">
-              <Download className="w-4 h-4 mr-2" />
-              Export CSV
-            </Button>
           </div>
         </CardContent>
       </Card>
 
       {/* Results Table */}
       <Card>
-        <CardHeader>
-          <CardTitle>
-            Hours by {reportType === 'project' ? 'Project' : reportType === 'person' ? 'Team Member' : 'Initiative'}
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
+        <CardContent className="p-0">
           <div className="overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Name</TableHead>
+                  <TableHead>Project</TableHead>
+                  <TableHead>Assignee</TableHead>
+                  <TableHead>Team</TableHead>
+                  <TableHead>Role</TableHead>
+                  <TableHead>Start Date</TableHead>
+                  <TableHead>End Date</TableHead>
+                  <TableHead className="text-right">Allocation %</TableHead>
+                  <TableHead className="text-right">Weekly Hours</TableHead>
                   <TableHead className="text-right">Total Hours</TableHead>
-                  <TableHead className="text-right">R&D Hours</TableHead>
-                  <TableHead className="text-right">Product Hours</TableHead>
-                  <TableHead className="text-right">% R&D</TableHead>
-                  <TableHead className="text-right">Projects</TableHead>
-                  <TableHead className="text-right">Weeks</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Type</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {aggregatedData.map((item) => {
-                  const rdPercentage = item.totalHours > 0 ? (item.rdHours / item.totalHours) * 100 : 0;
-                  
-                  return (
-                    <TableRow key={item.key}>
-                      <TableCell className="font-medium">{item.name}</TableCell>
-                      <TableCell className="text-right">{item.totalHours.toFixed(1)}</TableCell>
-                      <TableCell className="text-right text-blue-600">{item.rdHours.toFixed(1)}</TableCell>
-                      <TableCell className="text-right text-green-600">{item.nonRdHours.toFixed(1)}</TableCell>
-                      <TableCell className="text-right">
-                        <Badge variant={rdPercentage > 50 ? "default" : "secondary"}>
-                          {rdPercentage.toFixed(0)}%
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-right">{item.projects.size}</TableCell>
-                      <TableCell className="text-right">{item.weeks.size}</TableCell>
-                    </TableRow>
-                  );
-                })}
-                {aggregatedData.length === 0 && (
+                {filteredData.map((assignment) => (
+                  <TableRow key={assignment.id}>
+                    <TableCell className="font-medium">{assignment.projectName}</TableCell>
+                    <TableCell>{assignment.teamMemberName}</TableCell>
+                    <TableCell>{assignment.teamName}</TableCell>
+                    <TableCell>{assignment.roleName}</TableCell>
+                    <TableCell>{format(parseISO(assignment.startDate), 'MMM dd, yyyy')}</TableCell>
+                    <TableCell>{format(parseISO(assignment.endDate), 'MMM dd, yyyy')}</TableCell>
+                    <TableCell className="text-right">{assignment.percentAllocation}%</TableCell>
+                    <TableCell className="text-right">{assignment.weeklyHours.toFixed(1)}h</TableCell>
+                    <TableCell className="text-right font-medium">{assignment.totalHours.toFixed(0)}h</TableCell>
+                    <TableCell>
+                      <Badge variant="outline">{assignment.projectStatus}</Badge>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={assignment.isRnD ? "default" : "secondary"}>
+                        {assignment.isRnD ? 'R&D' : 'Product'}
+                      </Badge>
+                    </TableCell>
+                  </TableRow>
+                ))}
+                {filteredData.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
-                      No data found for the selected filters and date range
+                    <TableCell colSpan={11} className="text-center text-muted-foreground py-8">
+                      No assignments found matching your filters
                     </TableCell>
                   </TableRow>
                 )}
