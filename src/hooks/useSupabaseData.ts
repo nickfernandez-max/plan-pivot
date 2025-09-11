@@ -494,18 +494,41 @@ export function useSupabaseData() {
         }
       }
 
-      // Fetch updated assignments for immediate UI update
-      const { data: updatedAssignments } = await supabase
-        .from('project_assignees')
-        .select('*')
-        .eq('project_id', projectId);
+      // Fetch updated assignments and project for immediate UI update
+      const [assignmentsResult, projectResult] = await Promise.all([
+        supabase
+          .from('project_assignees')
+          .select('*')
+          .eq('project_id', projectId),
+        supabase
+          .from('projects')
+          .select(`
+            *,
+            team:teams(*, product:products(*)),
+            assignees:project_assignees(team_member:team_members(*)),
+            products:project_products(product:products(*))
+          `)
+          .eq('id', projectId)
+          .single()
+      ]);
       
-      if (updatedAssignments) {
+      if (assignmentsResult.data) {
         // Update assignments state with fresh data
         setAssignments(prev => [
           ...prev.filter(a => a.project_id !== projectId),
-          ...updatedAssignments
+          ...assignmentsResult.data
         ]);
+      }
+
+      if (projectResult.data) {
+        // Update project state with fresh data including updated assignees
+        const transformedProject = {
+          ...projectResult.data,
+          assignees: projectResult.data.assignees?.map((a: any) => a.team_member) || [],
+          products: projectResult.data.products?.map((p: any) => p.product) || []
+        };
+        
+        setProjects(prev => prev.map(p => p.id === projectId ? transformedProject : p));
       }
     } catch (err) {
       console.error('Error updating project assignments:', err);
