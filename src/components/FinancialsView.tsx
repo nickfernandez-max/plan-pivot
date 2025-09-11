@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { EditRoleDialog } from '@/components/EditRoleDialog';
+import { AddUserDialog } from '@/components/AddUserDialog';
 import { useToast } from '@/hooks/use-toast';
 import { Role } from '@/types/roadmap';
 import { Lock } from 'lucide-react';
@@ -74,11 +75,14 @@ export function FinancialsView({ roles, onUpdateRole }: FinancialsViewProps) {
   return (
     <div className="space-y-6">
       <Card>
-        <CardHeader>
-          <CardTitle>Role Financial Information</CardTitle>
-          <p className="text-sm text-muted-foreground">
-            Manage display names, finance codes, and hourly rates for all roles.
-          </p>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <div>
+            <CardTitle>Role Financial Information</CardTitle>
+            <p className="text-sm text-muted-foreground">
+              Manage display names, finance codes, and hourly rates for all roles.
+            </p>
+          </div>
+          <AddUserDialog />
         </CardHeader>
         <CardContent>
           <Table>

@@ -13,7 +13,6 @@ import { UserMenu } from '@/components/UserMenu';
 import { AddProductDialog } from '@/components/AddProductDialog';
 import { AddTeamDialog } from '@/components/AddTeamDialog';
 import { AddPersonDialog } from '@/components/AddPersonDialog';
-import { CreateUserButton } from '@/components/CreateUserButton';
 import { useToast } from '@/hooks/use-toast';
 
 export default function RoadmapApp() {
@@ -233,7 +232,6 @@ export default function RoadmapApp() {
           </h1>
           
           <div className="flex items-center gap-4">
-            <CreateUserButton />
             <div className="flex gap-4">
             <Select value={selectedProduct} onValueChange={setSelectedProduct}>
               <SelectTrigger className="w-48">
