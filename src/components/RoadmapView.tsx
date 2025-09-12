@@ -608,7 +608,7 @@ export function RoadmapView({
             <div className="flex items-center gap-4">
               {/* Add Project Button */}
               <Button 
-                variant="default" 
+                variant="outline" 
                 size="sm"
                 onClick={() => setIsAddProjectDialogOpen(true)}
               >
