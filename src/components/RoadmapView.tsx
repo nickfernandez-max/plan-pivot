@@ -183,7 +183,10 @@ const assignAllocationSlots = (
     ...project,
     slot: project.slot,
     allocation: project.allocation,
-    slotHeight: project.slotHeight
+    slotHeight: project.slotHeight,
+    // Preserve the calculated assignment dates for tooltip display
+    start_date: project.startDate.toISOString().split('T')[0],
+    end_date: project.endDate.toISOString().split('T')[0]
   }));
 
   const assignedWorkAssignments = workAssignmentsWithData.map(workAssignment => {
