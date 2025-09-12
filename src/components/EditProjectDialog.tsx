@@ -35,6 +35,7 @@ const projectSchema = z.object({
   end_date: z.string().min(1, "End date is required"),
   value_score: z.number().min(1).max(10),
   is_rd: z.boolean(),
+  color: z.string().optional(),
   description: z.string().optional(),
   product_ids: z.array(z.string()).optional(),
   assignments: z.array(z.object({
@@ -87,6 +88,7 @@ export function EditProjectDialog({
         end_date: project.end_date,
         value_score: project.value_score,
         is_rd: project.is_rd,
+        color: project.color || "",
         description: project.description || "",
         product_ids: projectProducts,
         assignments: projectAssignments,
@@ -304,6 +306,61 @@ export function EditProjectDialog({
                       className="resize-none h-16"
                       {...field}
                     />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            {/* Color Picker */}
+            <FormField
+              control={form.control}
+              name="color"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-sm">Project Color</FormLabel>
+                  <FormControl>
+                    <div className="flex flex-wrap gap-2">
+                      {[
+                        { name: 'Blue', value: '#3B82F6' },
+                        { name: 'Green', value: '#10B981' },
+                        { name: 'Purple', value: '#8B5CF6' },
+                        { name: 'Orange', value: '#F59E0B' },
+                        { name: 'Red', value: '#EF4444' },
+                        { name: 'Pink', value: '#EC4899' },
+                        { name: 'Indigo', value: '#6366F1' },
+                        { name: 'Cyan', value: '#06B6D4' },
+                        { name: 'Emerald', value: '#059669' },
+                        { name: 'Amber', value: '#D97706' },
+                        { name: 'Rose', value: '#F43F5E' },
+                        { name: 'Violet', value: '#7C3AED' }
+                      ].map((color) => (
+                        <button
+                          key={color.value}
+                          type="button"
+                          className={`w-8 h-8 rounded-md border-2 transition-all ${
+                            field.value === color.value 
+                              ? 'border-foreground ring-2 ring-ring' 
+                              : 'border-border hover:border-foreground'
+                          }`}
+                          style={{ backgroundColor: color.value }}
+                          onClick={() => field.onChange(color.value)}
+                          title={color.name}
+                        />
+                      ))}
+                      <button
+                        type="button"
+                        className={`w-8 h-8 rounded-md border-2 bg-gradient-to-br from-gray-100 to-gray-200 transition-all ${
+                          !field.value 
+                            ? 'border-foreground ring-2 ring-ring' 
+                            : 'border-border hover:border-foreground'
+                        }`}
+                        onClick={() => field.onChange("")}
+                        title="Default"
+                      >
+                        <span className="text-xs text-gray-600">×</span>
+                      </button>
+                    </div>
                   </FormControl>
                   <FormMessage />
                 </FormItem>

@@ -35,6 +35,7 @@ const projectSchema = z.object({
   value_score: z.number().min(1).max(10),
   is_rd: z.boolean(),
   status: z.enum(['Logged', 'Planned', 'In Progress', 'Blocked', 'On Hold', 'Complete']),
+  color: z.string().optional(),
   description: z.string().optional(),
   link: z.string().optional(),
   
@@ -58,6 +59,7 @@ export function ProjectList({ projects, teams, products, onAddProject, onUpdateP
       value_score: 5,
       is_rd: false,
       status: "Logged" as ProjectStatus,
+      color: "",
       description: "",
       link: "",
       
@@ -125,6 +127,7 @@ export function ProjectList({ projects, teams, products, onAddProject, onUpdateP
       value_score: project.value_score,
       is_rd: project.is_rd,
       status: project.status,
+      color: project.color || "",
       description: project.description || "",
       link: project.link || "",
     });
@@ -349,6 +352,60 @@ export function ProjectList({ projects, teams, products, onAddProject, onUpdateP
                             className="resize-none"
                             {...field}
                           />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="color"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Project Color</FormLabel>
+                        <FormControl>
+                          <div className="flex flex-wrap gap-2">
+                            {[
+                              { name: 'Blue', value: '#3B82F6' },
+                              { name: 'Green', value: '#10B981' },
+                              { name: 'Purple', value: '#8B5CF6' },
+                              { name: 'Orange', value: '#F59E0B' },
+                              { name: 'Red', value: '#EF4444' },
+                              { name: 'Pink', value: '#EC4899' },
+                              { name: 'Indigo', value: '#6366F1' },
+                              { name: 'Cyan', value: '#06B6D4' },
+                              { name: 'Emerald', value: '#059669' },
+                              { name: 'Amber', value: '#D97706' },
+                              { name: 'Rose', value: '#F43F5E' },
+                              { name: 'Violet', value: '#7C3AED' }
+                            ].map((color) => (
+                              <button
+                                key={color.value}
+                                type="button"
+                                className={`w-8 h-8 rounded-md border-2 transition-all ${
+                                  field.value === color.value 
+                                    ? 'border-foreground ring-2 ring-ring' 
+                                    : 'border-border hover:border-foreground'
+                                }`}
+                                style={{ backgroundColor: color.value }}
+                                onClick={() => field.onChange(color.value)}
+                                title={color.name}
+                              />
+                            ))}
+                            <button
+                              type="button"
+                              className={`w-8 h-8 rounded-md border-2 bg-gradient-to-br from-gray-100 to-gray-200 transition-all ${
+                                !field.value 
+                                  ? 'border-foreground ring-2 ring-ring' 
+                                  : 'border-border hover:border-foreground'
+                              }`}
+                              onClick={() => field.onChange("")}
+                              title="Default"
+                            >
+                              <span className="text-xs text-gray-600">×</span>
+                            </button>
+                          </div>
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -666,6 +723,60 @@ export function ProjectList({ projects, teams, products, onAddProject, onUpdateP
                                   )}
                                 />
                               </div>
+                              
+                              <FormField
+                                control={editForm.control}
+                                name="color"
+                                render={({ field }) => (
+                                  <FormItem>
+                                    <FormLabel className="text-xs">Project Color</FormLabel>
+                                    <FormControl>
+                                      <div className="flex flex-wrap gap-1.5">
+                                        {[
+                                          { name: 'Blue', value: '#3B82F6' },
+                                          { name: 'Green', value: '#10B981' },
+                                          { name: 'Purple', value: '#8B5CF6' },
+                                          { name: 'Orange', value: '#F59E0B' },
+                                          { name: 'Red', value: '#EF4444' },
+                                          { name: 'Pink', value: '#EC4899' },
+                                          { name: 'Indigo', value: '#6366F1' },
+                                          { name: 'Cyan', value: '#06B6D4' },
+                                          { name: 'Emerald', value: '#059669' },
+                                          { name: 'Amber', value: '#D97706' },
+                                          { name: 'Rose', value: '#F43F5E' },
+                                          { name: 'Violet', value: '#7C3AED' }
+                                        ].map((color) => (
+                                          <button
+                                            key={color.value}
+                                            type="button"
+                                            className={`w-6 h-6 rounded border transition-all ${
+                                              field.value === color.value 
+                                                ? 'border-foreground ring-1 ring-ring' 
+                                                : 'border-border hover:border-foreground'
+                                            }`}
+                                            style={{ backgroundColor: color.value }}
+                                            onClick={() => field.onChange(color.value)}
+                                            title={color.name}
+                                          />
+                                        ))}
+                                        <button
+                                          type="button"
+                                          className={`w-6 h-6 rounded border bg-gradient-to-br from-gray-100 to-gray-200 transition-all ${
+                                            !field.value 
+                                              ? 'border-foreground ring-1 ring-ring' 
+                                              : 'border-border hover:border-foreground'
+                                          }`}
+                                          onClick={() => field.onChange("")}
+                                          title="Default"
+                                        >
+                                          <span className="text-xs text-gray-600">×</span>
+                                        </button>
+                                      </div>
+                                    </FormControl>
+                                    <FormMessage />
+                                  </FormItem>
+                                )}
+                              />
                               <div className="flex justify-end space-x-2">
                                 <Button type="button" variant="outline" size="sm" onClick={handleCancelEdit}>
                                   <X className="w-3 h-3 mr-1" />
