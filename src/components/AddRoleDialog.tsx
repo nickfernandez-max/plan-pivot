@@ -49,18 +49,20 @@ export function AddRoleDialog({ onAddRole }: AddRoleDialogProps) {
     }
   };
 
-  const handleClose = () => {
-    setOpen(false);
-    // Reset form when closing
-    setName('');
-    setDisplayName('');
-    setFinanceName('');
-    setDescription('');
-    setHourlyRate('');
+  const handleClose = (open: boolean) => {
+    setOpen(open);
+    if (!open) {
+      // Reset form when closing
+      setName('');
+      setDisplayName('');
+      setFinanceName('');
+      setDescription('');
+      setHourlyRate('');
+    }
   };
 
   return (
-    <Dialog open={open} onOpenChange={handleClose}>
+    <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <Button>
           <Plus className="w-4 h-4 mr-2" />
@@ -128,7 +130,7 @@ export function AddRoleDialog({ onAddRole }: AddRoleDialogProps) {
           </div>
           
           <div className="flex justify-end space-x-2 pt-4">
-            <Button type="button" variant="outline" onClick={handleClose}>
+            <Button type="button" variant="outline" onClick={() => setOpen(false)}>
               Cancel
             </Button>
             <Button type="submit" disabled={isSubmitting || !name.trim()}>
