@@ -526,6 +526,13 @@ export function EditProjectDialog({
                 </Popover>
               </div>
 
+              {/* Show form errors for assignments */}
+              {form.formState.errors.assignments && (
+                <div className="text-sm text-destructive mb-2 p-2 bg-destructive/10 rounded">
+                  {form.formState.errors.assignments.message}
+                </div>
+              )}
+
               {/* Currently Assigned Members */}
               {currentAssignments.length > 0 ? (
                 <div className="space-y-2 max-h-64 overflow-y-auto">
@@ -605,7 +612,24 @@ export function EditProjectDialog({
               <Button type="button" variant="outline" onClick={onClose}>
                 Cancel
               </Button>
-              <Button type="submit">
+              <Button 
+                type="submit"
+                onClick={() => {
+                  console.log('Update Project button clicked');
+                  console.log('Form state:', form.formState);
+                  console.log('Form errors:', form.formState.errors);
+                  console.log('Form values:', form.getValues());
+                  
+                  // Check if form is valid
+                  const isValid = form.formState.isValid;
+                  console.log('Form is valid:', isValid);
+                  
+                  if (!isValid) {
+                    console.log('Form validation failed, triggering validation...');
+                    form.trigger(); // Trigger validation to show errors
+                  }
+                }}
+              >
                 Update Project
               </Button>
             </div>
