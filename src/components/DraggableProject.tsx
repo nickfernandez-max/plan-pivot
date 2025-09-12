@@ -25,6 +25,13 @@ export function DraggableProject({
   onClick,
   isFront = false
 }: DraggableProjectProps) {
+  // Debug: Log if onEdit is available for this project
+  console.log(`🔧 DraggableProject for "${project.name}":`, {
+    hasOnEdit: !!onEdit,
+    isPreview,
+    project: project.name,
+    projectId: project.id
+  });
   const {
     attributes,
     listeners,
