@@ -40,17 +40,19 @@ interface RoadmapViewProps {
 interface ProjectWithPosition extends Project {
   left: number;
   width: number;
-  slot: number;
+  topOffset: number;
+  itemHeight: number;
   allocation: number;
-  slotHeight: number;
+  start_date: string;
+  end_date: string;
 }
 
 interface WorkAssignmentWithPosition extends WorkAssignment {
   left: number;
   width: number;
-  slot: number;
+  topOffset: number;
+  itemHeight: number;
   allocation: number;
-  slotHeight: number;
 }
 
 interface MemberRow {
@@ -62,18 +64,19 @@ interface MemberRow {
   rowHeight: number;
 }
 
-// Function to assign allocation slots to projects and work assignments based on temporal scheduling and percentage
-const assignAllocationSlots = (
+// Function to assign flexible allocation positions to projects and work assignments based on temporal scheduling and percentage
+const assignAllocationPositions = (
   projects: Array<Project & { left: number; width: number }>,
   workAssignments: Array<WorkAssignment & { left: number; width: number }>,
   assignments: ProjectAssignment[],
-  memberId: string
+  memberId: string,
+  rowHeight: number
 ): { projects: ProjectWithPosition[]; workAssignments: WorkAssignmentWithPosition[] } => {
   if (projects.length === 0 && workAssignments.length === 0) return { projects: [], workAssignments: [] };
 
-  const SLOTS_PER_MEMBER = 4;
-  const SLOT_PERCENTAGE = 25;
-  const BASE_SLOT_HEIGHT = 24; // Increased from 18px for better text readability
+  const ROW_PADDING = 4; // Padding at top and bottom of row
+  const ITEM_SPACING = 2; // Spacing between overlapping items
+  const AVAILABLE_HEIGHT = rowHeight - (ROW_PADDING * 2);
 
   // Prepare projects with temporal and allocation data
   const projectsWithData = projects.map(project => {
@@ -86,15 +89,17 @@ const assignAllocationSlots = (
     const startDate = assignment?.start_date ? new Date(assignment.start_date) : new Date(project.start_date);
     const endDate = assignment?.end_date ? new Date(assignment.end_date) : new Date(project.end_date);
     
+    // Calculate height proportional to allocation (minimum 20px for visibility)
+    const itemHeight = Math.max(Math.round((allocation / 100) * AVAILABLE_HEIGHT), 20);
+    
     return {
       ...project,
       allocation,
       startDate,
       endDate,
-      slotsNeeded: Math.ceil(allocation / SLOT_PERCENTAGE),
-      assigned: false,
-      slot: -1,
-      slotHeight: BASE_SLOT_HEIGHT * Math.ceil(allocation / SLOT_PERCENTAGE)
+      itemHeight,
+      topOffset: 0, // Will be calculated during positioning
+      assigned: false
     };
   });
 
@@ -104,19 +109,21 @@ const assignAllocationSlots = (
     const startDate = new Date(workAssignment.start_date);
     const endDate = new Date(workAssignment.end_date);
     
+    // Calculate height proportional to allocation (minimum 20px for visibility)
+    const itemHeight = Math.max(Math.round((allocation / 100) * AVAILABLE_HEIGHT), 20);
+    
     return {
       ...workAssignment,
       allocation,
       startDate,
       endDate,
-      slotsNeeded: Math.ceil(allocation / SLOT_PERCENTAGE),
-      assigned: false,
-      slot: -1,
-      slotHeight: BASE_SLOT_HEIGHT * Math.ceil(allocation / SLOT_PERCENTAGE)
+      itemHeight,
+      topOffset: 0, // Will be calculated during positioning
+      assigned: false
     };
   });
 
-  // Combine all items for unified slot assignment
+  // Combine all items for unified positioning
   const allItems = [...projectsWithData, ...workAssignmentsWithData];
 
   // Sort all items by start date, then by allocation (higher allocation first)
@@ -126,78 +133,87 @@ const assignAllocationSlots = (
     return b.allocation - a.allocation; // Higher allocation gets priority
   });
 
-  // Track slot occupancy with time intervals
-  const slotOccupancy: Array<Array<{ startDate: Date; endDate: Date; itemId: string }>> = 
-    Array.from({ length: SLOTS_PER_MEMBER }, () => []);
+  // Track vertical position occupancy with time intervals
+  const positionOccupancy: Array<{ startDate: Date; endDate: Date; itemId: string; topOffset: number; bottomOffset: number }> = [];
 
-  // Function to check if an item can fit in a slot during its time period
-  const canFitInSlot = (slotIndex: number, slotsNeeded: number, startDate: Date, endDate: Date): boolean => {
-    // Check if we have enough consecutive slots available
-    if (slotIndex + slotsNeeded > SLOTS_PER_MEMBER) return false;
+  // Function to find the best vertical position for an item
+  const findBestPosition = (startDate: Date, endDate: Date, itemHeight: number): number => {
+    let bestPosition = ROW_PADDING;
     
-    // Check temporal overlap for all required slots
-    for (let i = 0; i < slotsNeeded; i++) {
-      const currentSlot = slotIndex + i;
-      const overlaps = slotOccupancy[currentSlot].some(occupation => 
-        !(endDate <= occupation.startDate || startDate >= occupation.endDate)
-      );
-      if (overlaps) return false;
-    }
+    // Check for temporal overlaps and find a free vertical space
+    const overlappingItems = positionOccupancy.filter(occupation => 
+      !(endDate <= occupation.startDate || startDate >= occupation.endDate)
+    );
     
-    return true;
-  };
-
-  // Function to reserve slots for an item
-  const reserveSlots = (slotIndex: number, slotsNeeded: number, startDate: Date, endDate: Date, itemId: string) => {
-    for (let i = 0; i < slotsNeeded; i++) {
-      const currentSlot = slotIndex + i;
-      slotOccupancy[currentSlot].push({ startDate, endDate, itemId });
-    }
-  };
-
-  // Assign slots using a scheduling algorithm
-  for (const item of allItems) {
-    let assigned = false;
-    
-    // Try to find the best slot for this item
-    for (let slot = 0; slot <= SLOTS_PER_MEMBER - item.slotsNeeded; slot++) {
-      if (canFitInSlot(slot, item.slotsNeeded, item.startDate, item.endDate)) {
-        item.slot = slot;
-        item.assigned = true;
-        reserveSlots(slot, item.slotsNeeded, item.startDate, item.endDate, item.id);
-        assigned = true;
-        break;
+    if (overlappingItems.length > 0) {
+      // Sort overlapping items by top offset
+      overlappingItems.sort((a, b) => a.topOffset - b.topOffset);
+      
+      // Try to fit between existing items or stack below them
+      for (let i = 0; i < overlappingItems.length; i++) {
+        const currentItem = overlappingItems[i];
+        const nextItem = overlappingItems[i + 1];
+        
+        // Check if we can fit between current and next item
+        if (nextItem) {
+          const availableSpace = nextItem.topOffset - currentItem.bottomOffset - ITEM_SPACING;
+          if (availableSpace >= itemHeight) {
+            bestPosition = currentItem.bottomOffset + ITEM_SPACING;
+            break;
+          }
+        } else {
+          // No next item, place below current item
+          bestPosition = currentItem.bottomOffset + ITEM_SPACING;
+          break;
+        }
+      }
+      
+      // If no space found between items, place at the bottom
+      if (bestPosition === ROW_PADDING && overlappingItems.length > 0) {
+        const lastItem = overlappingItems[overlappingItems.length - 1];
+        bestPosition = lastItem.bottomOffset + ITEM_SPACING;
       }
     }
     
-    // If no slot found, assign to the last available slot (overflow handling)
-    if (!assigned) {
-      const lastSlot = Math.max(0, SLOTS_PER_MEMBER - item.slotsNeeded);
-      item.slot = lastSlot;
-      item.assigned = true;
-      // Still reserve the slot to track the overflow
-      reserveSlots(lastSlot, item.slotsNeeded, item.startDate, item.endDate, item.id);
-    }
+    // Ensure the item fits within the available height
+    const maxTop = AVAILABLE_HEIGHT - itemHeight + ROW_PADDING;
+    return Math.min(bestPosition, maxTop);
+  };
+
+  // Assign vertical positions using a stacking algorithm
+  for (const item of allItems) {
+    const topOffset = findBestPosition(item.startDate, item.endDate, item.itemHeight);
+    item.topOffset = topOffset;
+    item.assigned = true;
+    
+    // Reserve the vertical space
+    positionOccupancy.push({
+      startDate: item.startDate,
+      endDate: item.endDate,
+      itemId: item.id,
+      topOffset: topOffset,
+      bottomOffset: topOffset + item.itemHeight
+    });
   }
 
-  // Separate projects and work assignments with their assigned slots
+  // Separate projects and work assignments with their assigned positions
   const assignedProjects = projectsWithData.map(project => ({
     ...project,
-    slot: project.slot,
+    topOffset: project.topOffset,
     allocation: project.allocation,
-    slotHeight: project.slotHeight,
+    itemHeight: project.itemHeight,
     // Preserve the calculated assignment dates for tooltip display
     start_date: project.startDate.toISOString().split('T')[0],
     end_date: project.endDate.toISOString().split('T')[0]
   }));
 
   const assignedWorkAssignments = workAssignmentsWithData.map(workAssignment => {
-    const { startDate: _startDate, endDate: _endDate, slotsNeeded: _slotsNeeded, assigned: _assigned, ...rest } = workAssignment;
+    const { startDate: _startDate, endDate: _endDate, assigned: _assigned, ...rest } = workAssignment;
     return {
       ...rest,
-      slot: workAssignment.slot,
+      topOffset: workAssignment.topOffset,
       allocation: workAssignment.allocation,
-      slotHeight: workAssignment.slotHeight
+      itemHeight: workAssignment.itemHeight
     };
   });
 
@@ -549,9 +565,9 @@ export function RoadmapView({
               };
             });
 
-          // Assign allocation slots based on percentage
+          // Assign flexible allocation positions based on percentage
           const { projects: projectsWithSlots, workAssignments: workAssignmentsWithSlots } = 
-            assignAllocationSlots(memberProjects, memberWorkAssignments, assignments, member.id);
+            assignAllocationPositions(memberProjects, memberWorkAssignments, assignments, member.id, FIXED_ROW_HEIGHT);
           
           // Calculate total allocated percentage for this member
           const allocatedPercentage = 
@@ -986,8 +1002,7 @@ export function RoadmapView({
                       const currentMemberTop = memberTopOffset;
                       memberTopOffset += rowHeight;
                       
-                      const SLOT_HEIGHT = 24; // Increased from 18px for better text readability
-                      const SLOT_PADDING = 1; // Reduced padding
+                      const ROW_PADDING = 4; // Padding for the row
                       
                       const isDropTarget = dragOverData.memberId === member.id;
                       
@@ -1015,25 +1030,9 @@ export function RoadmapView({
                             </div>
                           )}
 
-                          {/* Allocation slot guides */}
-                          {[0, 1, 2, 3].map(slotIndex => (
-                            <div
-                              key={`slot-${slotIndex}`}
-                              className="absolute border-t border-border/30"
-                              style={{
-                                left: '0',
-                                right: '0',
-                                top: `${slotIndex * SLOT_HEIGHT + SLOT_PADDING}px`,
-                                height: `${SLOT_HEIGHT - SLOT_PADDING * 2}px`,
-                              }}
-                            />
-                          ))}
                           
-                          {/* Projects in their assigned slots */}
+                          {/* Projects with flexible positioning */}
                           {projects.map(project => {
-                            const slotTop = project.slot * SLOT_HEIGHT + SLOT_PADDING;
-                            const projectHeight = project.slotHeight - (SLOT_PADDING * 2);
-                            
                             return (
                               <DraggableProject
                                 key={`${member.id}-${project.id}`}
@@ -1049,18 +1048,15 @@ export function RoadmapView({
                                 style={{
                                   left: `${project.left}%`,
                                   width: `${project.width}%`,
-                                  top: `${slotTop}px`,
-                                  height: `${projectHeight}px`,
+                                  top: `${project.topOffset}px`,
+                                  height: `${project.itemHeight}px`,
                                 }}
                               />
                             );
                           })}
                           
-                          {/* Work assignments in their assigned slots */}
+                          {/* Work assignments with flexible positioning */}
                           {workAssignments.map(workAssignment => {
-                            const slotTop = workAssignment.slot * SLOT_HEIGHT + SLOT_PADDING;
-                            const assignmentHeight = workAssignment.slotHeight - (SLOT_PADDING * 2);
-                            
                             return (
                               <div
                                 key={`work-${member.id}-${workAssignment.id}`}
@@ -1068,8 +1064,8 @@ export function RoadmapView({
                                 style={{
                                   left: `${workAssignment.left}%`,
                                   width: `${workAssignment.width}%`,
-                                  top: `${slotTop}px`,
-                                  height: `${assignmentHeight}px`,
+                                  top: `${workAssignment.topOffset}px`,
+                                  height: `${workAssignment.itemHeight}px`,
                                   display: 'flex',
                                   alignItems: 'center',
                                   borderColor: workAssignment.color || 'hsl(var(--secondary))',
@@ -1105,8 +1101,7 @@ export function RoadmapView({
                       const currentMemberTop = memberTopOffset;
                       memberTopOffset += rowHeight;
                       
-                      const SLOT_HEIGHT = 24; // Increased from 18px for better text readability
-                      const SLOT_PADDING = 1; // Reduced padding
+                      const ROW_PADDING = 4; // Padding for the row
                       
                       const isDropTarget = dragOverData.memberId === member.id;
                       
@@ -1134,25 +1129,9 @@ export function RoadmapView({
                             </div>
                           )}
 
-                          {/* Allocation slot guides */}
-                          {[0, 1, 2, 3].map(slotIndex => (
-                            <div
-                              key={`slot-${slotIndex}`}
-                              className="absolute border-t border-border/30"
-                              style={{
-                                left: '0',
-                                right: '0',
-                                top: `${slotIndex * SLOT_HEIGHT + SLOT_PADDING}px`,
-                                height: `${SLOT_HEIGHT - SLOT_PADDING * 2}px`,
-                              }}
-                            />
-                          ))}
                           
-                          {/* Projects in their assigned slots */}
+                          {/* Projects with flexible positioning */}
                           {projects.map(project => {
-                            const slotTop = project.slot * SLOT_HEIGHT + SLOT_PADDING;
-                            const projectHeight = project.slotHeight - (SLOT_PADDING * 2);
-                            
                              return (
                                <DraggableProject
                                  key={`${member.id}-${project.id}`}
@@ -1163,23 +1142,20 @@ export function RoadmapView({
                                     console.log('🔧 Setting editing project:', project.name, project.id);
                                     setEditingProject(project);
                                   }}
-                                 onClick={() => setFrontProject(project.id)}
-                                 isFront={frontProject === project.id}
-                                 style={{
-                                   left: `${project.left}%`,
-                                   width: `${project.width}%`,
-                                   top: `${slotTop}px`,
-                                   height: `${projectHeight}px`,
-                                 }}
-                               />
+                                  onClick={() => setFrontProject(project.id)}
+                                  isFront={frontProject === project.id}
+                                  style={{
+                                    left: `${project.left}%`,
+                                    width: `${project.width}%`,
+                                    top: `${project.topOffset}px`,
+                                    height: `${project.itemHeight}px`,
+                                  }}
+                                />
                              );
-                          })}
+                           })}
                           
-                          {/* Work assignments in their assigned slots */}
+                          {/* Work assignments with flexible positioning */}
                           {workAssignments.map(workAssignment => {
-                            const slotTop = workAssignment.slot * SLOT_HEIGHT + SLOT_PADDING;
-                            const assignmentHeight = workAssignment.slotHeight - (SLOT_PADDING * 2);
-                            
                             return (
                               <div
                                 key={`work-${member.id}-${workAssignment.id}`}
@@ -1187,8 +1163,8 @@ export function RoadmapView({
                                 style={{
                                   left: `${workAssignment.left}%`,
                                   width: `${workAssignment.width}%`,
-                                  top: `${slotTop}px`,
-                                  height: `${assignmentHeight}px`,
+                                  top: `${workAssignment.topOffset}px`,
+                                  height: `${workAssignment.itemHeight}px`,
                                   display: 'flex',
                                   alignItems: 'center',
                                   borderColor: workAssignment.color || 'hsl(var(--secondary))',
