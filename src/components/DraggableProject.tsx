@@ -24,13 +24,6 @@ export function DraggableProject({
   onClick,
   isFront = false
 }: DraggableProjectProps) {
-  // Debug: Log if onEdit is available for this project
-  console.log(`🔧 DraggableProject for "${project.name}":`, {
-    hasOnEdit: !!onEdit,
-    isPreview,
-    project: project.name,
-    projectId: project.id
-  });
   const {
     attributes,
     listeners,
@@ -58,6 +51,17 @@ export function DraggableProject({
     transition: isDragging ? 'none' : 'all 0.2s ease-out',
   };
 
+  // Handle double click without interfering with drag
+  const handleDoubleClick = (e: React.MouseEvent) => {
+    console.log('🔧 Double-click handler called:', project.name, { isDragging, hasOnEdit: !!onEdit, isPreview });
+    if (!isDragging && onEdit && !isPreview) {
+      e.preventDefault();
+      e.stopPropagation();
+      console.log('🔧 Calling onEdit for:', project.name);
+      onEdit();
+    }
+  };
+
   return (
     <div
       ref={setNodeRef}
@@ -68,30 +72,17 @@ export function DraggableProject({
         backgroundColor: project.color || 'hsl(var(--primary))',
         borderColor: project.color || 'hsl(var(--primary))',
       }}
-      onDoubleClick={(e) => {
-        console.log('🔧 Double-click on project container:', project.name, { isDragging, hasOnEdit: !!onEdit, isPreview });
-        if (!isDragging && onEdit && !isPreview) {
-          e.preventDefault();
-          e.stopPropagation();
-          onEdit();
-        }
-      }}
+      onDoubleClick={handleDoubleClick}
     >
-      <div className="h-full flex items-center overflow-hidden">
-        {/* Drag handle area */}
-        <div 
-          {...listeners}
-          {...attributes}
-          className="flex-1 min-w-0 h-full flex items-center px-2 cursor-grab active:cursor-grabbing touch-none"
-          title={project.name}
-        >
-          <div className="flex-1 min-w-0">
-            <div 
-              className="text-white text-[10px] font-medium leading-tight break-words hyphens-auto select-none pointer-events-none" 
-              style={{ wordBreak: 'break-word' }}
-            >
-              {project.name}
-            </div>
+      <div 
+        className="h-full flex items-center overflow-hidden px-2 cursor-grab active:cursor-grabbing"
+        {...listeners}
+        {...attributes}
+        title={project.name}
+      >
+        <div className="flex-1 min-w-0">
+          <div className="text-white text-[10px] font-medium leading-tight break-words hyphens-auto select-none pointer-events-none" style={{ wordBreak: 'break-word' }}>
+            {project.name}
           </div>
         </div>
       </div>
