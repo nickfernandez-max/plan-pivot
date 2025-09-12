@@ -37,6 +37,7 @@ export function UserPreferencesDialog({
 }: UserPreferencesDialogProps) {
   const [defaultTeam, setDefaultTeam] = useState<string>('all');
   const [defaultProduct, setDefaultProduct] = useState<string>('all');
+  const [preferredLandingPage, setPreferredLandingPage] = useState<string>('/');
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
 
@@ -50,7 +51,7 @@ export function UserPreferencesDialog({
     try {
       const { data, error } = await supabase
         .from('profiles')
-        .select('default_team_filter, default_product_filter')
+        .select('default_team_filter, default_product_filter, preferred_landing_page')
         .eq('id', currentUserId)
         .single();
 
@@ -58,6 +59,7 @@ export function UserPreferencesDialog({
 
       setDefaultTeam(data.default_team_filter || 'all');
       setDefaultProduct(data.default_product_filter || 'all');
+      setPreferredLandingPage(data.preferred_landing_page || '/');
     } catch (error) {
       console.error('Error loading preferences:', error);
     }
@@ -73,6 +75,7 @@ export function UserPreferencesDialog({
         .update({
           default_team_filter: defaultTeam,
           default_product_filter: defaultProduct,
+          preferred_landing_page: preferredLandingPage,
         })
         .eq('id', currentUserId);
 
@@ -80,7 +83,7 @@ export function UserPreferencesDialog({
 
       toast({
         title: "Success",
-        description: "Default filter preferences saved successfully",
+        description: "User preferences saved successfully",
       });
       
       onPreferencesUpdate?.();
@@ -104,10 +107,23 @@ export function UserPreferencesDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>Default Filter Preferences</DialogTitle>
+          <DialogTitle>User Preferences</DialogTitle>
         </DialogHeader>
         
         <div className="grid gap-4 py-4">
+          <div className="grid gap-2">
+            <Label htmlFor="preferred-landing-page">Preferred Landing Page</Label>
+            <Select value={preferredLandingPage} onValueChange={setPreferredLandingPage}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select preferred landing page" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="/">Dashboard</SelectItem>
+                <SelectItem value="/roadmap">Roadmap</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
           <div className="grid gap-2">
             <Label htmlFor="default-product">Default Product Filter</Label>
             <Select value={defaultProduct} onValueChange={setDefaultProduct}>
