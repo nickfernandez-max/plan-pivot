@@ -1,7 +1,6 @@
 import { useDraggable } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
 import { format } from 'date-fns';
-import { Edit } from 'lucide-react';
 import { Project, Team } from '@/types/roadmap';
 
 interface DraggableProjectProps {
@@ -75,6 +74,13 @@ export function DraggableProject({
           onClick();
         }
       }}
+      onDoubleClick={(e) => {
+        if (!isDragging && onEdit && !isPreview) {
+          e.preventDefault();
+          e.stopPropagation();
+          onEdit();
+        }
+      }}
     >
       <div className="h-full flex items-center overflow-hidden">
         {/* Drag handle area */}
@@ -90,23 +96,6 @@ export function DraggableProject({
             </div>
           </div>
         </div>
-        
-        {/* Edit button - separate from drag handle - DEBUGGING: Always visible */}
-        {onEdit && !isPreview && (
-          <button
-            onClick={(e) => {
-              console.log('🔧 Edit button clicked for project:', project.name);
-              e.preventDefault();
-              e.stopPropagation();
-              onEdit();
-            }}
-            className="mr-2 p-1 rounded hover:bg-white/20 transition-colors bg-black/30 border border-white/50"
-            title="Edit project"
-            style={{ minWidth: '20px', minHeight: '20px', zIndex: 1000 }}
-          >
-            <Edit className="h-3 w-3 text-white" />
-          </button>
-        )}
       </div>
       
       {/* Enhanced Tooltip */}
