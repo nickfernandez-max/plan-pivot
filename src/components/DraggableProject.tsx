@@ -75,6 +75,14 @@ export function DraggableProject({
           onClick();
         }
       }}
+      onDoubleClick={(e) => {
+        if (!isDragging && onEdit) {
+          e.stopPropagation();
+          e.preventDefault();
+          console.log('🔧 Double-click detected for project:', project.name);
+          onEdit();
+        }
+      }}
     >
       <div className="h-full flex items-center overflow-hidden">
         {/* Drag handle area */}
