@@ -102,9 +102,13 @@ export function DraggableProject({
       {/* Enhanced Tooltip */}
       <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-gray-900 text-white rounded-md shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-50 whitespace-nowrap border border-gray-700">
         <div className="text-sm font-medium">{project.name}</div>
+        
+        {/* Show assignment dates clearly labeled */}
         <div className="text-xs text-gray-300 mt-1">
-          {format(new Date(project.start_date), 'MMM d, yyyy')} - {format(new Date(project.end_date), 'MMM d, yyyy')}
+          <div className="text-yellow-300 font-medium">Assignment Period:</div>
+          <div>{format(new Date(project.start_date), 'MMM d, yyyy')} - {format(new Date(project.end_date), 'MMM d, yyyy')}</div>
         </div>
+        
         {project.description && (
           <div className="text-xs mt-1 max-w-xs text-gray-300">{project.description}</div>
         )}
