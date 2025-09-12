@@ -611,7 +611,7 @@ export function RoadmapView({
     );
   }
 
-  const TEAM_HEADER_HEIGHT = 24; // Reduced from 32px
+  const TEAM_HEADER_HEIGHT = 32; // Increased from 24px for better visual hierarchy
   const PRODUCT_HEADER_HEIGHT = 30; // Reduced from 40px
   
   return (
@@ -765,22 +765,28 @@ export function RoadmapView({
                     <div key={team.id}>
                       {/* Team header */}
                       <div 
-                        className="flex items-center px-6 py-1 font-semibold text-xs border-b border-border"
+                        className="flex items-center px-6 py-2 font-bold text-sm border-b-2 border-border/30 bg-muted/80 shadow-sm"
                         style={{ 
                           height: `${TEAM_HEADER_HEIGHT}px`,
-                          backgroundColor: 'hsl(var(--muted))',
-                          borderLeftColor: 'hsl(var(--primary))',
-                          borderLeftWidth: '4px'
+                          borderLeftColor: team.color || 'hsl(var(--primary))',
+                          borderLeftWidth: '6px',
+                          borderLeftStyle: 'solid'
                         }}
                       >
-                        <span className="truncate">{team.name}</span>
+                        <div className="flex items-center gap-2">
+                          <div 
+                            className="w-3 h-3 rounded-full border-2 border-white/50"
+                            style={{ backgroundColor: team.color || 'hsl(var(--primary))' }}
+                          />
+                          <span className="truncate text-foreground/90">{team.name}</span>
+                        </div>
                       </div>
                       
                       {/* Team members with allocation display */}
                       {teamMemberRows.map(({ member, rowHeight, allocatedPercentage }) => (
                         <div
                           key={member.id}
-                          className="flex items-center px-8 py-1 text-xs border-b border-border/50 bg-background cursor-pointer hover:bg-muted/50 transition-colors"
+                          className="flex items-center px-8 py-1 text-xs border-b border-border/40 bg-background/50 cursor-pointer hover:bg-muted/30 transition-colors"
                           style={{ height: `${rowHeight}px` }}
                           onClick={() => handleOpenWorkAssignmentDialog(member.id, member.name)}
                           title="Click to add work assignment"
@@ -817,22 +823,28 @@ export function RoadmapView({
                     <div key={team.id}>
                       {/* Team header */}
                       <div 
-                        className="flex items-center px-6 py-1 font-semibold text-xs border-b border-border"
+                        className="flex items-center px-6 py-2 font-bold text-sm border-b-2 border-border/30 bg-muted/80 shadow-sm"
                         style={{ 
                           height: `${TEAM_HEADER_HEIGHT}px`,
-                          backgroundColor: 'hsl(var(--muted))',
-                          borderLeftColor: 'hsl(var(--primary))',
-                          borderLeftWidth: '4px'
+                          borderLeftColor: team.color || 'hsl(var(--primary))',
+                          borderLeftWidth: '6px',
+                          borderLeftStyle: 'solid'
                         }}
                       >
-                        <span className="truncate">{team.name}</span>
+                        <div className="flex items-center gap-2">
+                          <div 
+                            className="w-3 h-3 rounded-full border-2 border-white/50"
+                            style={{ backgroundColor: team.color || 'hsl(var(--primary))' }}
+                          />
+                          <span className="truncate text-foreground/90">{team.name}</span>
+                        </div>
                       </div>
                       
                       {/* Team members with allocation display */}
                       {teamMemberRows.map(({ member, rowHeight, allocatedPercentage }) => (
                         <div
                           key={member.id}
-                          className="flex items-center px-8 py-1 text-xs border-b border-border/50 bg-background cursor-pointer hover:bg-muted/50 transition-colors"
+                          className="flex items-center px-8 py-1 text-xs border-b border-border/40 bg-background/50 cursor-pointer hover:bg-muted/30 transition-colors"
                           style={{ height: `${rowHeight}px` }}
                           onClick={() => handleOpenWorkAssignmentDialog(member.id, member.name)}
                           title="Click to add work assignment"
