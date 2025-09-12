@@ -84,6 +84,7 @@ export function DraggableProject({
           title={project.name} // Add native tooltip as fallback
           onDoubleClick={(e) => {
             console.log('🔧 Double-click detected on project:', project.name);
+            console.log('🔧 Double-click conditions:', { isDragging, hasOnEdit: !!onEdit, isPreview });
             if (!isDragging && onEdit && !isPreview) {
               console.log('🔧 Executing onEdit for project:', project.name);
               e.preventDefault();
