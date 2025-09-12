@@ -209,16 +209,16 @@ export function EditProjectDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-3xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader className="pb-4">
+      <DialogContent className="sm:max-w-3xl max-h-[85vh] overflow-y-auto">
+        <DialogHeader className="pb-2">
           <DialogTitle>Edit Project</DialogTitle>
-          <DialogDescription className="text-sm">
+          <DialogDescription className="text-xs">
             Update project details and manage team member assignments.
           </DialogDescription>
         </DialogHeader>
         
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-3">
             {/* Project Name */}
             <FormField
               control={form.control}
@@ -347,7 +347,7 @@ export function EditProjectDialog({
                   <FormControl>
                     <Textarea 
                       placeholder="Enter project description"
-                      className="resize-none h-16"
+                      className="resize-none h-12 text-sm"
                       {...field}
                     />
                   </FormControl>
@@ -419,7 +419,7 @@ export function EditProjectDialog({
                 <FormItem>
                   <FormLabel className="text-sm">Products (Optional)</FormLabel>
                   <FormControl>
-                    <div className="flex flex-wrap gap-2 p-2 border rounded-md max-h-20 overflow-y-auto">
+                    <div className="flex flex-wrap gap-1 p-2 border rounded-md max-h-16 overflow-y-auto">
                       {products.map((product) => (
                         <label key={product.id} className="flex items-center space-x-1 cursor-pointer text-sm">
                           <input
@@ -445,12 +445,12 @@ export function EditProjectDialog({
               )}
             />
 
-            <Separator className="my-3" />
+            <Separator className="my-2" />
 
             {/* Team Member Assignments - Only show assigned members */}
             <div>
-              <div className="flex items-center justify-between mb-3">
-                <FormLabel className="text-base font-semibold">Team Assignments</FormLabel>
+              <div className="flex items-center justify-between mb-2">
+                <FormLabel className="text-sm font-semibold">Team Assignments</FormLabel>
                 <Popover open={addAssignmentOpen} onOpenChange={setAddAssignmentOpen}>
                   <PopoverTrigger asChild>
                     <Button 
@@ -528,14 +528,14 @@ export function EditProjectDialog({
 
               {/* Show form errors for assignments */}
               {form.formState.errors.assignments && (
-                <div className="text-sm text-destructive mb-2 p-2 bg-destructive/10 rounded">
+                <div className="text-xs text-destructive mb-1 p-1.5 bg-destructive/10 rounded">
                   {form.formState.errors.assignments.message}
                 </div>
               )}
 
               {/* Currently Assigned Members */}
               {currentAssignments.length > 0 ? (
-                <div className="space-y-2 max-h-64 overflow-y-auto">
+                <div className="space-y-1.5 max-h-48 overflow-y-auto border rounded p-2">
                   {currentAssignments.map((assignment) => {
                     const member = teamMembers.find(m => m.id === assignment.teamMemberId);
                     if (!member) return null;
@@ -543,38 +543,36 @@ export function EditProjectDialog({
                     const memberTeam = teams.find(t => t.id === member.team_id);
 
                     return (
-                      <div key={member.id} className="flex items-center justify-between p-2 border rounded text-sm">
-                        <div className="flex items-center space-x-2 flex-1">
+                      <div key={member.id} className="flex items-center justify-between p-1.5 bg-muted/30 rounded text-xs">
+                        <div className="flex items-center space-x-2 flex-1 min-w-0">
                           <button
                             type="button"
                             onClick={() => removeAssignment(member.id)}
-                            className="text-muted-foreground hover:text-destructive"
+                            className="text-muted-foreground hover:text-destructive flex-shrink-0"
                           >
-                            <X className="h-4 w-4" />
+                            <X className="h-3 w-3" />
                           </button>
                           <div className="flex-1 min-w-0">
-                            <p className="font-medium truncate">{member.name}</p>
-                            <p className="text-xs text-muted-foreground">
+                            <p className="font-medium truncate text-xs">{member.name}</p>
+                            <p className="text-xs text-muted-foreground truncate">
                               {member.role?.display_name || member.role?.name}
                               {memberTeam && (
-                                <Badge variant="secondary" className="ml-1 text-xs">
-                                  {memberTeam.name}
-                                </Badge>
+                                <span className="ml-1 text-xs opacity-70">• {memberTeam.name}</span>
                               )}
                             </p>
                           </div>
                         </div>
                         
-                        <div className="flex items-center space-x-2 text-xs">
+                        <div className="flex items-center space-x-1 text-xs flex-shrink-0">
                           <Input
                             type="number"
                             min="0"
                             max="100"
                             value={assignment.percentAllocation}
                             onChange={(e) => updateAssignmentAllocation(member.id, parseInt(e.target.value) || 0)}
-                            className="w-16 h-7 text-xs"
+                            className="w-12 h-6 text-xs"
                           />
-                          <span>%</span>
+                          <span className="text-xs">%</span>
                           <Input
                             type="date"
                             value={assignment.startDate || form.getValues().start_date}
@@ -583,7 +581,7 @@ export function EditProjectDialog({
                               e.target.value, 
                               assignment.endDate || form.getValues().end_date
                             )}
-                            className="w-28 h-7 text-xs"
+                            className="w-24 h-6 text-xs"
                           />
                           <Input
                             type="date"
@@ -593,7 +591,7 @@ export function EditProjectDialog({
                               assignment.startDate || form.getValues().start_date,
                               e.target.value
                             )}
-                            className="w-28 h-7 text-xs"
+                            className="w-24 h-6 text-xs"
                           />
                         </div>
                       </div>
@@ -601,14 +599,13 @@ export function EditProjectDialog({
                   })}
                 </div>
               ) : (
-                <div className="text-center py-8 text-muted-foreground">
-                  <p className="text-sm">No team members assigned</p>
-                  <p className="text-xs">Click "Add Assignment" to assign team members</p>
+                <div className="text-center py-3 text-muted-foreground border rounded">
+                  <p className="text-xs">No team members assigned</p>
                 </div>
               )}
             </div>
 
-            <div className="flex justify-end space-x-2 pt-4">
+            <div className="flex justify-end space-x-2 pt-2 border-t mt-2">
               <Button type="button" variant="outline" onClick={onClose}>
                 Cancel
               </Button>
