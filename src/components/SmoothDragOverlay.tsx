@@ -29,7 +29,7 @@ export function SmoothDragOverlay({ project, className = "" }: SmoothDragOverlay
           {project.name}
         </div>
         <div className="text-xs text-muted-foreground">
-          {project.is_rd ? 'R&D Project' : 'Project'}
+          Project
         </div>
       </div>
       <div className="text-xs text-muted-foreground px-2 py-1 bg-muted/50 rounded">

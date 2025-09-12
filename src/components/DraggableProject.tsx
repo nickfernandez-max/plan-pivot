@@ -80,9 +80,6 @@ export function DraggableProject({
             <div className="text-white text-xs font-medium truncate">
               {project.name}
             </div>
-            {project.is_rd && (
-              <div className="text-white/80 text-xs">R&D</div>
-            )}
           </div>
         </div>
         

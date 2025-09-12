@@ -466,7 +466,16 @@ export function RoadmapView({
       const teamGroups: Array<{ team: Team; memberRows: MemberRow[]; totalHeight: number }> = [];
       
       teamsToProcess.forEach(team => {
-        const membersInTeam = teamMembers.filter(member => member.team_id === team.id);
+        const membersInTeam = teamMembers
+          .filter(member => member.team_id === team.id)
+          .sort((a, b) => {
+            // Primary sort by role (ascending)
+            const roleCompare = (a.role?.display_name || a.role?.name || '').localeCompare(b.role?.display_name || b.role?.name || '');
+            if (roleCompare !== 0) return roleCompare;
+            
+            // Secondary sort by name (ascending)
+            return a.name.localeCompare(b.name);
+          });
         const memberRows: MemberRow[] = [];
         
         membersInTeam.forEach(member => {
