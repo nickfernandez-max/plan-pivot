@@ -181,13 +181,13 @@ export function ReportsView({ projects, teamMembers, assignments }: ReportsViewP
 
   // Get unique values for filters
   const availableProducts = useMemo(() => {
-    const productSet = new Set<{id: string, name: string}>();
+    const productMap = new Map<string, {id: string, name: string}>();
     projects.forEach(project => {
       project.products?.forEach(product => {
-        productSet.add({id: product.id, name: product.name});
+        productMap.set(product.id, {id: product.id, name: product.name});
       });
     });
-    return Array.from(productSet);
+    return Array.from(productMap.values());
   }, [projects]);
   
   const availableTeams = useMemo(() => {
@@ -200,8 +200,14 @@ export function ReportsView({ projects, teamMembers, assignments }: ReportsViewP
     return Array.from(teamSet).sort();
   }, [reportData]);
   
-  const availableStatuses = [...new Set(projects.map(p => p.status))];
-  const availableAssignees = teamMembers.map(tm => ({ id: tm.id, name: tm.name }));
+  const availableStatuses = useMemo(() => [...new Set(projects.map(p => p.status))], [projects]);
+  const availableAssignees = useMemo(() => {
+    const assigneeMap = new Map<string, {id: string, name: string}>();
+    teamMembers.forEach(tm => {
+      assigneeMap.set(tm.id, {id: tm.id, name: tm.name});
+    });
+    return Array.from(assigneeMap.values());
+  }, [teamMembers]);
 
   // Summary statistics
   const totalHours = filteredData.reduce((sum, item) => sum + item.totalHours, 0);
