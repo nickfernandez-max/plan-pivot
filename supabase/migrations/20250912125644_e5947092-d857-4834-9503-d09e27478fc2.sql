@@ -1,0 +1,1 @@
+DELETE FROM work_assignments WHERE name = 'Test queue 2' AND id = '9efe13fd-8ea0-4ca3-8a2e-b4fcf805d245';
