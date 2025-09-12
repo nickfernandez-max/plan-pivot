@@ -385,7 +385,6 @@ export function RoadmapView({
   // Initialize drag and drop functionality
   const {
     activeDrag,
-    isDraggingWithMovement,
     dragOverData,
     handleDragStart,
     handleDragOver,
@@ -1220,7 +1219,7 @@ export function RoadmapView({
       style={{ zIndex: 9999 }}
       className="z-[9999]"
     >
-      {activeDrag && isDraggingWithMovement && (() => {
+      {activeDrag && (() => {
         const draggedProject = visibleProjects.find(p => p.id === activeDrag.projectId);
         if (!draggedProject) return null;
 

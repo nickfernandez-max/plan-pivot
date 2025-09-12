@@ -1,6 +1,7 @@
 import { useDraggable } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
 import { format } from 'date-fns';
+import { Edit } from 'lucide-react';
 import { Project, Team } from '@/types/roadmap';
 
 interface DraggableProjectProps {
@@ -24,6 +25,13 @@ export function DraggableProject({
   onClick,
   isFront = false
 }: DraggableProjectProps) {
+  // Debug: Log if onEdit is available for this project
+  console.log(`🔧 DraggableProject for "${project.name}":`, {
+    hasOnEdit: !!onEdit,
+    isPreview,
+    project: project.name,
+    projectId: project.id
+  });
   const {
     attributes,
     listeners,
@@ -51,40 +59,54 @@ export function DraggableProject({
     transition: isDragging ? 'none' : 'all 0.2s ease-out',
   };
 
-  // Handle double click without interfering with drag
-  const handleDoubleClick = (e: React.MouseEvent) => {
-    console.log('🔧 Double-click handler called:', project.name, { isDragging, hasOnEdit: !!onEdit, isPreview });
-    if (!isDragging && onEdit && !isPreview) {
-      e.preventDefault();
-      e.stopPropagation();
-      console.log('🔧 Calling onEdit for:', project.name);
-      onEdit();
-    }
-  };
-
   return (
     <div
       ref={setNodeRef}
-      className="absolute rounded-md shadow-sm border transition-all duration-200 hover:shadow-lg group animate-fade-in"
+      className="absolute rounded-md shadow-sm border transition-all duration-200 hover:shadow-lg group animate-fade-in cursor-grab active:cursor-grabbing"
       style={{
         ...style,
         ...dragStyle,
         backgroundColor: project.color || 'hsl(var(--primary))',
         borderColor: project.color || 'hsl(var(--primary))',
       }}
-      onDoubleClick={handleDoubleClick}
+      onClick={(e) => {
+        if (!isDragging && onClick) {
+          e.stopPropagation();
+          onClick();
+        }
+      }}
     >
-      <div 
-        className="h-full flex items-center overflow-hidden px-2 cursor-grab active:cursor-grabbing"
-        {...listeners}
-        {...attributes}
-        title={project.name}
-      >
-        <div className="flex-1 min-w-0">
-          <div className="text-white text-[10px] font-medium leading-tight break-words hyphens-auto select-none pointer-events-none" style={{ wordBreak: 'break-word' }}>
-            {project.name}
+      <div className="h-full flex items-center overflow-hidden">
+        {/* Drag handle area */}
+        <div 
+          {...listeners}
+          {...attributes}
+          className="flex-1 min-w-0 h-full flex items-center px-2 cursor-grab active:cursor-grabbing touch-none"
+          title={project.name} // Add native tooltip as fallback
+        >
+          <div className="flex-1 min-w-0">
+            <div className="text-white text-[10px] font-medium leading-tight break-words hyphens-auto" style={{ wordBreak: 'break-word' }}>
+              {project.name}
+            </div>
           </div>
         </div>
+        
+        {/* Edit button - separate from drag handle - DEBUGGING: Always visible */}
+        {onEdit && !isPreview && (
+          <button
+            onClick={(e) => {
+              console.log('🔧 Edit button clicked for project:', project.name);
+              e.preventDefault();
+              e.stopPropagation();
+              onEdit();
+            }}
+            className="mr-2 p-1 rounded hover:bg-white/20 transition-colors bg-black/30 border border-white/50"
+            title="Edit project"
+            style={{ minWidth: '20px', minHeight: '20px', zIndex: 1000 }}
+          >
+            <Edit className="h-3 w-3 text-white" />
+          </button>
+        )}
       </div>
       
       {/* Enhanced Tooltip */}
