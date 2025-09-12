@@ -15,6 +15,8 @@ import { Users, ChevronLeft, ChevronRight, Calendar, UserPlus, Plus } from 'luci
 import { AddProjectAssignmentDialog } from '@/components/AddProjectAssignmentDialog';
 import { AddWorkAssignmentDialog } from '@/components/AddWorkAssignmentDialog';
 import { AddProjectDialog } from '@/components/AddProjectDialog';
+import { DateConflictDialog } from '@/components/DateConflictDialog';
+import { useDateValidation } from '@/hooks/useDateValidation';
 
 interface RoadmapViewProps {
   projects: Project[];
@@ -220,6 +222,12 @@ export function RoadmapView({
   onUpdateWorkAssignment,
   onDeleteWorkAssignment
 }: RoadmapViewProps) {
+  // Initialize date validation hook
+  const { conflictDialog, closeConflictDialog } = useDateValidation({
+    onUpdateProject,
+    onUpdateProjectAssignments
+  });
+  
   const [editingProject, setEditingProject] = useState<Project | null>(null);
   const [isAssignmentDialogOpen, setIsAssignmentDialogOpen] = useState(false);
   const [isWorkAssignmentDialogOpen, setIsWorkAssignmentDialogOpen] = useState(false);

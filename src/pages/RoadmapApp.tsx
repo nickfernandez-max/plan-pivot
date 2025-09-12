@@ -501,9 +501,8 @@ export default function RoadmapApp() {
           teams={teams}
           roles={roles}
         />
-        </Tabs>
+        </div>
       </div>
     </DateValidationProvider>
   );
-}
 }
