@@ -470,7 +470,7 @@ export function RoadmapView({
 
   // Group teams by product and calculate member rows with allocation slots
   const productGroups = useMemo(() => {
-    const FIXED_ROW_HEIGHT = 80; // Reduced from 100px for more compact view
+    const FIXED_ROW_HEIGHT = 100; // Increased to accommodate all 4 allocation slots (4 * 24px + padding)
     const ALLOCATION_SLOTS = 4;
     
     // Group teams by product
