@@ -14,7 +14,6 @@ import { UserMenu } from '@/components/UserMenu';
 import { AddProductDialog } from '@/components/AddProductDialog';
 import { AddTeamDialog } from '@/components/AddTeamDialog';
 import { AddPersonDialog } from '@/components/AddPersonDialog';
-import { DateValidationProvider } from '@/components/DateValidationProvider';
 import { useToast } from '@/hooks/use-toast';
 import { startOfMonth, addMonths, format } from 'date-fns';
 
@@ -319,16 +318,12 @@ export default function RoadmapApp() {
   }
 
   return (
-    <DateValidationProvider 
-      onUpdateProject={handleUpdateProject}
-      onUpdateProjectAssignments={updateProjectAssignments}
-    >
-      <div className="min-h-screen bg-background">
-        <div className="container mx-auto p-6">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
-            <h1 className="text-4xl font-bold bg-gradient-to-r from-primary to-primary-glow bg-clip-text text-transparent">
-              Project Roadmap
-            </h1>
+    <div className="min-h-screen bg-background">
+      <div className="container mx-auto p-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
+          <h1 className="text-4xl font-bold bg-gradient-to-r from-primary to-primary-glow bg-clip-text text-transparent">
+            Project Roadmap
+          </h1>
           
           <div className="flex items-center gap-4">
             <div className="flex gap-4">
@@ -501,8 +496,7 @@ export default function RoadmapApp() {
           teams={teams}
           roles={roles}
         />
-        </div>
       </div>
-    </DateValidationProvider>
+    </div>
   );
 }
