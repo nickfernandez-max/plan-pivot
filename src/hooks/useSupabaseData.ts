@@ -195,6 +195,8 @@ export function useSupabaseData() {
 
   const updateProject = async (id: string, updates: Partial<Project>) => {
     try {
+      console.log('Updating project:', id, 'with updates:', updates);
+      
       const { data, error } = await supabase
         .from('projects')
         .update(updates)
@@ -204,8 +206,13 @@ export function useSupabaseData() {
 
       if (error) throw error;
 
+      console.log('Project updated successfully:', data);
+      
       // Update local state immediately for responsive UI
       setProjects(prev => prev.map(p => p.id === id ? { ...p, ...updates } : p));
+      
+      // Force a complete data refresh to ensure UI consistency
+      await fetchData();
       
       return data;
     } catch (err) {
