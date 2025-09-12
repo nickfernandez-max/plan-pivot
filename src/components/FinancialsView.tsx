@@ -164,6 +164,7 @@ export function FinancialsView({ roles, onUpdateRole, onAddRole }: FinancialsVie
                     {getSortIcon('display_name')}
                   </Button>
                 </TableHead>
+                <TableHead>Finance Code</TableHead>
                 <TableHead>
                   <Button
                     variant="ghost"
@@ -182,6 +183,7 @@ export function FinancialsView({ roles, onUpdateRole, onAddRole }: FinancialsVie
                 <TableRow key={role.id}>
                   <TableCell className="font-medium">{role.name}</TableCell>
                   <TableCell>{role.display_name || role.name}</TableCell>
+                  <TableCell>{role.finance_name || '—'}</TableCell>
                   <TableCell>
                     {role.hourly_rate ? `$${role.hourly_rate.toFixed(2)}` : '—'}
                   </TableCell>
