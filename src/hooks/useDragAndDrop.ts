@@ -35,6 +35,7 @@ export function useDragAndDrop({
   onUpdateProjectAssignments
 }: UseDragAndDropProps) {
   const [activeDrag, setActiveDrag] = useState<DragData | null>(null);
+  const [isDraggingWithMovement, setIsDraggingWithMovement] = useState(false);
   const [dragOverData, setDragOverData] = useState<{
     memberId: string | null;
     newStartDate: Date | null;
@@ -57,11 +58,18 @@ export function useDragAndDrop({
       originalEndDate: active.data.current.endDate,
       originalAllocation: assignment?.percent_allocation || 25,
     });
+    setIsDraggingWithMovement(false); // Reset movement state
   }, [assignments]);
 
   const handleDragOver = useCallback((event: DragOverEvent) => {
-    const { over } = event;
+    const { over, delta } = event;
     if (!over || !activeDrag) return;
+
+    // Check if there's actual movement to show the overlay
+    const hasMovement = Math.abs(delta.x) > 5 || Math.abs(delta.y) > 5;
+    if (hasMovement && !isDraggingWithMovement) {
+      setIsDraggingWithMovement(true);
+    }
 
     let newMemberId: string | null = null;
     let isValidDrop = false;
@@ -73,13 +81,14 @@ export function useDragAndDrop({
     }
 
     setDragOverData({ memberId: newMemberId, newStartDate: null, isValidDrop });
-  }, [activeDrag]);
+  }, [activeDrag, isDraggingWithMovement]);
 
   const handleDragEnd = useCallback(async (event: DragEndEvent) => {
     const { over, delta, active } = event;
     
     if (!activeDrag) {
       setActiveDrag(null);
+      setIsDraggingWithMovement(false);
       setDragOverData({ memberId: null, newStartDate: null, isValidDrop: false });
       return;
     }
@@ -89,12 +98,14 @@ export function useDragAndDrop({
     if (!isDragAction && active.data.current?.onClick) {
       active.data.current.onClick();
       setActiveDrag(null);
+      setIsDraggingWithMovement(false);
       setDragOverData({ memberId: null, newStartDate: null, isValidDrop: false });
       return;
     }
 
     if (!over || !isDragAction) {
       setActiveDrag(null);
+      setIsDraggingWithMovement(false);
       setDragOverData({ memberId: null, newStartDate: null, isValidDrop: false });
       return;
     }
@@ -206,6 +217,7 @@ export function useDragAndDrop({
     }
 
     setActiveDrag(null);
+    setIsDraggingWithMovement(false);
     setDragOverData({ memberId: null, newStartDate: null, isValidDrop: false });
   }, [activeDrag, timelineBounds, totalDays, assignments, onUpdateProject, onUpdateProjectAssignments]);
 
@@ -238,6 +250,7 @@ export function useDragAndDrop({
 
   return {
     activeDrag,
+    isDraggingWithMovement,
     dragOverData,
     handleDragStart,
     handleDragOver,
