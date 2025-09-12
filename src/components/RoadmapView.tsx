@@ -222,8 +222,6 @@ export function RoadmapView({
   onUpdateWorkAssignment,
   onDeleteWorkAssignment
 }: RoadmapViewProps) {
-  // Debug: Log all projects being passed to RoadmapView
-  console.log('🔍 All projects passed to RoadmapView:', projects.map(p => ({ id: p.id, name: p.name })));
   
   // Initialize date validation hook
   const { conflictDialog, closeConflictDialog } = useDateValidation({
@@ -328,20 +326,36 @@ export function RoadmapView({
       // Project intersects if it starts before timeline ends and ends after timeline starts
       return projectStart <= timelineBounds.end && projectEnd >= timelineBounds.start;
     });
-    
-    console.log('🔍 Visible projects after date filtering:', filtered.map(p => ({ id: p.id, name: p.name })));
     return filtered;
   }, [projects, timelineBounds]);
 
   // Filter work assignments to only include those that intersect with the visible timeline
   const visibleWorkAssignments = useMemo(() => {
-    return workAssignments.filter(workAssignment => {
+    const filtered = workAssignments.filter(workAssignment => {
       const assignmentStart = new Date(workAssignment.start_date);
       const assignmentEnd = new Date(workAssignment.end_date);
       
       // Work assignment intersects if it starts before timeline ends and ends after timeline starts
-      return assignmentStart <= timelineBounds.end && assignmentEnd >= timelineBounds.start;
+      const isVisible = assignmentStart <= timelineBounds.end && assignmentEnd >= timelineBounds.start;
+      
+      // Debug Test queue specifically
+      if (workAssignment.name === 'Test queue') {
+        console.log('🔍 Test queue filtering:', {
+          name: workAssignment.name,
+          start: workAssignment.start_date,
+          end: workAssignment.end_date,
+          timelineBounds,
+          assignmentStart,
+          assignmentEnd,
+          isVisible
+        });
+      }
+      
+      return isVisible;
     });
+    
+    console.log('🔍 Total work assignments:', workAssignments.length, 'Visible:', filtered.length);
+    return filtered;
   }, [workAssignments, timelineBounds]);
 
   // Ref for timeline container to handle scrolling
