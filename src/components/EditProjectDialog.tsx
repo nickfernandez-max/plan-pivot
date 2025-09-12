@@ -28,6 +28,7 @@ interface EditProjectDialogProps {
   onUpdateProjectAssignments: (projectId: string, assignments: { teamMemberId: string; percentAllocation: number; startDate?: string; endDate?: string }[]) => Promise<void>;
 }
 
+// Enhanced Zod schema with date cross-validation
 const projectSchema = z.object({
   name: z.string().min(1, "Project name is required"),
   team_id: z.string().min(1, "Team is required"),
@@ -44,6 +45,32 @@ const projectSchema = z.object({
     startDate: z.string().optional(),
     endDate: z.string().optional()
   })).optional(),
+}).refine((data) => {
+  // Validate that end date is after start date
+  if (data.start_date && data.end_date) {
+    return new Date(data.start_date) <= new Date(data.end_date);
+  }
+  return true;
+}, {
+  message: "End date must be after start date",
+  path: ["end_date"]
+}).refine((data) => {
+  // Validate assignment dates against project dates
+  if (data.assignments && data.start_date && data.end_date) {
+    const projectStart = new Date(data.start_date);
+    const projectEnd = new Date(data.end_date);
+    
+    return data.assignments.every(assignment => {
+      if (!assignment.startDate || !assignment.endDate) return true;
+      const assignStart = new Date(assignment.startDate);
+      const assignEnd = new Date(assignment.endDate);
+      return assignStart >= projectStart && assignEnd <= projectEnd;
+    });
+  }
+  return true;
+}, {
+  message: "Assignment dates must be within project timeline",
+  path: ["assignments"]
 });
 
 export function EditProjectDialog({

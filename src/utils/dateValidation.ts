@@ -1,5 +1,22 @@
 import { Project, ProjectAssignment, TeamMember } from '@/types/roadmap';
-import { DateConflictInfo, DateConflictAction } from '@/components/DateConflictDialog';
+
+export interface DateConflictInfo {
+  type: 'project_date_change' | 'assignment_date_change' | 'assignment_outside_project';
+  projectName: string;
+  projectDates: { start: string; end: string };
+  assignmentDates?: { start: string; end: string };
+  affectedAssignments?: Array<{
+    memberName: string;
+    currentDates: { start: string; end: string };
+  }>;
+}
+
+export interface DateConflictAction {
+  id: string;
+  label: string;
+  description: string;
+  variant: 'default' | 'destructive' | 'outline';
+}
 
 export interface DateValidationResult {
   isValid: boolean;

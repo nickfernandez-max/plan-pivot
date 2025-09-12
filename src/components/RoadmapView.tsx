@@ -1254,6 +1254,15 @@ export function RoadmapView({
       onOpenChange={setIsAddProjectDialogOpen}
       onAddProject={onAddProject}
     />
+
+    {/* Date Conflict Dialog */}
+    <DateConflictDialog
+      open={conflictDialog.open}
+      onOpenChange={closeConflictDialog}
+      conflict={conflictDialog.conflict}
+      actions={conflictDialog.actions}
+      onAction={conflictDialog.onAction}
+    />
   </DndContext>
   );
 }

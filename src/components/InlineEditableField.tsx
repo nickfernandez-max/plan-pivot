@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 
 interface InlineEditableFieldProps {
   value: any;
-  onSave: (newValue: any) => void;
+  onSave: (newValue: any) => Promise<void> | void;
   type: 'text' | 'number' | 'date' | 'select' | 'boolean';
   options?: { value: string; label: string }[];
   min?: number;
@@ -44,7 +44,7 @@ export function InlineEditableField({
     }
   }, [isEditing, type]);
 
-  const handleSave = () => {
+  const handleSave = async () => {
     let processedValue = editValue;
     
     if (type === 'number') {
@@ -54,8 +54,26 @@ export function InlineEditableField({
       }
     }
     
-    onSave(processedValue);
-    setIsEditing(false);
+    // For date fields, validate the value before saving
+    if (type === 'date' && processedValue) {
+      try {
+        // Basic date validation
+        const date = new Date(processedValue);
+        if (isNaN(date.getTime())) {
+          processedValue = value; // Revert to original value if invalid
+        }
+      } catch (error) {
+        processedValue = value; // Revert to original value if invalid
+      }
+    }
+    
+    try {
+      await onSave(processedValue);
+      setIsEditing(false);
+    } catch (error) {
+      // If save fails, keep editing mode open
+      console.error('Error saving field:', error);
+    }
   };
 
   const handleCancel = () => {
@@ -65,6 +83,7 @@ export function InlineEditableField({
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
+      e.preventDefault();
       handleSave();
     } else if (e.key === 'Escape') {
       handleCancel();

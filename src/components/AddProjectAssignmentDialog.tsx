@@ -33,6 +33,7 @@ interface Assignment {
   endDate?: string;
 }
 
+// Enhanced assignment schema with date validation
 const assignmentSchema = z.object({
   memberId: z.string().min(1, "Please select a team member"),
   projectType: z.enum(['existing', 'new']),
@@ -54,6 +55,24 @@ const assignmentSchema = z.object({
   }
 }, {
   message: "Please fill in all required fields",
+}).refine((data) => {
+  // Validate assignment dates
+  if (data.startDate && data.endDate) {
+    return new Date(data.startDate) <= new Date(data.endDate);
+  }
+  return true;
+}, {
+  message: "Assignment end date must be after start date",
+  path: ["endDate"]
+}).refine((data) => {
+  // Validate new project dates
+  if (data.projectType === 'new' && data.newProjectStartDate && data.newProjectEndDate) {
+    return new Date(data.newProjectStartDate) <= new Date(data.newProjectEndDate);
+  }
+  return true;
+}, {
+  message: "Project end date must be after start date", 
+  path: ["newProjectEndDate"]
 });
 
 type AssignmentFormData = z.infer<typeof assignmentSchema>;
@@ -725,32 +744,42 @@ export function AddProjectAssignmentDialog({
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="startDate"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Start Date</FormLabel>
-                        <FormControl>
-                          <Input type="date" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="endDate"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>End Date</FormLabel>
-                        <FormControl>
-                          <Input type="date" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                        <FormField
+                          control={form.control}
+                          name="startDate"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Start Date</FormLabel>
+                              <FormControl>
+                                <Input 
+                                  type="date" 
+                                  {...field}
+                                  min={defaultStartDate}
+                                  max={defaultEndDate}
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name="endDate"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>End Date</FormLabel>
+                              <FormControl>
+                                <Input 
+                                  type="date" 
+                                  {...field}
+                                  min={form.watch('startDate') || defaultStartDate}
+                                  max={defaultEndDate}
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
                 </div>
               </div>
             )}
