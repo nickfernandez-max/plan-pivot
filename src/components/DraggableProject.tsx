@@ -61,7 +61,7 @@ export function DraggableProject({
   return (
     <div
       ref={setNodeRef}
-      className="absolute rounded-md shadow-sm border transition-all duration-200 hover:shadow-lg group animate-fade-in cursor-grab active:cursor-grabbing"
+      className="absolute rounded-md shadow-sm border transition-all duration-200 hover:shadow-lg group animate-fade-in"
       style={{
         ...style,
         ...dragStyle,
@@ -69,6 +69,7 @@ export function DraggableProject({
         borderColor: project.color || 'hsl(var(--primary))',
       }}
       onDoubleClick={(e) => {
+        console.log('🔧 Double-click on project container:', project.name, { isDragging, hasOnEdit: !!onEdit, isPreview });
         if (!isDragging && onEdit && !isPreview) {
           e.preventDefault();
           e.stopPropagation();
@@ -85,7 +86,10 @@ export function DraggableProject({
           title={project.name}
         >
           <div className="flex-1 min-w-0">
-            <div className="text-white text-[10px] font-medium leading-tight break-words hyphens-auto" style={{ wordBreak: 'break-word' }}>
+            <div 
+              className="text-white text-[10px] font-medium leading-tight break-words hyphens-auto select-none pointer-events-none" 
+              style={{ wordBreak: 'break-word' }}
+            >
               {project.name}
             </div>
           </div>
