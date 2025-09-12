@@ -68,10 +68,11 @@ export function DraggableProject({
         backgroundColor: project.color || 'hsl(var(--primary))',
         borderColor: project.color || 'hsl(var(--primary))',
       }}
-      onClick={(e) => {
-        if (!isDragging && onClick) {
+      onDoubleClick={(e) => {
+        if (!isDragging && onEdit && !isPreview) {
+          e.preventDefault();
           e.stopPropagation();
-          onClick();
+          onEdit();
         }
       }}
     >
@@ -81,19 +82,7 @@ export function DraggableProject({
           {...listeners}
           {...attributes}
           className="flex-1 min-w-0 h-full flex items-center px-2 cursor-grab active:cursor-grabbing touch-none"
-          title={project.name} // Add native tooltip as fallback
-          onDoubleClick={(e) => {
-            console.log('🔧 Double-click detected on project:', project.name);
-            console.log('🔧 Double-click conditions:', { isDragging, hasOnEdit: !!onEdit, isPreview });
-            if (!isDragging && onEdit && !isPreview) {
-              console.log('🔧 Executing onEdit for project:', project.name);
-              e.preventDefault();
-              e.stopPropagation();
-              onEdit();
-            } else {
-              console.log('🔧 Double-click blocked:', { isDragging, hasOnEdit: !!onEdit, isPreview });
-            }
-          }}
+          title={project.name}
         >
           <div className="flex-1 min-w-0">
             <div className="text-white text-[10px] font-medium leading-tight break-words hyphens-auto" style={{ wordBreak: 'break-word' }}>

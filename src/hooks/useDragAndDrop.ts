@@ -65,11 +65,9 @@ export function useDragAndDrop({
     const { over, delta } = event;
     if (!over || !activeDrag) return;
 
-    // Check if there's actual movement to show the overlay
-    const hasMovement = Math.abs(delta.x) > 5 || Math.abs(delta.y) > 5;
-    console.log('🔧 Drag over - movement check:', { deltaX: delta.x, deltaY: delta.y, hasMovement, isDraggingWithMovement });
+    // Check if there's actual movement to show the overlay - increased threshold
+    const hasMovement = Math.abs(delta.x) > 15 || Math.abs(delta.y) > 15;
     if (hasMovement && !isDraggingWithMovement) {
-      console.log('🔧 Setting isDraggingWithMovement to true');
       setIsDraggingWithMovement(true);
     }
 
