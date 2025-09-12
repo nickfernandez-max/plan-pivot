@@ -222,6 +222,9 @@ export function RoadmapView({
   onUpdateWorkAssignment,
   onDeleteWorkAssignment
 }: RoadmapViewProps) {
+  // Debug: Log all projects being passed to RoadmapView
+  console.log('🔍 All projects passed to RoadmapView:', projects.map(p => ({ id: p.id, name: p.name })));
+  
   // Initialize date validation hook
   const { conflictDialog, closeConflictDialog } = useDateValidation({
     onUpdateProject,
@@ -318,13 +321,16 @@ export function RoadmapView({
 
   // Filter projects to only include those that intersect with the visible timeline
   const visibleProjects = useMemo(() => {
-    return projects.filter(project => {
+    const filtered = projects.filter(project => {
       const projectStart = new Date(project.start_date);
       const projectEnd = new Date(project.end_date);
       
       // Project intersects if it starts before timeline ends and ends after timeline starts
       return projectStart <= timelineBounds.end && projectEnd >= timelineBounds.start;
     });
+    
+    console.log('🔍 Visible projects after date filtering:', filtered.map(p => ({ id: p.id, name: p.name })));
+    return filtered;
   }, [projects, timelineBounds]);
 
   // Filter work assignments to only include those that intersect with the visible timeline
