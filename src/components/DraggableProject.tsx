@@ -88,6 +88,7 @@ export function DraggableProject({
         {onEdit && !isPreview && (
           <button
             onClick={(e) => {
+              console.log('🔧 Edit button clicked for project:', project.name);
               e.stopPropagation();
               onEdit();
             }}

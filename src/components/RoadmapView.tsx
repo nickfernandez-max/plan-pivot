@@ -1,4 +1,4 @@
-import { useMemo, Fragment, useState, useCallback, useRef } from 'react';
+import { useMemo, Fragment, useState, useCallback, useRef, useEffect } from 'react';
 import { DndContext, DragOverlay } from '@dnd-kit/core';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -229,6 +229,11 @@ export function RoadmapView({
   });
   
   const [editingProject, setEditingProject] = useState<Project | null>(null);
+  
+  // Debug: Track editingProject state changes
+  useEffect(() => {
+    console.log('🔧 editingProject state changed:', editingProject?.name || 'null');
+  }, [editingProject]);
   const [isAssignmentDialogOpen, setIsAssignmentDialogOpen] = useState(false);
   const [isWorkAssignmentDialogOpen, setIsWorkAssignmentDialogOpen] = useState(false);
   const [isAddProjectDialogOpen, setIsAddProjectDialogOpen] = useState(false);
@@ -1019,7 +1024,10 @@ export function RoadmapView({
                                 project={project}
                                 team={team}
                                 memberId={member.id}
-                                onEdit={() => setEditingProject(project)}
+                                onEdit={() => {
+                                  console.log('🔧 Setting editing project:', project.name, project.id);
+                                  setEditingProject(project);
+                                }}
                                 onClick={() => setFrontProject(project.id)}
                                 isFront={frontProject === project.id}
                                 style={{
@@ -1135,7 +1143,10 @@ export function RoadmapView({
                                  project={project}
                                  team={team}
                                  memberId={member.id}
-                                 onEdit={() => setEditingProject(project)}
+                                  onEdit={() => {
+                                    console.log('🔧 Setting editing project:', project.name, project.id);
+                                    setEditingProject(project);
+                                  }}
                                  onClick={() => setFrontProject(project.id)}
                                  isFront={frontProject === project.id}
                                  style={{
@@ -1202,7 +1213,10 @@ export function RoadmapView({
       teamMembers={teamMembers}
       assignments={assignments}
       isOpen={!!editingProject}
-      onClose={() => setEditingProject(null)}
+      onClose={() => {
+        console.log('🔧 Closing EditProjectDialog');
+        setEditingProject(null);
+      }}
       onUpdateProject={onUpdateProject}
       onUpdateProjectProducts={onUpdateProjectProducts}
       onUpdateProjectAssignments={onUpdateProjectAssignments}
