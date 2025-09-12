@@ -499,12 +499,10 @@ export function RoadmapView({
         const memberRows: MemberRow[] = [];
         
         membersInTeam.forEach(member => {
-          // Find visible projects assigned to this member OR projects without any assignees
+          // Find visible projects specifically assigned to this member
           const memberProjects = visibleProjects
             .filter(project => 
-              project.assignees?.some(assignee => assignee.id === member.id) || 
-              !project.assignees || 
-              project.assignees.length === 0
+              project.assignees?.some(assignee => assignee.id === member.id)
             )
             .map(project => {
               // Get the assignment for this specific member to use their dates
