@@ -470,6 +470,7 @@ export default function RoadmapApp() {
             <FinancialsView 
               roles={roles} 
               onUpdateRole={updateRole}
+              onAddRole={addRole}
             />
           </TabsContent>
         </Tabs>

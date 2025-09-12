@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { EditRoleDialog } from '@/components/EditRoleDialog';
+import { AddRoleDialog } from '@/components/AddRoleDialog';
 import { AddUserDialog } from '@/components/AddUserDialog';
 import { useToast } from '@/hooks/use-toast';
 import { Role } from '@/types/roadmap';
@@ -13,9 +14,10 @@ import { Lock, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
 interface FinancialsViewProps {
   roles: Role[];
   onUpdateRole: (id: string, updates: Partial<Role>) => Promise<any>;
+  onAddRole: (role: Omit<Role, 'id' | 'created_at' | 'updated_at'>) => Promise<Role>;
 }
 
-export function FinancialsView({ roles, onUpdateRole }: FinancialsViewProps) {
+export function FinancialsView({ roles, onUpdateRole, onAddRole }: FinancialsViewProps) {
   const { toast } = useToast();
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -133,7 +135,10 @@ export function FinancialsView({ roles, onUpdateRole }: FinancialsViewProps) {
               Manage display names, finance codes, and hourly rates for all roles.
             </p>
           </div>
-          <AddUserDialog />
+          <div className="flex gap-2">
+            <AddRoleDialog onAddRole={onAddRole} />
+            <AddUserDialog />
+          </div>
         </CardHeader>
         <CardContent>
           <Table>
