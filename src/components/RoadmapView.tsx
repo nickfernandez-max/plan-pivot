@@ -331,31 +331,13 @@ export function RoadmapView({
 
   // Filter work assignments to only include those that intersect with the visible timeline
   const visibleWorkAssignments = useMemo(() => {
-    const filtered = workAssignments.filter(workAssignment => {
+    return workAssignments.filter(workAssignment => {
       const assignmentStart = new Date(workAssignment.start_date);
       const assignmentEnd = new Date(workAssignment.end_date);
       
       // Work assignment intersects if it starts before timeline ends and ends after timeline starts
-      const isVisible = assignmentStart <= timelineBounds.end && assignmentEnd >= timelineBounds.start;
-      
-      // Debug Test queue specifically
-      if (workAssignment.name === 'Test queue') {
-        console.log('🔍 Test queue filtering:', {
-          name: workAssignment.name,
-          start: workAssignment.start_date,
-          end: workAssignment.end_date,
-          timelineBounds,
-          assignmentStart,
-          assignmentEnd,
-          isVisible
-        });
-      }
-      
-      return isVisible;
+      return assignmentStart <= timelineBounds.end && assignmentEnd >= timelineBounds.start;
     });
-    
-    console.log('🔍 Total work assignments:', workAssignments.length, 'Visible:', filtered.length);
-    return filtered;
   }, [workAssignments, timelineBounds]);
 
   // Ref for timeline container to handle scrolling
