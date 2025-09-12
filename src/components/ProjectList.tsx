@@ -15,16 +15,21 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { InlineEditableField } from "./InlineEditableField";
-import { Project, Team, Product, SortField, SortDirection, ProjectStatus } from "@/types/roadmap";
+import { Project, Team, Product, SortField, SortDirection, ProjectStatus, ProjectAssignment, TeamMember } from "@/types/roadmap";
 import { useProjectExport } from "@/hooks/useProjectExport";
+import { useDateValidation } from "@/hooks/useDateValidation";
+import { DateConflictDialog } from "./DateConflictDialog";
 
 interface ProjectListProps {
   projects: Project[];
   teams: Team[];
   products: Product[];
+  assignments?: ProjectAssignment[];
+  teamMembers?: TeamMember[];
   onAddProject: (project: Omit<Project, 'id' | 'created_at' | 'updated_at'>) => Promise<Project>;
   onUpdateProject: (id: string, project: Partial<Project>) => void;
   onUpdateProjectProducts: (projectId: string, productIds: string[]) => void;
+  onUpdateProjectAssignments?: (projectId: string, assignments: any[]) => Promise<void>;
 }
 
 const projectSchema = z.object({
@@ -42,12 +47,33 @@ const projectSchema = z.object({
   product_ids: z.array(z.string()).optional(),
 });
 
-export function ProjectList({ projects, teams, products, onAddProject, onUpdateProject, onUpdateProjectProducts }: ProjectListProps) {
+export function ProjectList({ 
+  projects, 
+  teams, 
+  products, 
+  assignments = [], 
+  teamMembers = [], 
+  onAddProject, 
+  onUpdateProject, 
+  onUpdateProjectProducts,
+  onUpdateProjectAssignments 
+}: ProjectListProps) {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [editingProject, setEditingProject] = useState<Project | null>(null);
   const [sortField, setSortField] = useState<SortField>('start_date');
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
   const { exportToExcel, isExporting } = useProjectExport();
+  
+  // Initialize date validation with current data
+  const { conflictDialog, closeConflictDialog, handleProjectDateChange } = useDateValidation({
+    projects,
+    assignments,
+    teamMembers,
+    onUpdateProject: async (projectId: string, updates: Partial<Project>) => {
+      onUpdateProject(projectId, updates);
+    },
+    onUpdateProjectAssignments
+  });
 
   const form = useForm<z.infer<typeof projectSchema>>({
     resolver: zodResolver(projectSchema),
@@ -855,6 +881,9 @@ export function ProjectList({ projects, teams, products, onAddProject, onUpdateP
                             value={project.start_date}
                             onSave={(newValue) => onUpdateProject(project.id, { start_date: newValue })}
                             type="date"
+                            onDateValidation={async (newStartDate) => {
+                              return await handleProjectDateChange(project.id, newStartDate, project.end_date);
+                            }}
                           />
                         </TableCell>
                         <TableCell className="text-xs text-muted-foreground py-2">
@@ -862,6 +891,9 @@ export function ProjectList({ projects, teams, products, onAddProject, onUpdateP
                             value={project.end_date}
                             onSave={(newValue) => onUpdateProject(project.id, { end_date: newValue })}
                             type="date"
+                            onDateValidation={async (newEndDate) => {
+                              return await handleProjectDateChange(project.id, project.start_date, newEndDate);
+                            }}
                           />
                         </TableCell>
                         <TableCell className="py-2">
@@ -955,6 +987,14 @@ export function ProjectList({ projects, teams, products, onAddProject, onUpdateP
           )}
         </CardContent>
       </Card>
+      
+      <DateConflictDialog
+        open={conflictDialog.open}
+        onOpenChange={closeConflictDialog}
+        conflict={conflictDialog.conflict}
+        actions={conflictDialog.actions}
+        onAction={conflictDialog.onAction}
+      />
     </div>
   );
 }

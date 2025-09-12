@@ -17,6 +17,7 @@ interface InlineEditableFieldProps {
   className?: string;
   displayValue?: string;
   variant?: 'default' | 'badge';
+  onDateValidation?: (value: string) => Promise<boolean>;
 }
 
 export function InlineEditableField({
@@ -28,7 +29,8 @@ export function InlineEditableField({
   max,
   className = '',
   displayValue,
-  variant = 'default'
+  variant = 'default',
+  onDateValidation
 }: InlineEditableFieldProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [editValue, setEditValue] = useState(value);
@@ -61,6 +63,13 @@ export function InlineEditableField({
         const date = new Date(processedValue);
         if (isNaN(date.getTime())) {
           processedValue = value; // Revert to original value if invalid
+        } else if (onDateValidation) {
+          // If there's a date validation function, check for conflicts
+          const canProceed = await onDateValidation(processedValue);
+          if (!canProceed) {
+            // Validation failed, keep editing state (dialog will handle the conflict)
+            return;
+          }
         }
       } catch (error) {
         processedValue = value; // Revert to original value if invalid

@@ -387,9 +387,12 @@ export default function RoadmapApp() {
               projects={filteredProjects} 
               teams={teams}
               products={products}
+              assignments={assignments}
+              teamMembers={teamMembers}
               onAddProject={handleAddProject} 
               onUpdateProject={handleUpdateProject}
               onUpdateProjectProducts={updateProjectProducts}
+              onUpdateProjectAssignments={updateProjectAssignments}
             />
           </TabsContent>
 
