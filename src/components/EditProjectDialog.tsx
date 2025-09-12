@@ -136,28 +136,45 @@ export function EditProjectDialog({
   const onSubmit = async (values: z.infer<typeof projectSchema>) => {
     if (!project) return;
 
+    console.log('EditProjectDialog onSubmit called with values:', values);
+    console.log('Original project data:', project);
+
     try {
       const { product_ids, assignments: projectAssignments, ...projectData } = values;
       
+      console.log('Project data to update:', projectData);
+      console.log('Product IDs to update:', product_ids);
+      console.log('Assignments to update:', projectAssignments);
+      
       // Update project
+      console.log('Calling onUpdateProject...');
       await onUpdateProject(project.id, projectData);
+      console.log('Project updated successfully');
       
       // Update product relationships
       if (product_ids) {
+        console.log('Updating product relationships...');
         await onUpdateProjectProducts(project.id, product_ids);
+        console.log('Product relationships updated');
       }
       
       // Update assignments with allocations and dates
       if (projectAssignments) {
+        console.log('Updating project assignments...');
         const validAssignments = projectAssignments.filter((a): a is { teamMemberId: string; percentAllocation: number; startDate?: string; endDate?: string } => 
           Boolean(a.teamMemberId) && typeof a.percentAllocation === 'number'
         );
+        console.log('Valid assignments to update:', validAssignments);
         await onUpdateProjectAssignments(project.id, validAssignments);
+        console.log('Assignments updated');
       }
       
+      console.log('All updates completed, closing dialog');
       onClose();
     } catch (error) {
       console.error('Error updating project:', error);
+      console.error('Error details:', error instanceof Error ? error.message : 'Unknown error');
+      // Don't close dialog on error so user can try again
     }
   };
 
