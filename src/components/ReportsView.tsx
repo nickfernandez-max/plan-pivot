@@ -47,7 +47,7 @@ export function ReportsView({ projects, teamMembers, assignments }: ReportsViewP
   const [teamFilterValue, setTeamFilterValue] = useState<string>('all');
   const [statusFilterValue, setStatusFilterValue] = useState<string>('all');
   const [assigneeFilterValue, setAssigneeFilterValue] = useState<string>('all');
-  const [typeFilterValue, setTypeFilterValue] = useState<string>('all');
+  const [rdFilterValue, setRdFilterValue] = useState<string>('all');
   const [showFinancials, setShowFinancials] = useState(false);
 
   const projectSearchRef = useRef<HTMLDivElement>(null);
@@ -138,14 +138,14 @@ export function ReportsView({ projects, teamMembers, assignments }: ReportsViewP
       // Assignee filter
       const matchesAssignee = assigneeFilterValue === 'all' || report.teamMemberId === assigneeFilterValue;
 
-      // Type filter (R&D vs Product)
-      const matchesType = typeFilterValue === 'all' || 
-        (typeFilterValue === 'rd' && report.isRnD) ||
-        (typeFilterValue === 'product' && !report.isRnD);
+      // R&D filter
+      const matchesRD = rdFilterValue === 'all' || 
+        (rdFilterValue === 'yes' && report.isRnD) ||
+        (rdFilterValue === 'no' && !report.isRnD);
 
-      return matchesSearch && matchesProjectSelection && matchesProduct && matchesTeam && matchesStatus && matchesAssignee && matchesType;
+      return matchesSearch && matchesProjectSelection && matchesProduct && matchesTeam && matchesStatus && matchesAssignee && matchesRD;
     });
-  }, [reportData, searchQuery, selectedProjectId, productFilterValue, teamFilterValue, statusFilterValue, assigneeFilterValue, typeFilterValue, projects]);
+  }, [reportData, searchQuery, selectedProjectId, productFilterValue, teamFilterValue, statusFilterValue, assigneeFilterValue, rdFilterValue, projects]);
 
   // Filtered projects for dropdown
   const filteredProjects = useMemo(() => {
@@ -208,18 +208,18 @@ export function ReportsView({ projects, teamMembers, assignments }: ReportsViewP
   const totalCost = filteredData.reduce((sum, item) => sum + item.totalCost, 0);
   const rdHours = filteredData.filter(item => item.isRnD).reduce((sum, item) => sum + item.totalHours, 0);
   const rdCost = filteredData.filter(item => item.isRnD).reduce((sum, item) => sum + item.totalCost, 0);
-  const productHours = filteredData.filter(item => !item.isRnD).reduce((sum, item) => sum + item.totalHours, 0);
-  const productCost = filteredData.filter(item => !item.isRnD).reduce((sum, item) => sum + item.totalCost, 0);
+  const nonRdHours = filteredData.filter(item => !item.isRnD).reduce((sum, item) => sum + item.totalHours, 0);
+  const nonRdCost = filteredData.filter(item => !item.isRnD).reduce((sum, item) => sum + item.totalCost, 0);
 
   const exportToCSV = () => {
     const headers = showFinancials && isAdmin
       ? [
           'Project', 'Team Member', 'Team', 'Role', 'Hourly Rate', 'Start Date', 'End Date', 
-          'Allocation %', 'Weekly Hours', 'Total Hours', 'Total Cost', 'Status', 'Type'
+          'Allocation %', 'Weekly Hours', 'Total Hours', 'Total Cost', 'Status', 'R&D'
         ]
       : [
           'Project', 'Team Member', 'Team', 'Role', 'Start Date', 'End Date', 
-          'Allocation %', 'Weekly Hours', 'Total Hours', 'Status', 'Type'
+          'Allocation %', 'Weekly Hours', 'Total Hours', 'Status', 'R&D'
         ];
     
     const rows = filteredData.map(item => {
@@ -248,7 +248,7 @@ export function ReportsView({ projects, teamMembers, assignments }: ReportsViewP
 
       baseRow.push(
         item.projectStatus,
-        item.isRnD ? 'R&D' : 'Product'
+        item.isRnD ? 'Yes' : 'No'
       );
 
       return baseRow;
@@ -365,14 +365,14 @@ export function ReportsView({ projects, teamMembers, assignments }: ReportsViewP
               </div>
 
               <div className="min-w-[120px]">
-                <Select value={typeFilterValue} onValueChange={setTypeFilterValue}>
+                <Select value={rdFilterValue} onValueChange={setRdFilterValue}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Type: All" />
+                    <SelectValue placeholder="R&D: All" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">Type: All</SelectItem>
-                    <SelectItem value="rd">R&D</SelectItem>
-                    <SelectItem value="product">Product</SelectItem>
+                    <SelectItem value="all">R&D: All</SelectItem>
+                    <SelectItem value="yes">R&D: Yes</SelectItem>
+                    <SelectItem value="no">R&D: No</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -445,10 +445,10 @@ export function ReportsView({ projects, teamMembers, assignments }: ReportsViewP
                 )}
               </div>
               <div className="text-center">
-                <div className="text-2xl font-bold text-green-600">{productHours.toFixed(0)}h</div>
-                <div className="text-sm text-muted-foreground">Product Hours</div>
+                <div className="text-2xl font-bold text-green-600">{nonRdHours.toFixed(0)}h</div>
+                <div className="text-sm text-muted-foreground">Non-R&D Hours</div>
                 {showFinancials && isAdmin && (
-                  <div className="text-xs text-green-600 font-medium">${productCost.toFixed(0)}</div>
+                  <div className="text-xs text-green-600 font-medium">${nonRdCost.toFixed(0)}</div>
                 )}
               </div>
             </div>
@@ -479,7 +479,7 @@ export function ReportsView({ projects, teamMembers, assignments }: ReportsViewP
                     <TableHead className="text-right">Total Cost</TableHead>
                   )}
                   <TableHead>Status</TableHead>
-                  <TableHead>Type</TableHead>
+                  <TableHead>R&D</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -509,7 +509,7 @@ export function ReportsView({ projects, teamMembers, assignments }: ReportsViewP
                     </TableCell>
                     <TableCell>
                       <Badge variant={assignment.isRnD ? "default" : "secondary"}>
-                        {assignment.isRnD ? 'R&D' : 'Product'}
+                        {assignment.isRnD ? "Yes" : "No"}
                       </Badge>
                     </TableCell>
                   </TableRow>
