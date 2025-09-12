@@ -75,9 +75,10 @@ export function DraggableProject({
           {...listeners}
           {...attributes}
           className="flex-1 min-w-0 h-full flex items-center px-2 cursor-grab active:cursor-grabbing touch-none"
+          title={project.name} // Add native tooltip as fallback
         >
           <div className="flex-1 min-w-0">
-            <div className="text-white text-xs font-medium truncate">
+            <div className="text-white text-[10px] font-medium leading-tight break-words hyphens-auto" style={{ wordBreak: 'break-word' }}>
               {project.name}
             </div>
           </div>
@@ -98,20 +99,20 @@ export function DraggableProject({
         )}
       </div>
       
-      {/* Tooltip */}
-      <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-popover text-popover-foreground rounded-md shadow-md opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10 whitespace-nowrap">
+      {/* Enhanced Tooltip */}
+      <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-gray-900 text-white rounded-md shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-50 whitespace-nowrap border border-gray-700">
         <div className="text-sm font-medium">{project.name}</div>
-        <div className="text-xs text-muted-foreground mt-1">
+        <div className="text-xs text-gray-300 mt-1">
           {format(new Date(project.start_date), 'MMM d, yyyy')} - {format(new Date(project.end_date), 'MMM d, yyyy')}
         </div>
         {project.description && (
-          <div className="text-xs mt-1 max-w-xs">{project.description}</div>
+          <div className="text-xs mt-1 max-w-xs text-gray-300">{project.description}</div>
         )}
-        <div className="text-xs mt-1">
+        <div className="text-xs mt-1 text-gray-300">
           Value Score: {project.value_score}
         </div>
         {project.allocation && (
-          <div className="text-xs mt-1">
+          <div className="text-xs mt-1 text-gray-300">
             Allocation: {project.allocation}%
           </div>
         )}

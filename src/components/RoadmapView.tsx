@@ -70,7 +70,7 @@ const assignAllocationSlots = (
 
   const SLOTS_PER_MEMBER = 4;
   const SLOT_PERCENTAGE = 25;
-  const BASE_SLOT_HEIGHT = 18; // Reduced from 22px for more compact view
+  const BASE_SLOT_HEIGHT = 24; // Increased from 18px for better text readability
 
   // Prepare projects with temporal and allocation data
   const projectsWithData = projects.map(project => {
@@ -942,7 +942,7 @@ export function RoadmapView({
                       const currentMemberTop = memberTopOffset;
                       memberTopOffset += rowHeight;
                       
-                      const SLOT_HEIGHT = 18; // Reduced from 22px for more compact view
+                      const SLOT_HEIGHT = 24; // Increased from 18px for better text readability
                       const SLOT_PADDING = 1; // Reduced padding
                       
                       const isDropTarget = dragOverData.memberId === member.id;
@@ -1058,7 +1058,7 @@ export function RoadmapView({
                       const currentMemberTop = memberTopOffset;
                       memberTopOffset += rowHeight;
                       
-                      const SLOT_HEIGHT = 18; // Reduced from 22px for more compact view
+                      const SLOT_HEIGHT = 24; // Increased from 18px for better text readability
                       const SLOT_PADDING = 1; // Reduced padding
                       
                       const isDropTarget = dragOverData.memberId === member.id;
