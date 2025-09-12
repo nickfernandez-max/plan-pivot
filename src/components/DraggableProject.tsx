@@ -84,16 +84,18 @@ export function DraggableProject({
           </div>
         </div>
         
-        {/* Edit button - separate from drag handle */}
+        {/* Edit button - separate from drag handle - DEBUGGING: Always visible */}
         {onEdit && !isPreview && (
           <button
             onClick={(e) => {
               console.log('🔧 Edit button clicked for project:', project.name);
+              e.preventDefault();
               e.stopPropagation();
               onEdit();
             }}
-            className="mr-2 p-1 rounded hover:bg-white/20 transition-colors opacity-0 group-hover:opacity-100"
+            className="mr-2 p-1 rounded hover:bg-white/20 transition-colors bg-black/30 border border-white/50"
             title="Edit project"
+            style={{ minWidth: '20px', minHeight: '20px', zIndex: 1000 }}
           >
             <Edit className="h-3 w-3 text-white" />
           </button>
