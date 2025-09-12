@@ -11,9 +11,10 @@ import { DraggableProject } from '@/components/DraggableProject';
 import { DroppableMemberRow } from '@/components/DroppableMemberRow';
 import { EditProjectDialog } from '@/components/EditProjectDialog';
 import { SmoothDragOverlay } from '@/components/SmoothDragOverlay';
-import { Users, ChevronLeft, ChevronRight, Calendar, UserPlus } from 'lucide-react';
+import { Users, ChevronLeft, ChevronRight, Calendar, UserPlus, Plus } from 'lucide-react';
 import { AddProjectAssignmentDialog } from '@/components/AddProjectAssignmentDialog';
 import { AddWorkAssignmentDialog } from '@/components/AddWorkAssignmentDialog';
+import { AddProjectDialog } from '@/components/AddProjectDialog';
 
 interface RoadmapViewProps {
   projects: Project[];
@@ -219,6 +220,7 @@ export function RoadmapView({
   const [editingProject, setEditingProject] = useState<Project | null>(null);
   const [isAssignmentDialogOpen, setIsAssignmentDialogOpen] = useState(false);
   const [isWorkAssignmentDialogOpen, setIsWorkAssignmentDialogOpen] = useState(false);
+  const [isAddProjectDialogOpen, setIsAddProjectDialogOpen] = useState(false);
   const [selectedMember, setSelectedMember] = useState<{ id: string; name: string } | null>(null);
   const [frontProject, setFrontProject] = useState<string | null>(null);
   const [preSelectedMember, setPreSelectedMember] = useState<{ id: string; startDate: string } | null>(null);
@@ -604,6 +606,16 @@ export function RoadmapView({
               Team Roadmap Timeline
             </CardTitle>
             <div className="flex items-center gap-4">
+              {/* Add Project Button */}
+              <Button 
+                variant="default" 
+                size="sm"
+                onClick={() => setIsAddProjectDialogOpen(true)}
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Add Project
+              </Button>
+              
               {/* Add Project Assignment Button */}
               <Button 
                 variant="outline" 
@@ -1228,6 +1240,17 @@ export function RoadmapView({
         onAddWorkAssignment={onAddWorkAssignment}
       />
     )}
+
+    {/* Add Project Dialog */}
+    <AddProjectDialog
+      teams={teams}
+      products={products}
+      selectedTeam={selectedTeam}
+      selectedProduct={selectedProduct}
+      open={isAddProjectDialogOpen}
+      onOpenChange={setIsAddProjectDialogOpen}
+      onAddProject={onAddProject}
+    />
   </DndContext>
   );
 }
