@@ -74,13 +74,6 @@ export function DraggableProject({
           onClick();
         }
       }}
-      onDoubleClick={(e) => {
-        if (!isDragging && onEdit && !isPreview) {
-          e.preventDefault();
-          e.stopPropagation();
-          onEdit();
-        }
-      }}
     >
       <div className="h-full flex items-center overflow-hidden">
         {/* Drag handle area */}
@@ -89,6 +82,17 @@ export function DraggableProject({
           {...attributes}
           className="flex-1 min-w-0 h-full flex items-center px-2 cursor-grab active:cursor-grabbing touch-none"
           title={project.name} // Add native tooltip as fallback
+          onDoubleClick={(e) => {
+            console.log('🔧 Double-click detected on project:', project.name);
+            if (!isDragging && onEdit && !isPreview) {
+              console.log('🔧 Executing onEdit for project:', project.name);
+              e.preventDefault();
+              e.stopPropagation();
+              onEdit();
+            } else {
+              console.log('🔧 Double-click blocked:', { isDragging, hasOnEdit: !!onEdit, isPreview });
+            }
+          }}
         >
           <div className="flex-1 min-w-0">
             <div className="text-white text-[10px] font-medium leading-tight break-words hyphens-auto" style={{ wordBreak: 'break-word' }}>
