@@ -44,6 +44,7 @@ export function ReportsView({ projects, teamMembers, assignments }: ReportsViewP
   const [selectedProjectId, setSelectedProjectId] = useState<string>('');
   const [showProjectDropdown, setShowProjectDropdown] = useState(false);
   const [productFilterValue, setProductFilterValue] = useState<string>('all');
+  const [teamFilterValue, setTeamFilterValue] = useState<string>('all');
   const [statusFilterValue, setStatusFilterValue] = useState<string>('all');
   const [assigneeFilterValue, setAssigneeFilterValue] = useState<string>('all');
   const [typeFilterValue, setTypeFilterValue] = useState<string>('all');
@@ -128,6 +129,9 @@ export function ReportsView({ projects, teamMembers, assignments }: ReportsViewP
       const matchesProduct = productFilterValue === 'all' || 
         project?.products?.some(p => p.id === productFilterValue);
 
+      // Team filter
+      const matchesTeam = teamFilterValue === 'all' || report.teamName === teamFilterValue;
+
       // Status filter  
       const matchesStatus = statusFilterValue === 'all' || report.projectStatus === statusFilterValue;
 
@@ -139,9 +143,9 @@ export function ReportsView({ projects, teamMembers, assignments }: ReportsViewP
         (typeFilterValue === 'rd' && report.isRnD) ||
         (typeFilterValue === 'product' && !report.isRnD);
 
-      return matchesSearch && matchesProjectSelection && matchesProduct && matchesStatus && matchesAssignee && matchesType;
+      return matchesSearch && matchesProjectSelection && matchesProduct && matchesTeam && matchesStatus && matchesAssignee && matchesType;
     });
-  }, [reportData, searchQuery, selectedProjectId, productFilterValue, statusFilterValue, assigneeFilterValue, typeFilterValue, projects]);
+  }, [reportData, searchQuery, selectedProjectId, productFilterValue, teamFilterValue, statusFilterValue, assigneeFilterValue, typeFilterValue, projects]);
 
   // Filtered projects for dropdown
   const filteredProjects = useMemo(() => {
@@ -185,6 +189,16 @@ export function ReportsView({ projects, teamMembers, assignments }: ReportsViewP
     });
     return Array.from(productSet);
   }, [projects]);
+  
+  const availableTeams = useMemo(() => {
+    const teamSet = new Set<string>();
+    reportData.forEach(report => {
+      if (report.teamName && report.teamName !== 'Unknown Team') {
+        teamSet.add(report.teamName);
+      }
+    });
+    return Array.from(teamSet).sort();
+  }, [reportData]);
   
   const availableStatuses = [...new Set(projects.map(p => p.status))];
   const availableAssignees = teamMembers.map(tm => ({ id: tm.id, name: tm.name }));
@@ -328,6 +342,22 @@ export function ReportsView({ projects, teamMembers, assignments }: ReportsViewP
                     {availableProducts.map(product => (
                       <SelectItem key={product.id} value={product.id}>
                         {product.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="min-w-[120px]">
+                <Select value={teamFilterValue} onValueChange={setTeamFilterValue}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Team: All" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Team: All</SelectItem>
+                    {availableTeams.map(team => (
+                      <SelectItem key={team} value={team}>
+                        {team}
                       </SelectItem>
                     ))}
                   </SelectContent>
