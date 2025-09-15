@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -81,6 +81,15 @@ export function ProjectList({
   const [completedBefore, setCompletedBefore] = useState<string>("");
   const [rdFilter, setRdFilter] = useState<'all' | 'rd' | 'non-rd'>('all');
   const { exportToExcel, isExporting } = useProjectExport();
+  
+  // Sync filter states with site-level filter changes
+  useEffect(() => {
+    setSelectedProducts(selectedProduct && selectedProduct !== 'all' ? [selectedProduct] : []);
+  }, [selectedProduct]);
+  
+  useEffect(() => {
+    setSelectedTeams(selectedTeam && selectedTeam !== 'all' ? [selectedTeam] : []);
+  }, [selectedTeam]);
   
   // Dynamic filtering options based on current selections
   const availableProducts = useMemo(() => {
