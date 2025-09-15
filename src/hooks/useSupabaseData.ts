@@ -391,6 +391,43 @@ export function useSupabaseData() {
 
   const deleteTeam = async (id: string) => {
     try {
+      // Check for active team members
+      const { data: members, error: memberError } = await supabase
+        .from('team_members')
+        .select('id, name')
+        .eq('team_id', id);
+      
+      if (memberError) throw memberError;
+      
+      if (members && members.length > 0) {
+        throw new Error(`Cannot delete team: ${members.length} team member(s) still assigned. Please reassign or remove them first.`);
+      }
+      
+      // Check for active projects
+      const { data: projects, error: projectError } = await supabase
+        .from('projects')
+        .select('id, name')
+        .eq('team_id', id);
+        
+      if (projectError) throw projectError;
+      
+      if (projects && projects.length > 0) {
+        throw new Error(`Cannot delete team: ${projects.length} project(s) still assigned. Please reassign them first.`);
+      }
+      
+      // Check for active memberships
+      const { data: memberships, error: membershipError } = await supabase
+        .from('team_memberships')
+        .select('id')
+        .eq('team_id', id);
+        
+      if (membershipError) throw membershipError;
+      
+      if (memberships && memberships.length > 0) {
+        throw new Error(`Cannot delete team: ${memberships.length} team membership(s) still exist. Please remove them first.`);
+      }
+      
+      // Now safe to delete the team
       const { error } = await supabase
         .from('teams')
         .delete()
