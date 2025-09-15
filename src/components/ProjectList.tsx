@@ -634,7 +634,7 @@ export function ProjectList({
                 {/* Teams */}
                 <div className="space-y-3">
                   <label className="text-sm font-medium text-foreground">Teams</label>
-                  <div className="space-y-2 max-h-28 overflow-y-auto pr-2">
+                  <div className="space-y-2 max-h-48 overflow-y-auto pr-2">
                     {teams.map((team) => (
                       <div key={team.id} className="flex items-center space-x-2.5">
                         <Checkbox
