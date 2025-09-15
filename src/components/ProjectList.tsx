@@ -82,15 +82,6 @@ export function ProjectList({
   const [rdFilter, setRdFilter] = useState<'all' | 'rd' | 'non-rd'>('all');
   const { exportToExcel, isExporting } = useProjectExport();
   
-  // Sync filter states with site-level filter changes
-  useEffect(() => {
-    setSelectedProducts(selectedProduct && selectedProduct !== 'all' ? [selectedProduct] : []);
-  }, [selectedProduct]);
-  
-  useEffect(() => {
-    setSelectedTeams(selectedTeam && selectedTeam !== 'all' ? [selectedTeam] : []);
-  }, [selectedTeam]);
-  
   // Dynamic filtering options based on current selections
   const availableProducts = useMemo(() => {
     if (selectedTeams.length === 0) return products;
@@ -114,6 +105,29 @@ export function ProjectList({
       team.product_id && selectedProducts.includes(team.product_id)
     );
   }, [teams, selectedProducts]);
+  
+  // Sync filter states with site-level filter changes after availableProducts/Teams are defined
+  useEffect(() => {
+    if (selectedProduct && selectedProduct !== 'all') {
+      const productToSelect = availableProducts.find(p => p.name === selectedProduct);
+      if (productToSelect) {
+        setSelectedProducts([productToSelect.id]);
+      }
+    } else {
+      setSelectedProducts([]);
+    }
+  }, [selectedProduct, availableProducts]);
+  
+  useEffect(() => {
+    if (selectedTeam && selectedTeam !== 'all') {
+      const teamToSelect = availableTeams.find(t => t.name === selectedTeam);
+      if (teamToSelect) {
+        setSelectedTeams([teamToSelect.id]);
+      }
+    } else {
+      setSelectedTeams([]);
+    }
+  }, [selectedTeam, availableTeams]);
   
   // Initialize date validation with current data
   const { conflictDialog, closeConflictDialog, handleProjectDateChange } = useDateValidation({
@@ -235,8 +249,20 @@ export function ProjectList({
 
   const clearFilters = () => {
     // Reset to site-level filters rather than completely clearing
-    setSelectedProducts(selectedProduct && selectedProduct !== 'all' ? [selectedProduct] : []);
-    setSelectedTeams(selectedTeam && selectedTeam !== 'all' ? [selectedTeam] : []);
+    if (selectedProduct && selectedProduct !== 'all') {
+      const productToSelect = availableProducts.find(p => p.name === selectedProduct);
+      setSelectedProducts(productToSelect ? [productToSelect.id] : []);
+    } else {
+      setSelectedProducts([]);
+    }
+    
+    if (selectedTeam && selectedTeam !== 'all') {
+      const teamToSelect = availableTeams.find(t => t.name === selectedTeam);
+      setSelectedTeams(teamToSelect ? [teamToSelect.id] : []);
+    } else {
+      setSelectedTeams([]);
+    }
+    
     setSelectedStatuses([]);
     setCompletedAfter("");
     setCompletedBefore("");
