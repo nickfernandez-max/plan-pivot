@@ -9,12 +9,13 @@ import { Upload, FileSpreadsheet, AlertCircle, CheckCircle } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast';
 import * as XLSX from 'xlsx';
 import { supabase } from '@/integrations/supabase/client';
-import type { Role, Team, TeamMember } from '@/types/roadmap';
+import type { Role, Team, TeamMember, Product } from '@/types/roadmap';
 
 interface ImportRow {
   positionId: string;
   name: string;
   jobTitle: string;
+  product: string;
   subTeam: string;
   status: 'pending' | 'success' | 'error';
   error?: string;
@@ -23,10 +24,11 @@ interface ImportRow {
 interface DataImportDialogProps {
   roles: Role[];
   teams: Team[];
+  products: Product[];
   onImportComplete: () => void;
 }
 
-export function DataImportDialog({ roles, teams, onImportComplete }: DataImportDialogProps) {
+export function DataImportDialog({ roles, teams, products, onImportComplete }: DataImportDialogProps) {
   const [open, setOpen] = useState(false);
   const [file, setFile] = useState<File | null>(null);
   const [importData, setImportData] = useState<ImportRow[]>([]);
@@ -50,10 +52,11 @@ export function DataImportDialog({ roles, teams, onImportComplete }: DataImportD
       const positionIdIndex = headers.findIndex(h => h?.toLowerCase().includes('position'));
       const nameIndex = headers.findIndex(h => h?.toLowerCase().includes('name'));
       const jobTitleIndex = headers.findIndex(h => h?.toLowerCase().includes('job') || h?.toLowerCase().includes('title'));
+      const productIndex = headers.findIndex(h => h?.toLowerCase().includes('product'));
       const subTeamIndex = headers.findIndex(h => h?.toLowerCase().includes('team'));
 
-      if (positionIdIndex === -1 || nameIndex === -1 || jobTitleIndex === -1 || subTeamIndex === -1) {
-        throw new Error('Required columns not found. Expected: Position ID, Name, Job Title, Sub-Team');
+      if (positionIdIndex === -1 || nameIndex === -1 || jobTitleIndex === -1 || productIndex === -1 || subTeamIndex === -1) {
+        throw new Error('Required columns not found. Expected: Position ID, Name, Job Title, Product, Sub-Team');
       }
 
       const parsedData: ImportRow[] = [];
@@ -65,6 +68,7 @@ export function DataImportDialog({ roles, teams, onImportComplete }: DataImportD
           positionId: String(row[positionIdIndex]).trim(),
           name: String(row[nameIndex]).trim(),
           jobTitle: String(row[jobTitleIndex] || '').trim(),
+          product: String(row[productIndex] || '').trim(),
           subTeam: String(row[subTeamIndex] || '').trim(),
           status: 'pending'
         });
@@ -93,10 +97,11 @@ export function DataImportDialog({ roles, teams, onImportComplete }: DataImportD
     try {
       // Create missing roles and teams first
       const uniqueJobTitles = [...new Set(importData.map(row => row.jobTitle).filter(Boolean))];
-      const uniqueSubTeams = [...new Set(importData.map(row => row.subTeam).filter(Boolean))];
+      const uniqueTeamProducts = [...new Set(importData.map(row => `${row.product}|${row.subTeam}`).filter(combo => combo.split('|')[0] && combo.split('|')[1]))];
 
       const roleMap = new Map(roles.map(r => [r.name.toLowerCase(), r]));
       const teamMap = new Map(teams.map(t => [t.name.toLowerCase(), t]));
+      const productMap = new Map(products.map(p => [p.name.toLowerCase(), p]));
 
       // Create missing roles
       for (const jobTitle of uniqueJobTitles) {
@@ -113,20 +118,20 @@ export function DataImportDialog({ roles, teams, onImportComplete }: DataImportD
         }
       }
 
-      // Create missing teams (assign to first product for now)
-      const { data: products } = await supabase.from('products').select('id').limit(1);
-      const defaultProductId = products?.[0]?.id;
-
-      for (const subTeam of uniqueSubTeams) {
-        if (!teamMap.has(subTeam.toLowerCase()) && defaultProductId) {
+      // Create missing teams with correct product assignment
+      for (const teamProduct of uniqueTeamProducts) {
+        const [productName, teamName] = teamProduct.split('|');
+        const product = productMap.get(productName.toLowerCase());
+        
+        if (!teamMap.has(teamName.toLowerCase()) && product) {
           const { data: newTeam, error } = await supabase
             .from('teams')
-            .insert({ name: subTeam, product_id: defaultProductId })
+            .insert({ name: teamName, product_id: product.id })
             .select()
             .single();
           
           if (!error && newTeam) {
-            teamMap.set(subTeam.toLowerCase(), newTeam);
+            teamMap.set(teamName.toLowerCase(), newTeam);
           }
         }
       }
@@ -151,10 +156,23 @@ export function DataImportDialog({ roles, teams, onImportComplete }: DataImportD
 
           const role = roleMap.get(row.jobTitle.toLowerCase());
           const team = teamMap.get(row.subTeam.toLowerCase());
+          const product = productMap.get(row.product.toLowerCase());
 
-          if (!role || !team) {
+          if (!role) {
             row.status = 'error';
-            row.error = 'Role or team not found';
+            row.error = 'Role not found';
+            continue;
+          }
+
+          if (!product) {
+            row.status = 'error';
+            row.error = 'Product not found';
+            continue;
+          }
+
+          if (!team) {
+            row.status = 'error';
+            row.error = 'Team not found';
             continue;
           }
 
@@ -287,6 +305,7 @@ export function DataImportDialog({ roles, teams, onImportComplete }: DataImportD
                       <TableHead>Position ID</TableHead>
                       <TableHead>Name</TableHead>
                       <TableHead>Job Title</TableHead>
+                      <TableHead>Product</TableHead>
                       <TableHead>Sub-Team</TableHead>
                       <TableHead>Status</TableHead>
                     </TableRow>
@@ -297,6 +316,7 @@ export function DataImportDialog({ roles, teams, onImportComplete }: DataImportD
                         <TableCell>{row.positionId}</TableCell>
                         <TableCell>{row.name}</TableCell>
                         <TableCell>{row.jobTitle}</TableCell>
+                        <TableCell>{row.product}</TableCell>
                         <TableCell>{row.subTeam}</TableCell>
                         <TableCell>
                           {row.status === 'pending' && (

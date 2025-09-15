@@ -476,6 +476,7 @@ export default function RoadmapApp() {
             <FinancialsView 
               roles={roles} 
               teams={teams}
+              products={products}
               onUpdateRole={updateRole}
               onAddRole={handleAddRole}
               onDataImported={() => {

@@ -15,12 +15,13 @@ import { Settings, Lock, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
 interface FinancialsViewProps {
   roles: Role[];
   teams: any[];
+  products: any[];
   onUpdateRole: (id: string, updates: Partial<Role>) => Promise<any>;
   onAddRole: (role: Omit<Role, 'id' | 'created_at' | 'updated_at'>) => Promise<Role>;
   onDataImported: () => void;
 }
 
-export function FinancialsView({ roles, teams, onUpdateRole, onAddRole, onDataImported }: FinancialsViewProps) {
+export function FinancialsView({ roles, teams, products, onUpdateRole, onAddRole, onDataImported }: FinancialsViewProps) {
   const { toast } = useToast();
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -137,6 +138,7 @@ export function FinancialsView({ roles, teams, onUpdateRole, onAddRole, onDataIm
           <DataImportDialog 
             roles={roles}
             teams={teams}
+            products={products}
             onImportComplete={onDataImported}
           />
         </CardContent>
