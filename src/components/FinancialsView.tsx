@@ -7,17 +7,20 @@ import { Button } from '@/components/ui/button';
 import { EditRoleDialog } from '@/components/EditRoleDialog';
 import { AddRoleDialog } from '@/components/AddRoleDialog';
 import { AddUserDialog } from '@/components/AddUserDialog';
+import { DataImportDialog } from '@/components/DataImportDialog';
 import { useToast } from '@/hooks/use-toast';
 import { Role } from '@/types/roadmap';
 import { Settings, Lock, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
 
 interface FinancialsViewProps {
   roles: Role[];
+  teams: any[];
   onUpdateRole: (id: string, updates: Partial<Role>) => Promise<any>;
   onAddRole: (role: Omit<Role, 'id' | 'created_at' | 'updated_at'>) => Promise<Role>;
+  onDataImported: () => void;
 }
 
-export function FinancialsView({ roles, onUpdateRole, onAddRole }: FinancialsViewProps) {
+export function FinancialsView({ roles, teams, onUpdateRole, onAddRole, onDataImported }: FinancialsViewProps) {
   const { toast } = useToast();
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -123,6 +126,22 @@ export function FinancialsView({ roles, onUpdateRole, onAddRole }: FinancialsVie
 
   return (
     <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <CardTitle>Data Import</CardTitle>
+          <p className="text-sm text-muted-foreground">
+            Bulk import employee data from Excel files.
+          </p>
+        </CardHeader>
+        <CardContent>
+          <DataImportDialog 
+            roles={roles}
+            teams={teams}
+            onImportComplete={onDataImported}
+          />
+        </CardContent>
+      </Card>
+      
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
           <div>

@@ -80,6 +80,7 @@ export default function RoadmapApp() {
     addWorkAssignment,
     updateWorkAssignment,
     deleteWorkAssignment,
+    refetch,
   } = useSupabaseData();
 
   // Load user preferences for default filters
@@ -474,8 +475,13 @@ export default function RoadmapApp() {
           <TabsContent value="financials">
             <FinancialsView 
               roles={roles} 
+              teams={teams}
               onUpdateRole={updateRole}
               onAddRole={handleAddRole}
+              onDataImported={() => {
+                // Refresh data after import
+                refetch();
+              }}
             />
           </TabsContent>
         </Tabs>

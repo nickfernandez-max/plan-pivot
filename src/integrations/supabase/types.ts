@@ -246,6 +246,7 @@ export type Database = {
           created_at: string
           id: string
           name: string
+          position_id: string | null
           role_id: string
           start_date: string
           team_id: string
@@ -255,6 +256,7 @@ export type Database = {
           created_at?: string
           id?: string
           name: string
+          position_id?: string | null
           role_id: string
           start_date: string
           team_id: string
@@ -264,6 +266,7 @@ export type Database = {
           created_at?: string
           id?: string
           name?: string
+          position_id?: string | null
           role_id?: string
           start_date?: string
           team_id?: string
