@@ -109,25 +109,21 @@ export function ProjectList({
   // Sync filter states with site-level filter changes after availableProducts/Teams are defined
   useEffect(() => {
     if (selectedProduct && selectedProduct !== 'all') {
-      const productToSelect = availableProducts.find(p => p.name === selectedProduct);
-      if (productToSelect) {
+      const productToSelect = products.find(p => p.name === selectedProduct);
+      if (productToSelect && !selectedProducts.includes(productToSelect.id)) {
         setSelectedProducts([productToSelect.id]);
       }
-    } else {
-      setSelectedProducts([]);
     }
-  }, [selectedProduct, availableProducts]);
+  }, [selectedProduct, products]);
   
   useEffect(() => {
     if (selectedTeam && selectedTeam !== 'all') {
-      const teamToSelect = availableTeams.find(t => t.name === selectedTeam);
-      if (teamToSelect) {
+      const teamToSelect = teams.find(t => t.name === selectedTeam);
+      if (teamToSelect && !selectedTeams.includes(teamToSelect.id)) {
         setSelectedTeams([teamToSelect.id]);
       }
-    } else {
-      setSelectedTeams([]);
     }
-  }, [selectedTeam, availableTeams]);
+  }, [selectedTeam, teams]);
   
   // Initialize date validation with current data
   const { conflictDialog, closeConflictDialog, handleProjectDateChange } = useDateValidation({
