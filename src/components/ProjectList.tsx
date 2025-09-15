@@ -9,8 +9,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
-import { Plus, Edit, Save, X, ChevronUp, ChevronDown, ExternalLink, Download } from "lucide-react";
+import { Plus, Edit, Save, X, ChevronUp, ChevronDown, ExternalLink, Download, Filter, FilterX } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -62,6 +63,15 @@ export function ProjectList({
   const [editingProject, setEditingProject] = useState<Project | null>(null);
   const [sortField, setSortField] = useState<SortField>('start_date');
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
+  
+  // Filter states
+  const [showFilters, setShowFilters] = useState(false);
+  const [selectedProducts, setSelectedProducts] = useState<string[]>([]);
+  const [selectedTeams, setSelectedTeams] = useState<string[]>([]);
+  const [selectedStatuses, setSelectedStatuses] = useState<ProjectStatus[]>([]);
+  const [completedAfter, setCompletedAfter] = useState<string>("");
+  const [completedBefore, setCompletedBefore] = useState<string>("");
+  const [rdFilter, setRdFilter] = useState<'all' | 'rd' | 'non-rd'>('all');
   const { exportToExcel, isExporting } = useProjectExport();
   
   // Initialize date validation with current data
@@ -106,7 +116,51 @@ export function ProjectList({
     }
   };
 
-  const sortedProjects = [...projects].sort((a, b) => {
+  // Apply filters first
+  const filteredProjects = projects.filter((project) => {
+    // Product filter
+    if (selectedProducts.length > 0) {
+      const projectProductIds = project.products?.map(p => p.id) || [];
+      if (!selectedProducts.some(id => projectProductIds.includes(id))) {
+        return false;
+      }
+    }
+    
+    // Team filter
+    if (selectedTeams.length > 0 && !selectedTeams.includes(project.team_id)) {
+      return false;
+    }
+    
+    // Status filter
+    if (selectedStatuses.length > 0 && !selectedStatuses.includes(project.status)) {
+      return false;
+    }
+    
+    // Completion timeframe filter (only applies to Complete projects)
+    if ((completedAfter || completedBefore) && project.status === 'Complete') {
+      const endDate = new Date(project.end_date);
+      
+      if (completedAfter && endDate < new Date(completedAfter)) {
+        return false;
+      }
+      
+      if (completedBefore && endDate > new Date(completedBefore)) {
+        return false;
+      }
+    }
+    
+    // R&D filter
+    if (rdFilter === 'rd' && !project.is_rd) {
+      return false;
+    }
+    if (rdFilter === 'non-rd' && project.is_rd) {
+      return false;
+    }
+    
+    return true;
+  });
+
+  const sortedProjects = [...filteredProjects].sort((a, b) => {
     let aValue: any;
     let bValue: any;
     
@@ -137,6 +191,18 @@ export function ProjectList({
     
     return 0;
   });
+
+  const clearFilters = () => {
+    setSelectedProducts([]);
+    setSelectedTeams([]);
+    setSelectedStatuses([]);
+    setCompletedAfter("");
+    setCompletedBefore("");
+    setRdFilter('all');
+  };
+
+  const hasActiveFilters = selectedProducts.length > 0 || selectedTeams.length > 0 || 
+    selectedStatuses.length > 0 || completedAfter || completedBefore || rdFilter !== 'all';
 
   const getSortIcon = (field: SortField) => {
     if (sortField !== field) return null;
@@ -214,10 +280,18 @@ export function ProjectList({
           <p className="text-muted-foreground">Manage your project portfolio</p>
         </div>
         <div className="flex gap-2">
+          <Button
+            variant="outline"
+            onClick={() => setShowFilters(!showFilters)}
+            className={hasActiveFilters ? "bg-primary text-primary-foreground" : ""}
+          >
+            <Filter className="w-4 h-4 mr-2" />
+            Filters {hasActiveFilters && `(${filteredProjects.length}/${projects.length})`}
+          </Button>
           <Button 
             variant="outline" 
-            onClick={() => exportToExcel(projects)}
-            disabled={isExporting || projects.length === 0}
+            onClick={() => exportToExcel(sortedProjects)}
+            disabled={isExporting || sortedProjects.length === 0}
           >
             <Download className="w-4 h-4 mr-2" />
             {isExporting ? 'Exporting...' : 'Export to Excel'}
@@ -498,9 +572,177 @@ export function ProjectList({
         </div>
       </div>
 
+      {/* Filters Panel */}
+      {showFilters && (
+        <Card className="mb-4">
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-lg">Filters</CardTitle>
+              <div className="flex gap-2">
+                {hasActiveFilters && (
+                  <Button variant="outline" size="sm" onClick={clearFilters}>
+                    <FilterX className="w-4 h-4 mr-2" />
+                    Clear All
+                  </Button>
+                )}
+                <Button variant="ghost" size="sm" onClick={() => setShowFilters(false)}>
+                  <X className="w-4 h-4" />
+                </Button>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              
+              {/* Product Filter */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Products</label>
+                <div className="space-y-2 max-h-32 overflow-y-auto">
+                  {products.map((product) => (
+                    <div key={product.id} className="flex items-center space-x-2">
+                      <Checkbox
+                        id={`product-${product.id}`}
+                        checked={selectedProducts.includes(product.id)}
+                        onCheckedChange={(checked) => {
+                          if (checked) {
+                            setSelectedProducts([...selectedProducts, product.id]);
+                          } else {
+                            setSelectedProducts(selectedProducts.filter(id => id !== product.id));
+                          }
+                        }}
+                      />
+                      <label 
+                        htmlFor={`product-${product.id}`}
+                        className="text-sm cursor-pointer"
+                      >
+                        {product.name}
+                      </label>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Team Filter */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Teams</label>
+                <div className="space-y-2 max-h-32 overflow-y-auto">
+                  {teams.map((team) => (
+                    <div key={team.id} className="flex items-center space-x-2">
+                      <Checkbox
+                        id={`team-${team.id}`}
+                        checked={selectedTeams.includes(team.id)}
+                        onCheckedChange={(checked) => {
+                          if (checked) {
+                            setSelectedTeams([...selectedTeams, team.id]);
+                          } else {
+                            setSelectedTeams(selectedTeams.filter(id => id !== team.id));
+                          }
+                        }}
+                      />
+                      <label 
+                        htmlFor={`team-${team.id}`}
+                        className="text-sm cursor-pointer"
+                      >
+                        {team.name}
+                      </label>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Status Filter */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Status</label>
+                <div className="space-y-2">
+                  {['Logged', 'Planned', 'In Progress', 'Blocked', 'On Hold', 'Complete'].map((status) => (
+                    <div key={status} className="flex items-center space-x-2">
+                      <Checkbox
+                        id={`status-${status}`}
+                        checked={selectedStatuses.includes(status as ProjectStatus)}
+                        onCheckedChange={(checked) => {
+                          if (checked) {
+                            setSelectedStatuses([...selectedStatuses, status as ProjectStatus]);
+                          } else {
+                            setSelectedStatuses(selectedStatuses.filter(s => s !== status));
+                          }
+                        }}
+                      />
+                      <label 
+                        htmlFor={`status-${status}`}
+                        className="text-sm cursor-pointer"
+                      >
+                        {status}
+                      </label>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2 border-t">
+              
+              {/* Completion Timeframe */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Completion Timeframe</label>
+                <div className="space-y-2">
+                  <div>
+                    <label className="text-xs text-muted-foreground">Completed After</label>
+                    <Input
+                      type="date"
+                      value={completedAfter}
+                      onChange={(e) => setCompletedAfter(e.target.value)}
+                      className="text-sm"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs text-muted-foreground">Completed Before</label>
+                    <Input
+                      type="date"
+                      value={completedBefore}
+                      onChange={(e) => setCompletedBefore(e.target.value)}
+                      className="text-sm"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* R&D Filter */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium">R&D Status</label>
+                <Select value={rdFilter} onValueChange={(value: 'all' | 'rd' | 'non-rd') => setRdFilter(value)}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Projects</SelectItem>
+                    <SelectItem value="rd">R&D Only</SelectItem>
+                    <SelectItem value="non-rd">Non-R&D Only</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Results Summary */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Results</label>
+                <div className="text-sm text-muted-foreground">
+                  Showing {sortedProjects.length} of {projects.length} projects
+                  {hasActiveFilters && (
+                    <div className="text-xs mt-1">
+                      {filteredProjects.length !== projects.length && `Filtered: ${projects.length - filteredProjects.length} hidden`}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+            </div>
+          </CardContent>
+        </Card>
+      )}
+      
       <Card>
         <CardContent className="p-0">
-          {projects.length === 0 ? (
+          {sortedProjects.length === 0 ? (
             <div className="text-center py-8">
               <p className="text-muted-foreground mb-4">No projects found</p>
               <Button onClick={() => setIsAddDialogOpen(true)}>
