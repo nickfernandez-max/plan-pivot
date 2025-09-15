@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -66,6 +66,17 @@ export function EditTeamMemberDialog({
     console.log('Active memberships:', active, 'for member:', member?.name);
     return active;
   }, [memberMemberships, member?.name]);
+
+  // Auto-select the most recent active membership when dialog opens
+  useEffect(() => {
+    if (isOpen && activeMemberships.length > 0 && !selectedMembershipId) {
+      // Select the most recent active membership (latest start_month)
+      const mostRecentMembership = activeMemberships.reduce((latest, current) => 
+        current.start_month > latest.start_month ? current : latest
+      );
+      setSelectedMembershipId(mostRecentMembership.id);
+    }
+  }, [isOpen, activeMemberships, selectedMembershipId]);
 
   const resetForm = () => {
     setSelectedMembershipId('');
