@@ -250,14 +250,14 @@ export function ProjectList({
   const clearFilters = () => {
     // Reset to site-level filters rather than completely clearing
     if (selectedProduct && selectedProduct !== 'all') {
-      const productToSelect = availableProducts.find(p => p.name === selectedProduct);
+      const productToSelect = products.find(p => p.name === selectedProduct);
       setSelectedProducts(productToSelect ? [productToSelect.id] : []);
     } else {
       setSelectedProducts([]);
     }
     
     if (selectedTeam && selectedTeam !== 'all') {
-      const teamToSelect = availableTeams.find(t => t.name === selectedTeam);
+      const teamToSelect = teams.find(t => t.name === selectedTeam);
       setSelectedTeams(teamToSelect ? [teamToSelect.id] : []);
     } else {
       setSelectedTeams([]);
