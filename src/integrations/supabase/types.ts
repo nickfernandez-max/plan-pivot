@@ -369,6 +369,8 @@ export type Database = {
       }
       teams: {
         Row: {
+          archived: boolean
+          archived_at: string | null
           color: string | null
           created_at: string
           description: string | null
@@ -379,6 +381,8 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          archived?: boolean
+          archived_at?: string | null
           color?: string | null
           created_at?: string
           description?: string | null
@@ -389,6 +393,8 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          archived?: boolean
+          archived_at?: string | null
           color?: string | null
           created_at?: string
           description?: string | null
