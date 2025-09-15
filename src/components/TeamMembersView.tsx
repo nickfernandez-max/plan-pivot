@@ -32,6 +32,7 @@ interface TeamMembersViewProps {
   onUpdateProduct: (id: string, updates: Partial<Product>) => void;
   onAddTeam: (team: Omit<Team, 'id' | 'created_at' | 'updated_at'>) => void;
   onUpdateTeam: (id: string, updates: Partial<Team>) => Promise<void>;
+  onDeleteTeam?: (id: string) => Promise<void>;
   onAddMembership: (membership: Omit<TeamMembership, 'id' | 'created_at' | 'updated_at'>) => Promise<any>;
   onUpdateMembership: (id: string, updates: Partial<TeamMembership>) => Promise<any>;
   onDeleteMembership: (id: string) => Promise<any> | void;
@@ -65,6 +66,7 @@ export function TeamMembersView({
   onUpdateProduct,
   onAddTeam,
   onUpdateTeam,
+  onDeleteTeam,
   onAddMembership,
   onUpdateMembership,
   onDeleteMembership,
@@ -607,13 +609,14 @@ export function TeamMembersView({
           onAddRole={onAddRole}
         />
       
-      <EditTeamDialog
-        team={editingTeam}
-        open={!!editingTeam}
-        onOpenChange={(open) => !open && setEditingTeam(null)}
-        onUpdateTeam={onUpdateTeam}
-        products={products}
-      />
+          <EditTeamDialog
+            team={editingTeam}
+            open={!!editingTeam}
+            onOpenChange={(open) => !open && setEditingTeam(null)}
+            onUpdateTeam={onUpdateTeam}
+            onDeleteTeam={onDeleteTeam}
+            products={products}
+          />
       
       <EditProductDialog
         product={editingProduct}

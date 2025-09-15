@@ -12,15 +12,17 @@ interface EditTeamDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onUpdateTeam: (id: string, updates: Partial<Team>) => Promise<void>;
+  onDeleteTeam?: (id: string) => Promise<void>;
   products: Product[];
 }
 
-export function EditTeamDialog({ team, open, onOpenChange, onUpdateTeam, products }: EditTeamDialogProps) {
+export function EditTeamDialog({ team, open, onOpenChange, onUpdateTeam, onDeleteTeam, products }: EditTeamDialogProps) {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [productId, setProductId] = useState('none');
   const [idealSize, setIdealSize] = useState('1');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     if (team) {
@@ -48,6 +50,25 @@ export function EditTeamDialog({ team, open, onOpenChange, onUpdateTeam, product
       console.error('Error updating team:', error);
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!team || !onDeleteTeam) return;
+    
+    if (!confirm(`Are you sure you want to delete the team "${team.name}"? This action cannot be undone.`)) {
+      return;
+    }
+
+    setIsDeleting(true);
+    try {
+      await onDeleteTeam(team.id);
+      onOpenChange(false);
+    } catch (error) {
+      console.error('Error deleting team:', error);
+      alert('Failed to delete team. It may have associated members or projects.');
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -112,13 +133,25 @@ export function EditTeamDialog({ team, open, onOpenChange, onUpdateTeam, product
             />
           </div>
           
-          <div className="flex justify-end space-x-2">
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-              Cancel
-            </Button>
-            <Button type="submit" disabled={isSubmitting || !name.trim()}>
-              {isSubmitting ? 'Updating...' : 'Update Team'}
-            </Button>
+          <div className="flex justify-between">
+            {onDeleteTeam && (
+              <Button 
+                type="button" 
+                variant="destructive" 
+                onClick={handleDelete}
+                disabled={isDeleting || isSubmitting}
+              >
+                {isDeleting ? 'Deleting...' : 'Delete Team'}
+              </Button>
+            )}
+            <div className="flex space-x-2 ml-auto">
+              <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+                Cancel
+              </Button>
+              <Button type="submit" disabled={isSubmitting || !name.trim()}>
+                {isSubmitting ? 'Updating...' : 'Update Team'}
+              </Button>
+            </div>
           </div>
         </form>
       </DialogContent>

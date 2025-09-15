@@ -389,6 +389,22 @@ export function useSupabaseData() {
     }
   };
 
+  const deleteTeam = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('teams')
+        .delete()
+        .eq('id', id);
+      
+      if (error) throw error;
+      
+      setTeams(prev => prev.filter(team => team.id !== id));
+    } catch (err) {
+      console.error('Error deleting team:', err);
+      throw err;
+    }
+  };
+
   const updateProjectProducts = async (projectId: string, productIds: string[]) => {
     // Delete existing product assignments
     const { error: deleteError } = await supabase
@@ -754,6 +770,7 @@ export function useSupabaseData() {
     updateRole,
     addTeam,
     updateTeam,
+    deleteTeam,
     updateProjectAssignees,
     updateProjectAssignments,
     addProduct,
