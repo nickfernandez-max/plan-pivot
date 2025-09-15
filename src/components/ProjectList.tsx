@@ -574,15 +574,22 @@ export function ProjectList({
 
       {/* Filters Panel */}
       {showFilters && (
-        <Card className="mb-4">
-          <CardHeader className="pb-3">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-lg">Filters</CardTitle>
-              <div className="flex gap-2">
+        <Card className="mb-4 border border-border/50">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-3">
+                <h3 className="font-semibold text-base">Filters</h3>
+                {hasActiveFilters && (
+                  <Badge variant="secondary" className="text-xs">
+                    {sortedProjects.length} of {projects.length} projects
+                  </Badge>
+                )}
+              </div>
+              <div className="flex items-center gap-2">
                 {hasActiveFilters && (
                   <Button variant="outline" size="sm" onClick={clearFilters}>
-                    <FilterX className="w-4 h-4 mr-2" />
-                    Clear All
+                    <FilterX className="w-3 h-3 mr-1.5" />
+                    Clear
                   </Button>
                 )}
                 <Button variant="ghost" size="sm" onClick={() => setShowFilters(false)}>
@@ -590,151 +597,178 @@ export function ProjectList({
                 </Button>
               </div>
             </div>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              
-              {/* Product Filter */}
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Products</label>
-                <div className="space-y-2 max-h-32 overflow-y-auto">
-                  {products.map((product) => (
-                    <div key={product.id} className="flex items-center space-x-2">
-                      <Checkbox
-                        id={`product-${product.id}`}
-                        checked={selectedProducts.includes(product.id)}
-                        onCheckedChange={(checked) => {
-                          if (checked) {
-                            setSelectedProducts([...selectedProducts, product.id]);
-                          } else {
-                            setSelectedProducts(selectedProducts.filter(id => id !== product.id));
-                          }
-                        }}
-                      />
-                      <label 
-                        htmlFor={`product-${product.id}`}
-                        className="text-sm cursor-pointer"
-                      >
-                        {product.name}
-                      </label>
-                    </div>
-                  ))}
-                </div>
-              </div>
 
-              {/* Team Filter */}
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Teams</label>
-                <div className="space-y-2 max-h-32 overflow-y-auto">
-                  {teams.map((team) => (
-                    <div key={team.id} className="flex items-center space-x-2">
-                      <Checkbox
-                        id={`team-${team.id}`}
-                        checked={selectedTeams.includes(team.id)}
-                        onCheckedChange={(checked) => {
-                          if (checked) {
-                            setSelectedTeams([...selectedTeams, team.id]);
-                          } else {
-                            setSelectedTeams(selectedTeams.filter(id => id !== team.id));
-                          }
-                        }}
-                      />
-                      <label 
-                        htmlFor={`team-${team.id}`}
-                        className="text-sm cursor-pointer"
-                      >
-                        {team.name}
-                      </label>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Status Filter */}
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Status</label>
-                <div className="space-y-2">
-                  {['Logged', 'Planned', 'In Progress', 'Blocked', 'On Hold', 'Complete'].map((status) => (
-                    <div key={status} className="flex items-center space-x-2">
-                      <Checkbox
-                        id={`status-${status}`}
-                        checked={selectedStatuses.includes(status as ProjectStatus)}
-                        onCheckedChange={(checked) => {
-                          if (checked) {
-                            setSelectedStatuses([...selectedStatuses, status as ProjectStatus]);
-                          } else {
-                            setSelectedStatuses(selectedStatuses.filter(s => s !== status));
-                          }
-                        }}
-                      />
-                      <label 
-                        htmlFor={`status-${status}`}
-                        className="text-sm cursor-pointer"
-                      >
-                        {status}
-                      </label>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2 border-t">
-              
-              {/* Completion Timeframe */}
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Completion Timeframe</label>
-                <div className="space-y-2">
-                  <div>
-                    <label className="text-xs text-muted-foreground">Completed After</label>
-                    <Input
-                      type="date"
-                      value={completedAfter}
-                      onChange={(e) => setCompletedAfter(e.target.value)}
-                      className="text-sm"
-                    />
+            <div className="space-y-6">
+              {/* Top Row - Main Filters */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                
+                {/* Products */}
+                <div className="space-y-3">
+                  <label className="text-sm font-medium text-foreground">Products</label>
+                  <div className="space-y-2 max-h-28 overflow-y-auto pr-2">
+                    {products.map((product) => (
+                      <div key={product.id} className="flex items-center space-x-2.5">
+                        <Checkbox
+                          id={`product-${product.id}`}
+                          checked={selectedProducts.includes(product.id)}
+                          onCheckedChange={(checked) => {
+                            if (checked) {
+                              setSelectedProducts([...selectedProducts, product.id]);
+                            } else {
+                              setSelectedProducts(selectedProducts.filter(id => id !== product.id));
+                            }
+                          }}
+                          className="data-[state=checked]:bg-primary data-[state=checked]:border-primary"
+                        />
+                        <label 
+                          htmlFor={`product-${product.id}`}
+                          className="text-sm cursor-pointer text-foreground hover:text-primary transition-colors"
+                        >
+                          {product.name}
+                        </label>
+                      </div>
+                    ))}
                   </div>
-                  <div>
-                    <label className="text-xs text-muted-foreground">Completed Before</label>
-                    <Input
-                      type="date"
-                      value={completedBefore}
-                      onChange={(e) => setCompletedBefore(e.target.value)}
-                      className="text-sm"
-                    />
+                </div>
+
+                {/* Teams */}
+                <div className="space-y-3">
+                  <label className="text-sm font-medium text-foreground">Teams</label>
+                  <div className="space-y-2 max-h-28 overflow-y-auto pr-2">
+                    {teams.map((team) => (
+                      <div key={team.id} className="flex items-center space-x-2.5">
+                        <Checkbox
+                          id={`team-${team.id}`}
+                          checked={selectedTeams.includes(team.id)}
+                          onCheckedChange={(checked) => {
+                            if (checked) {
+                              setSelectedTeams([...selectedTeams, team.id]);
+                            } else {
+                              setSelectedTeams(selectedTeams.filter(id => id !== team.id));
+                            }
+                          }}
+                          className="data-[state=checked]:bg-primary data-[state=checked]:border-primary"
+                        />
+                        <label 
+                          htmlFor={`team-${team.id}`}
+                          className="text-sm cursor-pointer text-foreground hover:text-primary transition-colors"
+                        >
+                          {team.name}
+                        </label>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Status */}
+                <div className="space-y-3">
+                  <label className="text-sm font-medium text-foreground">Status</label>
+                  <div className="grid grid-cols-2 gap-2">
+                    {['Logged', 'Planned', 'In Progress', 'Blocked', 'On Hold', 'Complete'].map((status) => (
+                      <div key={status} className="flex items-center space-x-2">
+                        <Checkbox
+                          id={`status-${status}`}
+                          checked={selectedStatuses.includes(status as ProjectStatus)}
+                          onCheckedChange={(checked) => {
+                            if (checked) {
+                              setSelectedStatuses([...selectedStatuses, status as ProjectStatus]);
+                            } else {
+                              setSelectedStatuses(selectedStatuses.filter(s => s !== status));
+                            }
+                          }}
+                          className="data-[state=checked]:bg-primary data-[state=checked]:border-primary"
+                        />
+                        <label 
+                          htmlFor={`status-${status}`}
+                          className="text-xs cursor-pointer text-foreground hover:text-primary transition-colors"
+                        >
+                          {status}
+                        </label>
+                      </div>
+                    ))}
                   </div>
                 </div>
               </div>
 
-              {/* R&D Filter */}
-              <div className="space-y-2">
-                <label className="text-sm font-medium">R&D Status</label>
-                <Select value={rdFilter} onValueChange={(value: 'all' | 'rd' | 'non-rd') => setRdFilter(value)}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Projects</SelectItem>
-                    <SelectItem value="rd">R&D Only</SelectItem>
-                    <SelectItem value="non-rd">Non-R&D Only</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+              {/* Bottom Row - Additional Filters */}
+              <div className="pt-4 border-t border-border/50">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  
+                  {/* Completion Timeframe */}
+                  <div className="space-y-3">
+                    <label className="text-sm font-medium text-foreground">Completion Timeframe</label>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-1.5">
+                        <label className="text-xs text-muted-foreground">After</label>
+                        <Input
+                          type="date"
+                          value={completedAfter}
+                          onChange={(e) => setCompletedAfter(e.target.value)}
+                          className="h-8 text-sm"
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <label className="text-xs text-muted-foreground">Before</label>
+                        <Input
+                          type="date"
+                          value={completedBefore}
+                          onChange={(e) => setCompletedBefore(e.target.value)}
+                          className="h-8 text-sm"
+                        />
+                      </div>
+                    </div>
+                  </div>
 
-              {/* Results Summary */}
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Results</label>
-                <div className="text-sm text-muted-foreground">
-                  Showing {sortedProjects.length} of {projects.length} projects
+                  {/* R&D Status */}
+                  <div className="space-y-3">
+                    <label className="text-sm font-medium text-foreground">R&D Type</label>
+                    <Select value={rdFilter} onValueChange={(value: 'all' | 'rd' | 'non-rd') => setRdFilter(value)}>
+                      <SelectTrigger className="h-8">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Projects</SelectItem>
+                        <SelectItem value="rd">R&D Only</SelectItem>
+                        <SelectItem value="non-rd">Non-R&D Only</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Active Filters Summary */}
                   {hasActiveFilters && (
-                    <div className="text-xs mt-1">
-                      {filteredProjects.length !== projects.length && `Filtered: ${projects.length - filteredProjects.length} hidden`}
+                    <div className="space-y-3">
+                      <label className="text-sm font-medium text-foreground">Active Filters</label>
+                      <div className="flex flex-wrap gap-1">
+                        {selectedProducts.length > 0 && (
+                          <Badge variant="outline" className="text-xs">
+                            Products: {selectedProducts.length}
+                          </Badge>
+                        )}
+                        {selectedTeams.length > 0 && (
+                          <Badge variant="outline" className="text-xs">
+                            Teams: {selectedTeams.length}
+                          </Badge>
+                        )}
+                        {selectedStatuses.length > 0 && (
+                          <Badge variant="outline" className="text-xs">
+                            Status: {selectedStatuses.length}
+                          </Badge>
+                        )}
+                        {(completedAfter || completedBefore) && (
+                          <Badge variant="outline" className="text-xs">
+                            Dates
+                          </Badge>
+                        )}
+                        {rdFilter !== 'all' && (
+                          <Badge variant="outline" className="text-xs">
+                            R&D
+                          </Badge>
+                        )}
+                      </div>
                     </div>
                   )}
                 </div>
               </div>
-
             </div>
           </CardContent>
         </Card>
