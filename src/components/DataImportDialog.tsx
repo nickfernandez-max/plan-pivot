@@ -177,7 +177,7 @@ export function DataImportDialog({ roles, teams, products, onImportComplete }: D
           }
 
           // Create team member
-          const { error: memberError } = await supabase
+          const { data: newMember, error: memberError } = await supabase
             .from('team_members')
             .insert({
               name: row.name,
@@ -185,13 +185,29 @@ export function DataImportDialog({ roles, teams, products, onImportComplete }: D
               role_id: role.id,
               team_id: team.id,
               start_date: new Date().toISOString().split('T')[0]
-            });
+            })
+            .select()
+            .single();
 
           if (memberError) {
             row.status = 'error';
             row.error = memberError.message;
-          } else {
-            row.status = 'success';
+          } else if (newMember) {
+            // Create team membership so member appears in timeline
+            const { error: membershipError } = await supabase
+              .from('team_memberships')
+              .insert({
+                team_member_id: newMember.id,
+                team_id: team.id,
+                start_month: new Date().toISOString().split('T')[0].substring(0, 7) + '-01'
+              });
+
+            if (membershipError) {
+              row.status = 'error';
+              row.error = `Member created but membership failed: ${membershipError.message}`;
+            } else {
+              row.status = 'success';
+            }
           }
         } catch (error) {
           row.status = 'error';
