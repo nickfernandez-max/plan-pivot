@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -27,6 +27,8 @@ interface ProjectListProps {
   products: Product[];
   assignments?: ProjectAssignment[];
   teamMembers?: TeamMember[];
+  selectedProduct?: string; // Site-level product filter
+  selectedTeam?: string; // Site-level team filter
   onAddProject: (project: Omit<Project, 'id' | 'created_at' | 'updated_at'>) => Promise<Project>;
   onUpdateProject: (id: string, project: Partial<Project>) => void;
   onUpdateProjectProducts: (projectId: string, productIds: string[]) => void;
@@ -54,6 +56,8 @@ export function ProjectList({
   products, 
   assignments = [], 
   teamMembers = [], 
+  selectedProduct = 'all',
+  selectedTeam = 'all',
   onAddProject, 
   onUpdateProject, 
   onUpdateProjectProducts,
@@ -64,15 +68,43 @@ export function ProjectList({
   const [sortField, setSortField] = useState<SortField>('start_date');
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
   
-  // Filter states
+  // Filter states - initialize with site-level filters
   const [showFilters, setShowFilters] = useState(false);
-  const [selectedProducts, setSelectedProducts] = useState<string[]>([]);
-  const [selectedTeams, setSelectedTeams] = useState<string[]>([]);
+  const [selectedProducts, setSelectedProducts] = useState<string[]>(
+    selectedProduct && selectedProduct !== 'all' ? [selectedProduct] : []
+  );
+  const [selectedTeams, setSelectedTeams] = useState<string[]>(
+    selectedTeam && selectedTeam !== 'all' ? [selectedTeam] : []
+  );
   const [selectedStatuses, setSelectedStatuses] = useState<ProjectStatus[]>([]);
   const [completedAfter, setCompletedAfter] = useState<string>("");
   const [completedBefore, setCompletedBefore] = useState<string>("");
   const [rdFilter, setRdFilter] = useState<'all' | 'rd' | 'non-rd'>('all');
   const { exportToExcel, isExporting } = useProjectExport();
+  
+  // Dynamic filtering options based on current selections
+  const availableProducts = useMemo(() => {
+    if (selectedTeams.length === 0) return products;
+    
+    // Get unique product IDs from selected teams
+    const teamProductIds = new Set(
+      teams
+        .filter(team => selectedTeams.includes(team.id))
+        .map(team => team.product_id)
+        .filter(Boolean)
+    );
+    
+    return products.filter(product => teamProductIds.has(product.id));
+  }, [products, teams, selectedTeams]);
+
+  const availableTeams = useMemo(() => {
+    if (selectedProducts.length === 0) return teams;
+    
+    // Only show teams that belong to selected products
+    return teams.filter(team => 
+      team.product_id && selectedProducts.includes(team.product_id)
+    );
+  }, [teams, selectedProducts]);
   
   // Initialize date validation with current data
   const { conflictDialog, closeConflictDialog, handleProjectDateChange } = useDateValidation({
@@ -193,8 +225,9 @@ export function ProjectList({
   });
 
   const clearFilters = () => {
-    setSelectedProducts([]);
-    setSelectedTeams([]);
+    // Reset to site-level filters rather than completely clearing
+    setSelectedProducts(selectedProduct && selectedProduct !== 'all' ? [selectedProduct] : []);
+    setSelectedTeams(selectedTeam && selectedTeam !== 'all' ? [selectedTeam] : []);
     setSelectedStatuses([]);
     setCompletedAfter("");
     setCompletedBefore("");
@@ -606,7 +639,7 @@ export function ProjectList({
                 <div className="space-y-3">
                   <label className="text-sm font-medium text-foreground">Products</label>
                   <div className="space-y-2 max-h-28 overflow-y-auto pr-2">
-                    {products.map((product) => (
+                    {availableProducts.map((product) => (
                       <div key={product.id} className="flex items-center space-x-2.5">
                         <Checkbox
                           id={`product-${product.id}`}
@@ -635,7 +668,7 @@ export function ProjectList({
                 <div className="space-y-3">
                   <label className="text-sm font-medium text-foreground">Teams</label>
                   <div className="space-y-2 max-h-48 overflow-y-auto pr-2">
-                    {teams.map((team) => (
+                    {availableTeams.map((team) => (
                       <div key={team.id} className="flex items-center space-x-2.5">
                         <Checkbox
                           id={`team-${team.id}`}

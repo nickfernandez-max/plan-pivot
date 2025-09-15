@@ -389,6 +389,8 @@ export default function RoadmapApp() {
               products={products}
               assignments={assignments}
               teamMembers={teamMembers}
+              selectedProduct={selectedProduct}
+              selectedTeam={selectedTeam}
               onAddProject={handleAddProject} 
               onUpdateProject={handleUpdateProject}
               onUpdateProjectProducts={updateProjectProducts}
