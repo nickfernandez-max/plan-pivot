@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Project, TeamMember, Team, Product, ProjectAssignment, TeamMembership, Role, WorkAssignment } from '@/types/roadmap';
+import { toast } from 'sonner';
 
 export function useSupabaseData() {
   const [projects, setProjects] = useState<Project[]>([]);
@@ -14,7 +15,7 @@ export function useSupabaseData() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchData = async () => {
+  const fetchData = async (includeArchived = false) => {
     try {
       setLoading(true);
       setError(null);
@@ -47,15 +48,21 @@ export function useSupabaseData() {
       }
       console.log('Products fetched:', productsData?.length || 0);
 
-      // Fetch teams with their products
+      // Fetch teams with their products (filter archived by default)
       console.log('Fetching teams...');
-      const { data: teamsData, error: teamsError } = await supabase
+      let teamsQuery = supabase
         .from('teams')
         .select(`
           *,
           product:products(*)
         `)
         .order('name');
+
+      if (!includeArchived) {
+        teamsQuery = teamsQuery.eq('archived', false);
+      }
+
+      const { data: teamsData, error: teamsError } = await teamsQuery;
 
       if (teamsError) {
         console.error('Teams error:', teamsError);
@@ -389,57 +396,49 @@ export function useSupabaseData() {
     }
   };
 
-  const deleteTeam = async (id: string) => {
+  const archiveTeam = async (id: string) => {
     try {
-      // Check for active team members
-      const { data: members, error: memberError } = await supabase
-        .from('team_members')
-        .select('id, name')
-        .eq('team_id', id);
-      
-      if (memberError) throw memberError;
-      
-      if (members && members.length > 0) {
-        throw new Error(`Cannot delete team: ${members.length} team member(s) still assigned. Please reassign or remove them first.`);
-      }
-      
-      // Check for active projects
-      const { data: projects, error: projectError } = await supabase
-        .from('projects')
-        .select('id, name')
-        .eq('team_id', id);
-        
-      if (projectError) throw projectError;
-      
-      if (projects && projects.length > 0) {
-        throw new Error(`Cannot delete team: ${projects.length} project(s) still assigned. Please reassign them first.`);
-      }
-      
-      // Check for active memberships
-      const { data: memberships, error: membershipError } = await supabase
-        .from('team_memberships')
-        .select('id')
-        .eq('team_id', id);
-        
-      if (membershipError) throw membershipError;
-      
-      if (memberships && memberships.length > 0) {
-        throw new Error(`Cannot delete team: ${memberships.length} team membership(s) still exist. Please remove them first.`);
-      }
-      
-      // Now safe to delete the team
       const { error } = await supabase
         .from('teams')
-        .delete()
+        .update({ archived: true })
         .eq('id', id);
-      
+
       if (error) throw error;
-      
-      // Update teams state by removing deleted team
-      setTeams(prev => prev.filter(team => team.id !== id));
-    } catch (err) {
-      console.error('Error deleting team:', err);
-      throw err;
+
+      // Update local state
+      setTeams(teams.map(team => 
+        team.id === id 
+          ? { ...team, archived: true, archived_at: new Date().toISOString() }
+          : team
+      ));
+      toast.success('Team archived successfully');
+    } catch (error) {
+      console.error('Error archiving team:', error);
+      toast.error('Failed to archive team');
+      throw error;
+    }
+  };
+
+  const unarchiveTeam = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('teams')
+        .update({ archived: false, archived_at: null })
+        .eq('id', id);
+
+      if (error) throw error;
+
+      // Update local state
+      setTeams(teams.map(team => 
+        team.id === id 
+          ? { ...team, archived: false, archived_at: null }
+          : team
+      ));
+      toast.success('Team unarchived successfully');
+    } catch (error) {
+      console.error('Error unarchiving team:', error);
+      toast.error('Failed to unarchive team');
+      throw error;
     }
   };
 
@@ -808,7 +807,8 @@ export function useSupabaseData() {
     updateRole,
     addTeam,
     updateTeam,
-    deleteTeam,
+    archiveTeam,
+    unarchiveTeam,
     updateProjectAssignees,
     updateProjectAssignments,
     addProduct,

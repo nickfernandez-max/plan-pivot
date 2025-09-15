@@ -12,17 +12,18 @@ interface EditTeamDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onUpdateTeam: (id: string, updates: Partial<Team>) => Promise<void>;
-  onDeleteTeam?: (id: string) => Promise<void>;
+  onArchiveTeam?: (id: string) => Promise<void>;
+  onUnarchiveTeam?: (id: string) => Promise<void>;
   products: Product[];
 }
 
-export function EditTeamDialog({ team, open, onOpenChange, onUpdateTeam, onDeleteTeam, products }: EditTeamDialogProps) {
+export function EditTeamDialog({ team, open, onOpenChange, onUpdateTeam, onArchiveTeam, onUnarchiveTeam, products }: EditTeamDialogProps) {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [productId, setProductId] = useState('none');
   const [idealSize, setIdealSize] = useState('1');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
+  const [isArchiving, setIsArchiving] = useState(false);
 
   useEffect(() => {
     if (team) {
@@ -53,22 +54,35 @@ export function EditTeamDialog({ team, open, onOpenChange, onUpdateTeam, onDelet
     }
   };
 
-  const handleDelete = async () => {
-    if (!team || !onDeleteTeam) return;
+  const handleArchive = async () => {
+    if (!team || !onArchiveTeam) return;
     
-    if (!confirm(`Are you sure you want to delete the team "${team.name}"? This action cannot be undone.`)) {
+    if (!confirm(`Are you sure you want to archive the team "${team.name}"? This will hide it from most views but preserve all historical data.`)) {
       return;
     }
 
-    setIsDeleting(true);
+    setIsArchiving(true);
     try {
-      await onDeleteTeam(team.id);
+      await onArchiveTeam(team.id);
       onOpenChange(false);
     } catch (error) {
-      console.error('Error deleting team:', error);
-      alert('Failed to delete team. It may have associated members or projects.');
+      console.error('Error archiving team:', error);
     } finally {
-      setIsDeleting(false);
+      setIsArchiving(false);
+    }
+  };
+
+  const handleUnarchive = async () => {
+    if (!team || !onUnarchiveTeam) return;
+    
+    setIsArchiving(true);
+    try {
+      await onUnarchiveTeam(team.id);
+      onOpenChange(false);
+    } catch (error) {
+      console.error('Error unarchiving team:', error);
+    } finally {
+      setIsArchiving(false);
     }
   };
 
@@ -134,15 +148,32 @@ export function EditTeamDialog({ team, open, onOpenChange, onUpdateTeam, onDelet
           </div>
           
           <div className="flex justify-between">
-            {onDeleteTeam && (
-              <Button 
-                type="button" 
-                variant="destructive" 
-                onClick={handleDelete}
-                disabled={isDeleting || isSubmitting}
-              >
-                {isDeleting ? 'Deleting...' : 'Delete Team'}
-              </Button>
+            {(onArchiveTeam || onUnarchiveTeam) && (
+              <div className="flex space-x-2">
+                {team?.archived ? (
+                  onUnarchiveTeam && (
+                    <Button 
+                      type="button" 
+                      variant="outline" 
+                      onClick={handleUnarchive}
+                      disabled={isArchiving || isSubmitting}
+                    >
+                      {isArchiving ? 'Unarchiving...' : 'Unarchive Team'}
+                    </Button>
+                  )
+                ) : (
+                  onArchiveTeam && (
+                    <Button 
+                      type="button" 
+                      variant="destructive" 
+                      onClick={handleArchive}
+                      disabled={isArchiving || isSubmitting}
+                    >
+                      {isArchiving ? 'Archiving...' : 'Archive Team'}
+                    </Button>
+                  )
+                )}
+              </div>
             )}
             <div className="flex space-x-2 ml-auto">
               <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>

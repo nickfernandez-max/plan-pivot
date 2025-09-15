@@ -68,7 +68,8 @@ export default function RoadmapApp() {
     addRole,
     addTeam,
     updateTeam,
-    deleteTeam,
+    archiveTeam,
+    unarchiveTeam,
     updateRole,
     updateProjectAssignees,
     updateProjectAssignments,
@@ -458,7 +459,7 @@ export default function RoadmapApp() {
               onUpdateProduct={updateProduct}
               onAddTeam={handleAddTeam}
               onUpdateTeam={handleUpdateTeam}
-              onDeleteTeam={deleteTeam}
+              onArchiveTeam={archiveTeam}
               onAddMembership={addTeamMembership}
               onUpdateMembership={updateTeamMembership}
               onDeleteMembership={deleteTeamMembership}

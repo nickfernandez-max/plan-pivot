@@ -32,7 +32,7 @@ interface TeamMembersViewProps {
   onUpdateProduct: (id: string, updates: Partial<Product>) => void;
   onAddTeam: (team: Omit<Team, 'id' | 'created_at' | 'updated_at'>) => void;
   onUpdateTeam: (id: string, updates: Partial<Team>) => Promise<void>;
-  onDeleteTeam?: (id: string) => Promise<void>;
+  onArchiveTeam?: (id: string) => Promise<void>;
   onAddMembership: (membership: Omit<TeamMembership, 'id' | 'created_at' | 'updated_at'>) => Promise<any>;
   onUpdateMembership: (id: string, updates: Partial<TeamMembership>) => Promise<any>;
   onDeleteMembership: (id: string) => Promise<any> | void;
@@ -66,7 +66,7 @@ export function TeamMembersView({
   onUpdateProduct,
   onAddTeam,
   onUpdateTeam,
-  onDeleteTeam,
+  onArchiveTeam,
   onAddMembership,
   onUpdateMembership,
   onDeleteMembership,
@@ -76,6 +76,7 @@ export function TeamMembersView({
   const [editingTeam, setEditingTeam] = useState<Team | null>(null);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [activeTab, setActiveTab] = useState<string>('');
+  const [showArchived, setShowArchived] = useState<boolean>(false);
   
   // Sorting state
   const [primarySort, setPrimarySort] = useState<SortField>('role');
@@ -208,13 +209,19 @@ export function TeamMembersView({
 
     const productsWithTeams = products.map(product => ({
       product,
-      teams: teams.filter(team => team.product_id === product.id).map(team => ({
+      teams: teams.filter(team => 
+        team.product_id === product.id && 
+        (showArchived || !team.archived)
+      ).map(team => ({
         team,
         members: sortMembers(getTimelineMembers(team.id))
       }))
     })).filter(group => group.teams.length > 0);
 
-    const teamsWithoutProduct = teams.filter(team => !team.product_id).map(team => ({
+    const teamsWithoutProduct = teams.filter(team => 
+      !team.product_id && 
+      (showArchived || !team.archived)
+    ).map(team => ({
       team,
       members: sortMembers(getTimelineMembers(team.id))
     }));
@@ -336,13 +343,18 @@ export function TeamMembersView({
                   className="font-semibold text-sm py-2"
                 >
                   <div className="flex items-center justify-between gap-2">
-                    <div className="flex items-center gap-3">
-                      <Users className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-                      <span className="text-blue-900 dark:text-blue-100">{team.name}</span>
-                      <Badge variant="secondary" className="text-xs px-2 py-1 bg-blue-200 text-blue-800 dark:bg-blue-800 dark:text-blue-200">
-                        Ideal: {team.ideal_size || 1}
-                      </Badge>
-                    </div>
+                     <div className="flex items-center gap-3">
+                       <Users className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                       <span className="text-blue-900 dark:text-blue-100">{team.name}</span>
+                       {team.archived && (
+                         <Badge variant="outline" className="text-xs px-2 py-1 text-muted-foreground">
+                           Archived
+                         </Badge>
+                       )}
+                       <Badge variant="secondary" className="text-xs px-2 py-1 bg-blue-200 text-blue-800 dark:bg-blue-800 dark:text-blue-200">
+                         Ideal: {team.ideal_size || 1}
+                       </Badge>
+                     </div>
                     <Button
                       variant="ghost"
                       size="sm"
@@ -491,6 +503,18 @@ export function TeamMembersView({
                 {secondaryDirection === 'asc' ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />}
               </Button>
             </div>
+            
+            {/* Show Archived Toggle */}
+            <div className="flex items-center gap-2">
+              <Button
+                variant={showArchived ? "default" : "outline"}
+                size="sm"
+                onClick={() => setShowArchived(prev => !prev)}
+                className="text-xs"
+              >
+                {showArchived ? "Hide Archived" : "Show Archived"}
+              </Button>
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -614,7 +638,7 @@ export function TeamMembersView({
             open={!!editingTeam}
             onOpenChange={(open) => !open && setEditingTeam(null)}
             onUpdateTeam={onUpdateTeam}
-            onDeleteTeam={onDeleteTeam}
+            onArchiveTeam={onArchiveTeam}
             products={products}
           />
       
