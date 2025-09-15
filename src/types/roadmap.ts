@@ -3,8 +3,6 @@ export interface Role {
   name: string;
   description?: string;
   display_name?: string;
-  finance_name?: string;
-  hourly_rate?: number;
   created_at?: string;
   updated_at?: string;
 }

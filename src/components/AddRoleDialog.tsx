@@ -15,9 +15,7 @@ export function AddRoleDialog({ onAddRole }: AddRoleDialogProps) {
   const [open, setOpen] = useState(false);
   const [name, setName] = useState('');
   const [displayName, setDisplayName] = useState('');
-  const [financeName, setFinanceName] = useState('');
   const [description, setDescription] = useState('');
-  const [hourlyRate, setHourlyRate] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -30,17 +28,13 @@ export function AddRoleDialog({ onAddRole }: AddRoleDialogProps) {
       await onAddRole({
         name: name.trim(),
         display_name: displayName.trim() || undefined,
-        finance_name: financeName.trim() || undefined,
         description: description.trim() || undefined,
-        hourly_rate: hourlyRate ? parseFloat(hourlyRate) : undefined,
       });
       
       // Reset form
       setName('');
       setDisplayName('');
-      setFinanceName('');
       setDescription('');
-      setHourlyRate('');
       setOpen(false);
     } catch (error) {
       console.error('Error adding role:', error);
@@ -55,9 +49,7 @@ export function AddRoleDialog({ onAddRole }: AddRoleDialogProps) {
       // Reset form when closing
       setName('');
       setDisplayName('');
-      setFinanceName('');
       setDescription('');
-      setHourlyRate('');
     }
   };
 
@@ -95,28 +87,6 @@ export function AddRoleDialog({ onAddRole }: AddRoleDialogProps) {
             />
           </div>
           
-          <div className="space-y-2">
-            <Label htmlFor="financeName">Finance Code</Label>
-            <Input
-              id="financeName"
-              placeholder="e.g., SDEV (optional)"
-              value={financeName}
-              onChange={(e) => setFinanceName(e.target.value)}
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="hourlyRate">Hourly Rate ($)</Label>
-            <Input
-              id="hourlyRate"
-              type="number"
-              step="0.01"
-              min="0"
-              placeholder="e.g., 85.00"
-              value={hourlyRate}
-              onChange={(e) => setHourlyRate(e.target.value)}
-            />
-          </div>
           
           <div className="space-y-2">
             <Label htmlFor="description">Description</Label>

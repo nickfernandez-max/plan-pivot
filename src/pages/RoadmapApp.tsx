@@ -378,7 +378,7 @@ export default function RoadmapApp() {
               Reports
             </TabsTrigger>
             <TabsTrigger value="financials" className="text-sm font-medium">
-              Financials
+              Admin
             </TabsTrigger>
           </TabsList>
 

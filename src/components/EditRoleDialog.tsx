@@ -26,8 +26,6 @@ export function EditRoleDialog({ role, onSave }: EditRoleDialogProps) {
   const [formData, setFormData] = useState({
     name: role.name,
     display_name: role.display_name || role.name,
-    finance_name: role.finance_name || '',
-    hourly_rate: role.hourly_rate?.toString() || '',
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -35,12 +33,7 @@ export function EditRoleDialog({ role, onSave }: EditRoleDialogProps) {
     setLoading(true);
     
     try {
-      const updates = {
-        ...formData,
-        finance_name: formData.finance_name || null,
-        hourly_rate: formData.hourly_rate ? parseFloat(formData.hourly_rate) : 0
-      };
-      await onSave(updates);
+      await onSave(formData);
       setOpen(false);
     } catch (error) {
       console.error('Error saving role:', error);
@@ -55,8 +48,6 @@ export function EditRoleDialog({ role, onSave }: EditRoleDialogProps) {
       setFormData({
         name: role.name,
         display_name: role.display_name || role.name,
-        finance_name: role.finance_name || '',
-        hourly_rate: role.hourly_rate?.toString() || '',
       });
     }
     setOpen(newOpen);
@@ -73,7 +64,7 @@ export function EditRoleDialog({ role, onSave }: EditRoleDialogProps) {
         <DialogHeader>
           <DialogTitle>Edit Role: {role.name}</DialogTitle>
           <DialogDescription>
-            Update the display name, finance code, and hourly rate for this role.
+            Update the role name and display name.
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit}>
@@ -95,27 +86,6 @@ export function EditRoleDialog({ role, onSave }: EditRoleDialogProps) {
                 value={formData.display_name}
                 onChange={(e) => setFormData(prev => ({ ...prev, display_name: e.target.value }))}
                 placeholder="Display name for this role"
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="finance_name">Finance Code</Label>
-              <Input
-                id="finance_name"
-                value={formData.finance_name}
-                onChange={(e) => setFormData(prev => ({ ...prev, finance_name: e.target.value }))}
-                placeholder="Finance code (e.g., BA1, DEV)"
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="hourly_rate">Hourly Rate ($)</Label>
-              <Input
-                id="hourly_rate"
-                type="number"
-                step="0.01"
-                min="0"
-                value={formData.hourly_rate}
-                onChange={(e) => setFormData(prev => ({ ...prev, hourly_rate: e.target.value }))}
-                placeholder="0.00"
               />
             </div>
           </div>

@@ -9,7 +9,7 @@ import { AddRoleDialog } from '@/components/AddRoleDialog';
 import { AddUserDialog } from '@/components/AddUserDialog';
 import { useToast } from '@/hooks/use-toast';
 import { Role } from '@/types/roadmap';
-import { Lock, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
+import { Settings, Lock, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
 
 interface FinancialsViewProps {
   roles: Role[];
@@ -21,10 +21,10 @@ export function FinancialsView({ roles, onUpdateRole, onAddRole }: FinancialsVie
   const { toast } = useToast();
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [sortField, setSortField] = useState<'name' | 'display_name' | 'hourly_rate' | null>(null);
+  const [sortField, setSortField] = useState<'name' | 'display_name' | null>(null);
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
 
-  const handleSort = (field: 'name' | 'display_name' | 'hourly_rate') => {
+  const handleSort = (field: 'name' | 'display_name') => {
     if (sortField === field) {
       setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
     } else {
@@ -33,7 +33,7 @@ export function FinancialsView({ roles, onUpdateRole, onAddRole }: FinancialsVie
     }
   };
 
-  const getSortIcon = (field: 'name' | 'display_name' | 'hourly_rate') => {
+  const getSortIcon = (field: 'name' | 'display_name') => {
     if (sortField !== field) {
       return <ArrowUpDown className="ml-2 h-4 w-4 opacity-50" />;
     }
@@ -57,10 +57,6 @@ export function FinancialsView({ roles, onUpdateRole, onAddRole }: FinancialsVie
         case 'display_name':
           aValue = (a.display_name || a.name).toLowerCase();
           bValue = (b.display_name || b.name).toLowerCase();
-          break;
-        case 'hourly_rate':
-          aValue = a.hourly_rate || 0;
-          bValue = b.hourly_rate || 0;
           break;
         default:
           return 0;
@@ -130,9 +126,12 @@ export function FinancialsView({ roles, onUpdateRole, onAddRole }: FinancialsVie
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
           <div>
-            <CardTitle>Role Financial Information</CardTitle>
+            <CardTitle className="flex items-center gap-2">
+              <Settings className="h-5 w-5" />
+              Role Management
+            </CardTitle>
             <p className="text-sm text-muted-foreground">
-              Manage display names, finance codes, and hourly rates for all roles.
+              Manage roles in the system. Only administrators can view and edit this information.
             </p>
           </div>
           <div className="flex gap-2">
@@ -164,17 +163,6 @@ export function FinancialsView({ roles, onUpdateRole, onAddRole }: FinancialsVie
                     {getSortIcon('display_name')}
                   </Button>
                 </TableHead>
-                <TableHead>Finance Code</TableHead>
-                <TableHead>
-                  <Button
-                    variant="ghost"
-                    className="h-auto p-0 font-medium hover:bg-transparent"
-                    onClick={() => handleSort('hourly_rate')}
-                  >
-                    Hourly Rate ($)
-                    {getSortIcon('hourly_rate')}
-                  </Button>
-                </TableHead>
                 <TableHead className="w-[100px]">Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -183,10 +171,6 @@ export function FinancialsView({ roles, onUpdateRole, onAddRole }: FinancialsVie
                 <TableRow key={role.id}>
                   <TableCell className="font-medium">{role.name}</TableCell>
                   <TableCell>{role.display_name || role.name}</TableCell>
-                  <TableCell>{role.finance_name || '—'}</TableCell>
-                  <TableCell>
-                    {role.hourly_rate ? `$${role.hourly_rate.toFixed(2)}` : '—'}
-                  </TableCell>
                   <TableCell>
                     <EditRoleDialog
                       role={role}

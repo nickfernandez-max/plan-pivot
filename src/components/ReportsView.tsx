@@ -84,7 +84,7 @@ export function ReportsView({ projects, teamMembers, assignments }: ReportsViewP
       const durationInDays = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
       const durationInWeeks = Math.ceil(durationInDays / 7);
       const totalHours = weeklyHours * durationInWeeks;
-      const hourlyRate = teamMember.role?.hourly_rate || 0;
+      const hourlyRate = 0; // Removed financial tracking
       const totalCost = totalHours * hourlyRate;
 
       reports.push({
