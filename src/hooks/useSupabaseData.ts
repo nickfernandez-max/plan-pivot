@@ -398,6 +398,7 @@ export function useSupabaseData() {
       
       if (error) throw error;
       
+      // Update teams state by removing deleted team
       setTeams(prev => prev.filter(team => team.id !== id));
     } catch (err) {
       console.error('Error deleting team:', err);
