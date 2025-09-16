@@ -241,6 +241,36 @@ export type Database = {
         }
         Relationships: []
       }
+      team_ideal_sizes: {
+        Row: {
+          created_at: string
+          end_month: string | null
+          id: string
+          ideal_size: number
+          start_month: string
+          team_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          end_month?: string | null
+          id?: string
+          ideal_size?: number
+          start_month: string
+          team_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          end_month?: string | null
+          id?: string
+          ideal_size?: number
+          start_month?: string
+          team_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       team_members: {
         Row: {
           created_at: string

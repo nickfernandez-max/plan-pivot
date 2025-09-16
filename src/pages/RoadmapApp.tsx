@@ -447,7 +447,7 @@ export default function RoadmapApp() {
               teams={teams}
               products={products}
               roles={roles}
-              memberships={memberships}
+              teamIdealSizes={teamIdealSizes}
               selectedProduct={selectedProduct}
               timelineStartDate={timelineStartDate}
               onTimelineNavigateForward={navigateTimelineForward}

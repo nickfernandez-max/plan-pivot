@@ -83,6 +83,16 @@ export interface TeamMembership {
   updated_at?: string;
 }
 
+export interface TeamIdealSize {
+  id: string;
+  team_id: string;
+  ideal_size: number;
+  start_month: string; // YYYY-MM-01
+  end_month?: string | null; // YYYY-MM-01 or null for ongoing
+  created_at?: string;
+  updated_at?: string;
+}
+
 export interface WorkAssignment {
   id: string;
   name: string;

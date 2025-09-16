@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { Project, TeamMember, Team, Product, ProjectAssignment, TeamMembership, Role, WorkAssignment } from '@/types/roadmap';
+import { Project, TeamMember, Team, Product, ProjectAssignment, TeamMembership, Role, WorkAssignment, TeamIdealSize } from '@/types/roadmap';
 import { toast } from 'sonner';
 
 export function useSupabaseData() {
@@ -12,6 +12,7 @@ export function useSupabaseData() {
   const [assignments, setAssignments] = useState<ProjectAssignment[]>([]);
   const [memberships, setMemberships] = useState<TeamMembership[]>([]);
   const [workAssignments, setWorkAssignments] = useState<WorkAssignment[]>([]);
+  const [teamIdealSizes, setTeamIdealSizes] = useState<TeamIdealSize[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -48,16 +49,13 @@ export function useSupabaseData() {
       }
       console.log('Products fetched:', productsData?.length || 0);
 
-      // Fetch teams with their products (filter archived by default)
+      // Fetch teams (with optional archived filtering)
       console.log('Fetching teams...');
       let teamsQuery = supabase
         .from('teams')
-        .select(`
-          *,
-          product:products(*)
-        `)
+        .select('*, product:products(*)')
         .order('name');
-
+      
       if (!includeArchived) {
         teamsQuery = teamsQuery.eq('archived', false);
       }
@@ -70,22 +68,19 @@ export function useSupabaseData() {
       }
       console.log('Teams fetched:', teamsData?.length || 0);
 
-      // Fetch team members with their teams and roles
+      // Fetch team members with relationships
       console.log('Fetching team members...');
       const { data: teamMembersData, error: teamMembersError } = await supabase
         .from('team_members')
-        .select(`
-          *,
-          team:teams(*),
-          role:roles(*)
-        `);
+        .select('*, team:teams(*, product:products(*)), role:roles(*)')
+        .order('name');
 
       if (teamMembersError) {
         console.error('Team members error:', teamMembersError);
         throw teamMembersError;
       }
-  console.log('Team members fetched:', teamMembersData?.length || 0);
-  console.log('Sample team member structure:', teamMembersData?.[0]);
+      console.log('Team members fetched:', teamMembersData?.length || 0);
+      console.log('Sample team member structure:', teamMembersData?.[0]);
 
       // Fetch projects with teams, assignees, and products
       console.log('Fetching projects...');
@@ -123,11 +118,12 @@ export function useSupabaseData() {
         .from('team_memberships')
         .select('*')
         .order('start_month');
+
       if (membershipsError) {
-        console.error('Team memberships error:', membershipsError);
+        console.error('Memberships error:', membershipsError);
         throw membershipsError;
       }
-      console.log('Team memberships fetched:', membershipsData?.length || 0);
+      console.log('Memberships fetched:', membershipsData?.length || 0);
 
       // Fetch work assignments
       console.log('Fetching work assignments...');
@@ -135,11 +131,25 @@ export function useSupabaseData() {
         .from('work_assignments')
         .select('*')
         .order('start_date');
+
       if (workAssignmentsError) {
         console.error('Work assignments error:', workAssignmentsError);
         throw workAssignmentsError;
       }
       console.log('Work assignments fetched:', workAssignmentsData?.length || 0);
+
+      // Fetch team ideal sizes
+      console.log('Fetching team ideal sizes...');
+      const { data: teamIdealSizesData, error: teamIdealSizesError } = await supabase
+        .from('team_ideal_sizes')
+        .select('*')
+        .order('start_month');
+
+      if (teamIdealSizesError) {
+        console.error('Team ideal sizes error:', teamIdealSizesError);
+        throw teamIdealSizesError;
+      }
+      console.log('Team ideal sizes fetched:', teamIdealSizesData?.length || 0);
 
       // Transform the data to match our interface
       const transformedProjects = projectsData?.map(project => ({
@@ -156,6 +166,7 @@ export function useSupabaseData() {
       setAssignments(assignmentsData || []);
       setMemberships(membershipsData || []);
       setWorkAssignments((workAssignmentsData || []) as WorkAssignment[]);
+      setTeamIdealSizes(teamIdealSizesData || []);
       console.log('Data fetch completed successfully');
     } catch (err) {
       console.error('Error fetching data:', err);
@@ -171,6 +182,7 @@ export function useSupabaseData() {
     }
   };
 
+  // Project CRUD operations
   const addProject = async (newProject: Omit<Project, 'id' | 'created_at' | 'updated_at'>) => {
     try {
       const { data, error } = await supabase
@@ -178,10 +190,9 @@ export function useSupabaseData() {
         .insert(newProject)
         .select(`
           *,
-          team:teams(*),
-          assignees:project_assignees(
-            team_member:team_members(*)
-          )
+          team:teams(*, product:products(*)),
+          assignees:project_assignees(team_member:team_members(*)),
+          products:project_products(product:products(*))
         `)
         .single();
 
@@ -202,56 +213,43 @@ export function useSupabaseData() {
 
   const updateProject = async (id: string, updates: Partial<Project>) => {
     try {
-      console.log('Updating project:', id, 'with updates:', updates);
-      
       const { data, error } = await supabase
         .from('projects')
         .update(updates)
         .eq('id', id)
-        .select()
+        .select(`
+          *,
+          team:teams(*, product:products(*)),
+          assignees:project_assignees(team_member:team_members(*)),
+          products:project_products(product:products(*))
+        `)
         .single();
 
       if (error) throw error;
 
-      console.log('Project updated successfully:', data);
-      
-      // Update local state immediately for responsive UI
-      setProjects(prev => prev.map(p => p.id === id ? { ...p, ...updates } : p));
-      
-      // Force a complete data refresh to ensure UI consistency
-      await fetchData();
-      
-      return data;
+      const transformedProject = {
+        ...data,
+        assignees: data.assignees?.map(assignee => assignee.team_member).filter(Boolean) || []
+      };
+
+      setProjects(prev => prev.map(p => p.id === id ? transformedProject : p));
+      return transformedProject;
     } catch (err) {
       console.error('Error updating project:', err);
       throw err;
     }
   };
 
+  // Team member CRUD operations
   const addTeamMember = async (newMember: Omit<TeamMember, 'id' | 'created_at' | 'updated_at'>) => {
     try {
       const { data, error } = await supabase
         .from('team_members')
         .insert(newMember)
-        .select(`
-          *,
-          team:teams(*),
-          role:roles(*)
-        `)
+        .select('*, team:teams(*, product:products(*)), role:roles(*)')
         .single();
 
       if (error) throw error;
-
-      // Also create a team membership starting from their start date
-      const membershipStartMonth = new Date(newMember.start_date).toISOString().split('T')[0].substring(0, 7) + '-01';
-      
-      await addTeamMembership({
-        team_member_id: data.id,
-        team_id: newMember.team_id,
-        start_month: membershipStartMonth,
-        end_month: null // Open-ended membership
-      });
-
       setTeamMembers(prev => [...prev, data]);
       return data;
     } catch (err) {
@@ -266,15 +264,10 @@ export function useSupabaseData() {
         .from('team_members')
         .update(updates)
         .eq('id', id)
-        .select(`
-          *,
-          team:teams(*),
-          role:roles(*)
-        `)
+        .select('*, team:teams(*, product:products(*)), role:roles(*)')
         .single();
 
       if (error) throw error;
-
       setTeamMembers(prev => prev.map(m => m.id === id ? data : m));
       return data;
     } catch (err) {
@@ -283,18 +276,15 @@ export function useSupabaseData() {
     }
   };
 
+  // Product CRUD operations
   const addProduct = async (newProduct: Omit<Product, 'id' | 'created_at' | 'updated_at'>) => {
     const { data, error } = await supabase
       .from('products')
-      .insert([newProduct])
-      .select()
+      .insert(newProduct)
+      .select('*')
       .single();
 
-    if (error) {
-      console.error('Error adding product:', error);
-      throw error;
-    }
-
+    if (error) throw error;
     setProducts(prev => [...prev, data]);
     return data;
   };
@@ -304,32 +294,24 @@ export function useSupabaseData() {
       .from('products')
       .update(updates)
       .eq('id', id)
-      .select()
+      .select('*')
       .single();
 
-    if (error) {
-      console.error('Error updating product:', error);
-      throw error;
-    }
-
-    setProducts(prev => prev.map(product => 
-      product.id === id ? { ...product, ...updates } : product
-    ));
+    if (error) throw error;
+    setProducts(prev => prev.map(p => p.id === id ? data : p));
+    await fetchData();
     return data;
   };
 
+  // Role CRUD operations
   const addRole = async (newRole: Omit<Role, 'id' | 'created_at' | 'updated_at'>) => {
     const { data, error } = await supabase
       .from('roles')
-      .insert([newRole])
-      .select()
+      .insert(newRole)
+      .select('*')
       .single();
 
-    if (error) {
-      console.error('Error adding role:', error);
-      throw error;
-    }
-
+    if (error) throw error;
     setRoles(prev => [...prev, data]);
     return data;
   };
@@ -339,241 +321,117 @@ export function useSupabaseData() {
       .from('roles')
       .update(updates)
       .eq('id', id)
-      .select()
+      .select('*')
       .single();
 
-    if (error) {
-      console.error('Error updating role:', error);
-      throw error;
-    }
-
-    setRoles(prev => prev.map(role => 
-      role.id === id ? { ...role, ...updates } : role
-    ));
+    if (error) throw error;
+    setRoles(prev => prev.map(r => r.id === id ? data : r));
+    await fetchData();
     return data;
   };
 
-  const addTeam = async (newTeam: Omit<Team, 'id' | 'created_at' | 'updated_at'> & { product_id: string }) => {
-    try {
-      const { data, error } = await supabase
-        .from('teams')
-        .insert(newTeam)
-        .select(`
-          *,
-          product:products(*)
-        `)
-        .single();
+  // Team CRUD operations
+  const addTeam = async (newTeam: Omit<Team, 'id' | 'created_at' | 'updated_at'>) => {
+    const { data, error } = await supabase
+      .from('teams')
+      .insert(newTeam)
+      .select('*, product:products(*)')
+      .single();
 
-      if (error) throw error;
-
-      setTeams(prev => [...prev, data]);
-      return data;
-    } catch (err) {
-      console.error('Error adding team:', err);
-      throw err;
-    }
+    if (error) throw error;
+    setTeams(prev => [...prev, data]);
+    return data;
   };
 
   const updateTeam = async (id: string, updates: Partial<Team>) => {
-    try {
-      const { data, error } = await supabase
-        .from('teams')
-        .update(updates)
-        .eq('id', id)
-        .select(`
-          *,
-          product:products(*)
-        `)
-        .single();
+    const { data, error } = await supabase
+      .from('teams')
+      .update(updates)
+      .eq('id', id)
+      .select('*, product:products(*)')
+      .single();
 
-      if (error) throw error;
-
-      setTeams(prev => prev.map(t => t.id === id ? data : t));
-      return data;
-    } catch (err) {
-      console.error('Error updating team:', err);
-      throw err;
-    }
+    if (error) throw error;
+    setTeams(prev => prev.map(t => t.id === id ? data : t));
+    return data;
   };
 
   const archiveTeam = async (id: string) => {
-    try {
-      const { error } = await supabase
-        .from('teams')
-        .update({ archived: true })
-        .eq('id', id);
+    const { data, error } = await supabase
+      .from('teams')
+      .update({ archived: true })
+      .eq('id', id)
+      .select('*, product:products(*)')
+      .single();
 
-      if (error) throw error;
-
-      // Update local state
-      setTeams(teams.map(team => 
-        team.id === id 
-          ? { ...team, archived: true, archived_at: new Date().toISOString() }
-          : team
-      ));
-      toast.success('Team archived successfully');
-    } catch (error) {
-      console.error('Error archiving team:', error);
-      toast.error('Failed to archive team');
-      throw error;
-    }
+    if (error) throw error;
+    setTeams(prev => prev.map(t => t.id === id ? data : t));
+    return data;
   };
 
   const unarchiveTeam = async (id: string) => {
-    try {
-      const { error } = await supabase
-        .from('teams')
-        .update({ archived: false, archived_at: null })
-        .eq('id', id);
+    const { data, error } = await supabase
+      .from('teams')
+      .update({ archived: false })
+      .eq('id', id)
+      .select('*, product:products(*)')
+      .single();
 
-      if (error) throw error;
-
-      // Update local state
-      setTeams(teams.map(team => 
-        team.id === id 
-          ? { ...team, archived: false, archived_at: null }
-          : team
-      ));
-      toast.success('Team unarchived successfully');
-    } catch (error) {
-      console.error('Error unarchiving team:', error);
-      toast.error('Failed to unarchive team');
-      throw error;
-    }
+    if (error) throw error;
+    setTeams(prev => prev.map(t => t.id === id ? data : t));
+    return data;
   };
 
+  // Project-related operations
   const updateProjectProducts = async (projectId: string, productIds: string[]) => {
-    // Delete existing product assignments
-    const { error: deleteError } = await supabase
-      .from('project_products')
-      .delete()
-      .eq('project_id', projectId);
-
-    if (deleteError) {
-      console.error('Error deleting project products:', deleteError);
-      throw deleteError;
-    }
-
-    // Insert new product assignments
-    if (productIds.length > 0) {
-      const { error: insertError } = await supabase
-        .from('project_products')
-        .insert(
-          productIds.map(productId => ({
-            project_id: projectId,
-            product_id: productId,
-          }))
-        );
-
-      if (insertError) {
-        console.error('Error inserting project products:', insertError);
-        throw insertError;
-      }
-    }
-
-    // Refetch the updated project
-    await fetchData();
+    await supabase.from('project_products').delete().eq('project_id', projectId);
     
-    return await supabase
-      .from('projects')
-      .select(`
-        *,
-        team:teams(*, product:products(*)),
-        assignees:project_assignees(team_member:team_members(*)),
-        products:project_products(product:products(*))
-      `)
-      .eq('id', projectId)
-      .single();
+    if (productIds.length > 0) {
+      const inserts = productIds.map(productId => ({ project_id: projectId, product_id: productId }));
+      const { error } = await supabase.from('project_products').insert(inserts);
+      if (error) throw error;
+    }
+    
+    await fetchData();
   };
 
   const updateProjectAssignees = async (projectId: string, assigneeIds: string[]) => {
-    try {
-      // Delete existing assignees for this project
-      const { error: deleteError } = await supabase
-        .from('project_assignees')
-        .delete()
-        .eq('project_id', projectId);
-
-      if (deleteError) {
-        console.error('Error deleting project assignees:', deleteError);
-        throw deleteError;
-      }
-
-      // Insert new assignees
-      if (assigneeIds.length > 0) {
-        const { error: insertError } = await supabase
-          .from('project_assignees')
-          .insert(
-            assigneeIds.map(memberId => ({
-              project_id: projectId,
-              team_member_id: memberId,
-            }))
-          );
-
-        if (insertError) {
-          console.error('Error inserting project assignees:', insertError);
-          throw insertError;
-        }
-      }
-
-      // Refetch the updated project
-      await fetchData();
-      
-      return await supabase
-        .from('projects')
-        .select(`
-          *,
-          team:teams(*, product:products(*)),
-          assignees:project_assignees(team_member:team_members(*)),
-          products:project_products(product:products(*))
-        `)
-        .eq('id', projectId)
-        .single();
-    } catch (err) {
-      console.error('Error updating project assignees:', err);
-      throw err;
+    await supabase.from('project_assignees').delete().eq('project_id', projectId);
+    
+    if (assigneeIds.length > 0) {
+      const inserts = assigneeIds.map(assigneeId => ({ 
+        project_id: projectId, 
+        team_member_id: assigneeId,
+        percent_allocation: 100
+      }));
+      const { error } = await supabase.from('project_assignees').insert(inserts);
+      if (error) throw error;
     }
+    
+    await fetchData();
   };
 
-  const updateProjectAssignments = async (projectId: string, assignments: { teamMemberId: string; percentAllocation: number; startDate?: string; endDate?: string }[]) => {
+  const updateProjectAssignments = async (
+    projectId: string, 
+    assignments: Array<{ 
+      team_member_id: string; 
+      percent_allocation: number; 
+      start_date?: string; 
+      end_date?: string; 
+    }>
+  ) => {
     try {
-      // Get project dates for fallback
-      const project = projects.find(p => p.id === projectId);
-      const fallbackStartDate = project?.start_date;
-      const fallbackEndDate = project?.end_date;
+      await supabase.from('project_assignees').delete().eq('project_id', projectId);
       
-      // Delete existing assignments for this project
-      const { error: deleteError } = await supabase
-        .from('project_assignees')
-        .delete()
-        .eq('project_id', projectId);
-
-      if (deleteError) {
-        console.error('Error deleting project assignments:', deleteError);
-        throw deleteError;
-      }
-
-      // Insert new assignments with allocations and dates (with fallbacks)
       if (assignments.length > 0) {
-        const { error: insertError } = await supabase
-          .from('project_assignees')
-          .insert(
-            assignments.map(assignment => ({
-              project_id: projectId,
-              team_member_id: assignment.teamMemberId,
-              percent_allocation: assignment.percentAllocation,
-              start_date: assignment.startDate || fallbackStartDate,
-              end_date: assignment.endDate || fallbackEndDate,
-            }))
-          );
-
-        if (insertError) {
-          console.error('Error inserting project assignments:', insertError);
-          throw insertError;
-        }
+        const inserts = assignments.map(assignment => ({
+          project_id: projectId,
+          ...assignment
+        }));
+        const { error } = await supabase.from('project_assignees').insert(inserts);
+        if (error) throw error;
       }
-
-      // Fetch updated assignments and project for immediate UI update
+      
       const [assignmentsResult, projectResult] = await Promise.all([
         supabase
           .from('project_assignees')
@@ -592,7 +450,6 @@ export function useSupabaseData() {
       ]);
       
       if (assignmentsResult.data) {
-        // Update assignments state with fresh data
         setAssignments(prev => [
           ...prev.filter(a => a.project_id !== projectId),
           ...assignmentsResult.data
@@ -600,7 +457,6 @@ export function useSupabaseData() {
       }
 
       if (projectResult.data) {
-        // Update project state with fresh data including updated assignees
         const transformedProject = {
           ...projectResult.data,
           assignees: projectResult.data.assignees?.map((a: any) => a.team_member) || [],
@@ -617,21 +473,18 @@ export function useSupabaseData() {
 
   // Team memberships CRUD
   const addTeamMembership = async (membership: Omit<TeamMembership, 'id' | 'created_at' | 'updated_at'>) => {
-    // Ensure month truncation client-side
     const payload = {
       ...membership,
       start_month: new Date(membership.start_month).toISOString().split('T')[0],
       end_month: membership.end_month ? new Date(membership.end_month).toISOString().split('T')[0] : null,
     };
 
-    // Check for overlapping memberships and end them automatically
     const overlappingMemberships = memberships.filter(m => 
       m.team_member_id === membership.team_member_id &&
       m.team_id !== membership.team_id &&
       (!m.end_month || new Date(m.end_month) >= new Date(payload.start_month))
     );
 
-    // End overlapping memberships by setting their end_month to one month before the new start
     for (const overlapping of overlappingMemberships) {
       const newEndDate = new Date(payload.start_month);
       newEndDate.setMonth(newEndDate.getMonth() - 1);
@@ -729,10 +582,40 @@ export function useSupabaseData() {
     }
   };
 
+  // Team ideal size CRUD operations
+  const addTeamIdealSize = async (idealSize: Omit<TeamIdealSize, 'id' | 'created_at' | 'updated_at'>) => {
+    const { error } = await supabase
+      .from('team_ideal_sizes')
+      .insert(idealSize);
+
+    if (error) throw error;
+    await fetchData();
+  };
+
+  const updateTeamIdealSize = async (id: string, updates: Partial<TeamIdealSize>) => {
+    const { error } = await supabase
+      .from('team_ideal_sizes')
+      .update(updates)
+      .eq('id', id);
+
+    if (error) throw error;
+    await fetchData();
+  };
+
+  const deleteTeamIdealSize = async (id: string) => {
+    const { error } = await supabase
+      .from('team_ideal_sizes')
+      .delete()
+      .eq('id', id);
+
+    if (error) throw error;
+    await fetchData();
+  };
+
+  // Real-time subscriptions
   useEffect(() => {
     fetchData();
-
-    // Set up real-time subscriptions with error handling
+    
     let subscriptions: any[] = [];
     
     try {
@@ -751,14 +634,14 @@ export function useSupabaseData() {
         .subscribe();
 
       const assigneesSubscription = supabase
-        .channel('project-assignees-changes')
+        .channel('assignees-changes')
         .on('postgres_changes', { event: '*', schema: 'public', table: 'project_assignees' }, () => {
           fetchData();
         })
         .subscribe();
 
       const membershipsSubscription = supabase
-        .channel('team-memberships-changes')
+        .channel('memberships-changes')
         .on('postgres_changes', { event: '*', schema: 'public', table: 'team_memberships' }, () => {
           fetchData();
         })
@@ -769,12 +652,14 @@ export function useSupabaseData() {
         .on('postgres_changes', { event: '*', schema: 'public', table: 'work_assignments' }, () => {
           fetchData();
         })
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'team_ideal_sizes' }, () => {
+          fetchData();
+        })
         .subscribe();
 
       subscriptions = [projectsSubscription, teamMembersSubscription, assigneesSubscription, membershipsSubscription, workAssignmentsSubscription];
     } catch (error) {
       console.warn('Real-time subscriptions could not be established:', error);
-      // App will continue to work without real-time updates
     }
 
     return () => {
@@ -797,6 +682,7 @@ export function useSupabaseData() {
     assignments,
     memberships,
     workAssignments,
+    teamIdealSizes,
     loading,
     error,
     addProject,
@@ -820,6 +706,9 @@ export function useSupabaseData() {
     addWorkAssignment,
     updateWorkAssignment,
     deleteWorkAssignment,
+    addTeamIdealSize,
+    updateTeamIdealSize,
+    deleteTeamIdealSize,
     refetch: fetchData,
   };
 };

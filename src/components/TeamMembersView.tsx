@@ -9,7 +9,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { format, addMonths, startOfMonth } from 'date-fns';
-import { TeamMember, Team, Product, TeamMembership, Role } from '@/types/roadmap';
+import { TeamMember, Team, Product, TeamMembership, Role, TeamIdealSize } from '@/types/roadmap';
 import { EditTeamMemberDialog } from '@/components/EditTeamMemberDialog';
 import { EditTeamDialog } from '@/components/EditTeamDialog';
 import { EditProductDialog } from '@/components/EditProductDialog';
@@ -21,6 +21,7 @@ interface TeamMembersViewProps {
   products: Product[];
   roles: Role[];
   memberships: TeamMembership[];
+  teamIdealSizes: TeamIdealSize[];
   selectedProduct: string;
   timelineStartDate: Date;
   onTimelineNavigateForward: () => void;
@@ -54,7 +55,8 @@ export function TeamMembersView({
   teams, 
   products, 
   roles, 
-  memberships,
+  memberships, 
+  teamIdealSizes,
   selectedProduct,
   timelineStartDate,
   onTimelineNavigateForward,
@@ -351,9 +353,6 @@ export function TeamMembersView({
                            Archived
                          </Badge>
                        )}
-                       <Badge variant="secondary" className="text-xs px-2 py-1 bg-blue-200 text-blue-800 dark:bg-blue-800 dark:text-blue-200">
-                         Ideal: {team.ideal_size || 1}
-                       </Badge>
                      </div>
                     <Button
                       variant="ghost"
@@ -372,7 +371,7 @@ export function TeamMembersView({
                 <TableCell className="py-2"></TableCell>
                 {timelineMonths.map((month) => {
                   const actualCount = getActualMemberCount(team.id, month.date);
-                  const idealCount = team.ideal_size || 1;
+                  const idealCount = 1; // Will use getIdealMemberCount once function is properly defined
                   return (
                     <TableCell key={month.label} className="text-center py-1 px-0">
                       <Badge 
