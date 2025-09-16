@@ -10,7 +10,7 @@ import { Product } from '@/types/roadmap';
 interface AddTeamDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onAddTeam: (teamData: { name: string; description?: string; product_id?: string; ideal_size?: number }) => Promise<void>;
+  onAddTeam: (teamData: { name: string; description?: string; product_id: string; ideal_size?: number }) => Promise<void>;
   products: Product[];
 }
 
@@ -23,14 +23,14 @@ export function AddTeamDialog({ open, onOpenChange, onAddTeam, products }: AddTe
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name.trim()) return;
+    if (!name.trim() || !productId) return;
 
     setIsSubmitting(true);
     try {
       await onAddTeam({
         name: name.trim(),
         description: description.trim() || undefined,
-        product_id: productId || undefined,
+        product_id: productId,
         ideal_size: idealSize,
       });
       setName('');
@@ -75,10 +75,10 @@ export function AddTeamDialog({ open, onOpenChange, onAddTeam, products }: AddTe
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="product">Product</Label>
-            <Select value={productId} onValueChange={setProductId}>
+            <Label htmlFor="product">Product *</Label>
+            <Select value={productId} onValueChange={setProductId} required>
               <SelectTrigger>
-                <SelectValue placeholder="Select a product (optional)" />
+                <SelectValue placeholder="Select a product" />
               </SelectTrigger>
               <SelectContent>
                 {products.map((product) => (
@@ -106,7 +106,7 @@ export function AddTeamDialog({ open, onOpenChange, onAddTeam, products }: AddTe
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               Cancel
             </Button>
-            <Button type="submit" disabled={isSubmitting || !name.trim()}>
+            <Button type="submit" disabled={isSubmitting || !name.trim() || !productId}>
               {isSubmitting ? 'Adding...' : 'Add Team'}
             </Button>
           </div>
