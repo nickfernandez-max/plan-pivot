@@ -348,9 +348,11 @@ export function RoadmapView({
       // Project intersects if it starts before timeline ends and ends after timeline starts
       const intersects = projectStart <= timelineBounds.end && projectEnd >= timelineBounds.start;
       
-      // For main roadmap, only show published projects
+      // For main roadmap, only show published projects  
       // For future planning, show all projects (including tentative)
-      const visibilityMatch = isFuturePlanning ? true : project.status_visibility === 'published';
+      const visibilityMatch = isFuturePlanning 
+        ? true  // Future Planning: show all projects
+        : project.status_visibility === 'published';  // Main Roadmap: only published
       
       return intersects && visibilityMatch;
     });

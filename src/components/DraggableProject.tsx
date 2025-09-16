@@ -26,11 +26,13 @@ export function DraggableProject({
   isFront = false
 }: DraggableProjectProps) {
   // Debug: Log if onEdit is available for this project
-  console.log(`🔧 DraggableProject for "${project.name}":`, {
+  console.log('🔧 DraggableProject for "' + project.name + '":', {
     hasOnEdit: !!onEdit,
     isPreview,
     project: project.name,
-    projectId: project.id
+    projectId: project.id,
+    status_visibility: project.status_visibility,
+    isTentative: project.status_visibility === 'tentative'
   });
   const {
     attributes,
@@ -61,6 +63,16 @@ export function DraggableProject({
 
   // Visual differentiation for tentative vs published projects
   const isTentative = project.status_visibility === 'tentative';
+  
+  // Debug logging for tentative projects
+  if (project.name?.includes('TENT')) {
+    console.log('🎨 Project styling debug:', {
+      name: project.name,
+      status_visibility: project.status_visibility,
+      isTentative,
+      project
+    });
+  }
   
   return (
     <div
@@ -102,11 +114,11 @@ export function DraggableProject({
           title={project.name} // Add native tooltip as fallback
         >
           <div className="flex-1 min-w-0">
-            <div className={`text-[10px] font-medium leading-tight break-words hyphens-auto ${
-              isTentative ? 'text-orange-800' : 'text-white'
+            <div className={`text-[10px] font-bold leading-tight break-words hyphens-auto ${
+              isTentative ? 'text-red-800' : 'text-white'
             }`} style={{ wordBreak: 'break-word' }}>
+              {isTentative && <span className="mr-1 text-[9px] font-bold bg-red-500 text-white px-1 rounded">TENTATIVE</span>}
               {project.name}
-              {isTentative && <span className="ml-1 text-[8px] font-bold">[TENTATIVE]</span>}
             </div>
           </div>
         </div>
