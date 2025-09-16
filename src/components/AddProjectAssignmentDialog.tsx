@@ -323,10 +323,12 @@ export function AddProjectAssignmentDialog({
           value_score: data.newProjectValueScore!,
           is_rd: data.newProjectIsRD || false,
           status: 'Logged' as ProjectStatus,
-          status_visibility: 'published' as const,
+          status_visibility: 'published' as const, // Default to published, let parent handler override
         };
         
+        console.log('🔧 Creating new project with data:', newProject);
         const createdProject = await onAddProject(newProject);
+        console.log('🔧 Created project result:', createdProject);
         projectId = createdProject.id;
       } else {
         projectId = data.existingProjectId!;

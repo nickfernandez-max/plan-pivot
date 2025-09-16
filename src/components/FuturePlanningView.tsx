@@ -49,9 +49,14 @@ export function FuturePlanningView({
 
   // Get filtered tentative projects based on current filters
   const filteredTentativeProjects = useMemo(() => {
-    return projects.filter(project => {
-      if (project.status_visibility !== 'tentative') return false;
-
+    const tentativeProjects = projects.filter(project => {
+      console.log('🔍 Checking project:', project.name, 'status_visibility:', project.status_visibility);
+      return project.status_visibility === 'tentative';
+    });
+    
+    console.log('🔍 All tentative projects found:', tentativeProjects.length, tentativeProjects.map(p => p.name));
+    
+    const filtered = tentativeProjects.filter(project => {
       // Apply team filter
       if (selectedTeam !== 'all') {
         const team = teams.find(t => t.id === project.team_id);
@@ -65,6 +70,9 @@ export function FuturePlanningView({
 
       return true;
     });
+    
+    console.log('🔍 Filtered tentative projects:', filtered.length, 'with filters team:', selectedTeam, 'product:', selectedProduct);
+    return filtered;
   }, [projects, selectedTeam, selectedProduct, teams]);
 
   // Handle publishing a single project
