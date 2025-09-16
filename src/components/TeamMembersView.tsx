@@ -23,6 +23,7 @@ interface TeamMembersViewProps {
   memberships: TeamMembership[];
   teamIdealSizes: TeamIdealSize[];
   selectedProduct: string;
+  selectedTeam: string;
   timelineStartDate: Date;
   onTimelineNavigateForward: () => void;
   onTimelineNavigateBackward: () => void;
@@ -58,6 +59,7 @@ export function TeamMembersView({
   memberships, 
   teamIdealSizes,
   selectedProduct,
+  selectedTeam,
   timelineStartDate,
   onTimelineNavigateForward,
   onTimelineNavigateBackward,
@@ -233,7 +235,8 @@ export function TeamMembersView({
       product,
       teams: teams.filter(team => 
         team.product_id === product.id && 
-        (showArchived || !team.archived)
+        (showArchived || !team.archived) &&
+        (selectedTeam === 'all' || team.name === selectedTeam)
       ).map(team => ({
         team,
         members: sortMembers(getTimelineMembers(team.id))
@@ -242,14 +245,15 @@ export function TeamMembersView({
 
     const teamsWithoutProduct = teams.filter(team => 
       !team.product_id && 
-      (showArchived || !team.archived)
+      (showArchived || !team.archived) &&
+      (selectedTeam === 'all' || team.name === selectedTeam)
     ).map(team => ({
       team,
       members: sortMembers(getTimelineMembers(team.id))
     }));
 
     return { productsWithTeams, teamsWithoutProduct };
-  }, [teams, teamMembers, products, memberships, primarySort, primaryDirection, secondarySort, secondaryDirection]);
+  }, [teams, teamMembers, products, memberships, selectedTeam, primarySort, primaryDirection, secondarySort, secondaryDirection, showArchived]);
 
 
   // Set active tab based on selected product
