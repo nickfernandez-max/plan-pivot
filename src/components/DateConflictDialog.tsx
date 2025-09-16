@@ -58,25 +58,25 @@ export function DateConflictDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-lg max-w-[90vw] max-h-[90vh] overflow-y-auto">
         <DialogHeader className="space-y-3">
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-full bg-amber-100 dark:bg-amber-900/20">
               <AlertTriangle className="h-5 w-5 text-amber-600 dark:text-amber-400" />
             </div>
-            <DialogTitle className="text-base">{getConflictTitle()}</DialogTitle>
+            <DialogTitle className="text-base flex-1 min-w-0">{getConflictTitle()}</DialogTitle>
           </div>
           <DialogDescription className="text-sm text-left">
             {getConflictDescription()}
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4">
+        <div className="space-y-4 max-w-full">
           {/* Project Information */}
           <div className="rounded-lg border bg-muted/50 p-3">
             <div className="flex items-center gap-2 mb-2">
-              <Calendar className="h-4 w-4 text-muted-foreground" />
-              <span className="font-medium text-sm">Project: {conflict.projectName}</span>
+              <Calendar className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+              <span className="font-medium text-sm flex-1 min-w-0 truncate">Project: {conflict.projectName}</span>
             </div>
             <div className="text-xs text-muted-foreground">
               {formatDate(conflict.projectDates.start)} → {formatDate(conflict.projectDates.end)}
@@ -87,7 +87,7 @@ export function DateConflictDialog({
           {conflict.assignmentDates && (
             <div className="rounded-lg border bg-muted/50 p-3">
               <div className="flex items-center gap-2 mb-2">
-                <Users className="h-4 w-4 text-muted-foreground" />
+                <Users className="h-4 w-4 text-muted-foreground flex-shrink-0" />
                 <span className="font-medium text-sm">Assignment Dates</span>
               </div>
               <div className="text-xs text-muted-foreground">
@@ -100,16 +100,16 @@ export function DateConflictDialog({
           {conflict.affectedAssignments && conflict.affectedAssignments.length > 0 && (
             <div className="rounded-lg border bg-muted/50 p-3">
               <div className="flex items-center gap-2 mb-2">
-                <Users className="h-4 w-4 text-muted-foreground" />
+                <Users className="h-4 w-4 text-muted-foreground flex-shrink-0" />
                 <span className="font-medium text-sm">
                   Affected Assignments ({conflict.affectedAssignments.length})
                 </span>
               </div>
               <div className="space-y-2">
                 {conflict.affectedAssignments.map((assignment, index) => (
-                  <div key={index} className="flex items-center justify-between text-xs">
-                    <span className="font-medium">{assignment.memberName}</span>
-                    <Badge variant="outline" className="text-xs">
+                  <div key={index} className="flex items-center justify-between text-xs gap-2">
+                    <span className="font-medium flex-1 min-w-0 truncate">{assignment.memberName}</span>
+                    <Badge variant="outline" className="text-xs flex-shrink-0">
                       {formatDate(assignment.currentDates.start)} → {formatDate(assignment.currentDates.end)}
                     </Badge>
                   </div>
@@ -125,15 +125,15 @@ export function DateConflictDialog({
                 key={action.id}
                 variant={action.variant}
                 size="sm"
-                className="w-full justify-start h-auto py-3"
+                className="w-full justify-start h-auto py-3 text-left"
                 onClick={() => {
                   onAction(action.id);
                   onOpenChange(false);
                 }}
               >
-                <div className="text-left">
+                <div className="text-left min-w-0 flex-1">
                   <div className="font-medium">{action.label}</div>
-                  <div className="text-xs text-muted-foreground mt-1">
+                  <div className="text-xs text-muted-foreground mt-1 break-words">
                     {action.description}
                   </div>
                 </div>
