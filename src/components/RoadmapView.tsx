@@ -549,14 +549,7 @@ export function RoadmapView({
              
              // Secondary sort by name (ascending)
              return a.name.localeCompare(b.name);
-           });
-            // Primary sort by role (ascending)
-            const roleCompare = (a.role?.display_name || a.role?.name || '').localeCompare(b.role?.display_name || b.role?.name || '');
-            if (roleCompare !== 0) return roleCompare;
-            
-            // Secondary sort by name (ascending)
-            return a.name.localeCompare(b.name);
-          });
+            });
         const memberRows: MemberRow[] = [];
         
         membersInTeam.forEach(member => {
@@ -1326,5 +1319,5 @@ export function RoadmapView({
       />
     )}
   </DndContext>
-  );
+);
 }
