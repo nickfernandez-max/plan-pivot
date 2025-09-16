@@ -59,10 +59,17 @@ export function DraggableProject({
     transition: isDragging ? 'none' : 'all 0.2s ease-out',
   };
 
+  // Visual differentiation for tentative vs published projects
+  const isTentative = project.status_visibility === 'tentative';
+  
   return (
     <div
       ref={setNodeRef}
-      className="absolute rounded-md shadow-sm border transition-all duration-200 hover:shadow-lg group animate-fade-in cursor-grab active:cursor-grabbing"
+      className={`absolute rounded-md shadow-sm transition-all duration-200 hover:shadow-lg group animate-fade-in cursor-grab active:cursor-grabbing ${
+        isTentative 
+          ? 'border-2 border-dashed opacity-75' 
+          : 'border border-solid'
+      }`}
       style={{
         ...style,
         ...dragStyle,
