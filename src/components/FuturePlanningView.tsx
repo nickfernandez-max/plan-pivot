@@ -49,29 +49,66 @@ export function FuturePlanningView({
 
   // Get filtered tentative projects based on current filters
   const filteredTentativeProjects = useMemo(() => {
+    console.log('🔍 FuturePlanning - Starting project filter process');
+    console.log('🔍 Total projects received:', projects.length);
+    console.log('🔍 Current filters - team:', selectedTeam, 'product:', selectedProduct);
+    
     const tentativeProjects = projects.filter(project => {
-      console.log('🔍 Checking project:', project.name, 'status_visibility:', project.status_visibility);
+      console.log('🔍 Checking project:', {
+        name: project.name,
+        status_visibility: project.status_visibility,
+        team_id: project.team_id,
+        products: project.products?.map(p => ({ id: p.id, name: p.name })) || []
+      });
       return project.status_visibility === 'tentative';
     });
     
-    console.log('🔍 All tentative projects found:', tentativeProjects.length, tentativeProjects.map(p => p.name));
+    console.log('🔍 All tentative projects found:', tentativeProjects.length);
+    tentativeProjects.forEach(p => {
+      const team = teams.find(t => t.id === p.team_id);
+      console.log('🔍 Tentative project details:', {
+        name: p.name,
+        id: p.id,
+        team_name: team?.name,
+        team_id: p.team_id,
+        products: p.products?.map(pr => pr.name) || 'No products'
+      });
+    });
     
     const filtered = tentativeProjects.filter(project => {
+      let teamMatch = true;
+      let productMatch = true;
+      
       // Apply team filter
       if (selectedTeam !== 'all') {
         const team = teams.find(t => t.id === project.team_id);
-        if (!team || team.name !== selectedTeam) return false;
+        teamMatch = team && team.name === selectedTeam;
+        console.log('🔍 Team filter check:', {
+          project: project.name,
+          selectedTeam,
+          projectTeam: team?.name,
+          match: teamMatch
+        });
       }
 
       // Apply product filter
       if (selectedProduct !== 'all') {
-        if (!project.products?.some(p => p.name === selectedProduct)) return false;
+        productMatch = project.products?.some(p => p.name === selectedProduct) || false;
+        console.log('🔍 Product filter check:', {
+          project: project.name,
+          selectedProduct,
+          projectProducts: project.products?.map(p => p.name) || [],
+          match: productMatch
+        });
       }
 
-      return true;
+      const passes = teamMatch && productMatch;
+      console.log('🔍 Final filter result for', project.name, ':', passes);
+      return passes;
     });
     
-    console.log('🔍 Filtered tentative projects:', filtered.length, 'with filters team:', selectedTeam, 'product:', selectedProduct);
+    console.log('🔍 Final filtered tentative projects:', filtered.length);
+    console.log('🔍 Filtered project names:', filtered.map(p => p.name));
     return filtered;
   }, [projects, selectedTeam, selectedProduct, teams]);
 

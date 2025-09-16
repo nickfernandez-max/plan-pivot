@@ -158,6 +158,21 @@ export function useSupabaseData() {
         assignees: project.assignees?.map((a: any) => a.team_member) || [],
         products: project.products?.map((p: any) => p.product) || []
       })) || [];
+      
+      console.log('🔍 Projects loaded. Status breakdown:', {
+        total: transformedProjects.length,
+        published: transformedProjects.filter(p => p.status_visibility === 'published').length,
+        tentative: transformedProjects.filter(p => p.status_visibility === 'tentative').length
+      });
+      
+      // Debug tentative projects specifically
+      const tentativeProjects = transformedProjects.filter(p => p.status_visibility === 'tentative');
+      console.log('🔍 Tentative projects loaded:', tentativeProjects.map(p => ({
+        name: p.name,
+        id: p.id,
+        team_id: p.team_id,
+        products: p.products?.map(pr => pr.name) || 'No products'
+      })));
 
       setProducts(productsData || []);
       setRoles(rolesData || []);
@@ -205,6 +220,12 @@ export function useSupabaseData() {
         assignees: data.assignees?.map((assignee: any) => assignee.team_member).filter(Boolean) || [],
         products: data.products?.map((p: any) => p.product).filter(Boolean) || []
       };
+
+      console.log('🔧 Added project to state:', {
+        name: transformedProject.name,
+        status_visibility: transformedProject.status_visibility,
+        products: transformedProject.products?.map(p => p.name) || []
+      });
 
       setProjects(prev => [...prev, transformedProject]);
       return transformedProject;
