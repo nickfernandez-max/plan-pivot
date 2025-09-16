@@ -339,14 +339,9 @@ export function RoadmapView({
 
   // Filter projects to only include those that intersect with the visible timeline
   const visibleProjects = useMemo(() => {
-    console.log('🔍 RoadmapView filtering projects', {
-      totalProjects: projects.length,
-      isFuturePlanning,
-      timelineBounds: {
-        start: timelineBounds.start.toISOString(),
-        end: timelineBounds.end.toISOString()
-      }
-    });
+    console.log('🔍🔍🔍 ROADMAPVIEW START - isFuturePlanning:', isFuturePlanning);
+    console.log('🔍🔍🔍 ROADMAPVIEW projects received:', projects.length);
+    console.log('🔍🔍🔍 Timeline bounds:', timelineBounds.start, 'to', timelineBounds.end);
 
     const filtered = projects.filter(project => {
       const projectStart = new Date(project.start_date);
@@ -362,13 +357,10 @@ export function RoadmapView({
       const passes = intersects && visibilityMatch;
       
       if (project.status_visibility === 'tentative') {
-        console.log('🔍 Tentative project filtering:', {
+        console.log('🔍🔍🔍 TENTATIVE PROJECT:', {
           name: project.name,
-          status_visibility: project.status_visibility,
           start_date: project.start_date,
           end_date: project.end_date,
-          projectStart: projectStart.toISOString(),
-          projectEnd: projectEnd.toISOString(),
           intersects,
           visibilityMatch,
           isFuturePlanning,
@@ -379,10 +371,9 @@ export function RoadmapView({
       return passes;
     });
     
-    console.log('🔍 RoadmapView filtered projects:', {
-      total: filtered.length,
-      tentative: filtered.filter(p => p.status_visibility === 'tentative').length,
-      published: filtered.filter(p => p.status_visibility === 'published').length
+    console.log('🔍🔍🔍 ROADMAPVIEW RESULT:', {
+      filtered: filtered.length,
+      tentative: filtered.filter(p => p.status_visibility === 'tentative').length
     });
     
     return filtered;
