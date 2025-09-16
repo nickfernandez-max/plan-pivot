@@ -218,6 +218,32 @@ export function TeamMembersView({
     // Helper function to get members assigned to a team during the timeline period
     const getTimelineMembers = (teamId: string) => {
       return teamMembers.filter(member => {
+        // When a specific product is selected, only show members who have memberships 
+        // in teams belonging to that product during the timeline period
+        if (selectedProduct !== 'all') {
+          // Get the team for this teamId to check its product
+          const currentTeam = teams.find(t => t.id === teamId);
+          if (!currentTeam) return false;
+          
+          // Find the product that matches the selected product name
+          const selectedProductObj = products.find(p => p.name === selectedProduct);
+          if (!selectedProductObj) return false;
+          
+          // Only include members if they have memberships in teams belonging to the selected product
+          const hasProductMembership = (memberships || []).some(membership => {
+            const membershipTeam = teams.find(t => t.id === membership.team_id);
+            const membershipStart = membership.start_month;
+            const membershipEnd = membership.end_month || '9999-12-01';
+            
+            return membership.team_member_id === member.id &&
+              membershipTeam?.product_id === selectedProductObj.id &&
+              membershipStart <= timelineEnd &&
+              membershipEnd >= timelineStart;
+          });
+          
+          if (!hasProductMembership) return false;
+        }
+        
         // Check if member has any membership for this team that overlaps with timeline
         return (memberships || []).some(membership => {
           const membershipStart = membership.start_month;
