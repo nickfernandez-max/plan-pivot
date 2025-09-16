@@ -59,6 +59,7 @@ export default function RoadmapApp() {
     assignments,
     memberships,
     workAssignments,
+    teamIdealSizes,
     loading, 
     error, 
     addProject, 
@@ -292,6 +293,36 @@ export default function RoadmapApp() {
     }
   };
 
+  const handleArchiveTeam = async (id: string) => {
+    try {
+      await archiveTeam(id);
+      toast({ title: "Success", description: "Team archived successfully" });
+    } catch (error) {
+      console.error('Error archiving team:', error);
+      toast({ title: "Error", description: "Failed to archive team", variant: "destructive" });
+    }
+  };
+
+  const handleUpdateProjectAssignments = async (
+    projectId: string, 
+    assignments: Array<{ teamMemberId: string; percentAllocation: number; startDate?: string; endDate?: string; }>
+  ) => {
+    try {
+      // Convert camelCase to snake_case for database compatibility
+      const dbAssignments = assignments.map(assignment => ({
+        team_member_id: assignment.teamMemberId,
+        percent_allocation: assignment.percentAllocation,
+        start_date: assignment.startDate,
+        end_date: assignment.endDate
+      }));
+      
+      await updateProjectAssignments(projectId, dbAssignments);
+    } catch (error) {
+      console.error('Error updating project assignments:', error);
+      throw error;
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -418,7 +449,7 @@ export default function RoadmapApp() {
               onUpdateProjectProducts={async (projectId: string, productIds: string[]) => {
                 await updateProjectProducts(projectId, productIds);
               }}
-              onUpdateProjectAssignments={updateProjectAssignments}
+               onUpdateProjectAssignments={handleUpdateProjectAssignments}
               onAddProject={handleAddProject}
               onAddWorkAssignment={addWorkAssignment}
               onUpdateWorkAssignment={updateWorkAssignment}
@@ -447,6 +478,7 @@ export default function RoadmapApp() {
               teams={teams}
               products={products}
               roles={roles}
+              memberships={memberships}
               teamIdealSizes={teamIdealSizes}
               selectedProduct={selectedProduct}
               timelineStartDate={timelineStartDate}
@@ -459,7 +491,7 @@ export default function RoadmapApp() {
               onUpdateProduct={updateProduct}
               onAddTeam={handleAddTeam}
               onUpdateTeam={handleUpdateTeam}
-              onArchiveTeam={archiveTeam}
+              onArchiveTeam={handleArchiveTeam}
               onAddMembership={addTeamMembership}
               onUpdateMembership={updateTeamMembership}
               onDeleteMembership={deleteTeamMembership}

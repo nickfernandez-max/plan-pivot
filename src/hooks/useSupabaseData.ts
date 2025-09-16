@@ -200,7 +200,8 @@ export function useSupabaseData() {
 
       const transformedProject = {
         ...data,
-        assignees: data.assignees?.map(assignee => assignee.team_member).filter(Boolean) || []
+        assignees: data.assignees?.map((assignee: any) => assignee.team_member).filter(Boolean) || [],
+        products: data.products?.map((p: any) => p.product).filter(Boolean) || []
       };
 
       setProjects(prev => [...prev, transformedProject]);
@@ -229,7 +230,8 @@ export function useSupabaseData() {
 
       const transformedProject = {
         ...data,
-        assignees: data.assignees?.map(assignee => assignee.team_member).filter(Boolean) || []
+        assignees: data.assignees?.map((assignee: any) => assignee.team_member).filter(Boolean) || [],
+        products: data.products?.map((p: any) => p.product).filter(Boolean) || []
       };
 
       setProjects(prev => prev.map(p => p.id === id ? transformedProject : p));
@@ -334,7 +336,10 @@ export function useSupabaseData() {
   const addTeam = async (newTeam: Omit<Team, 'id' | 'created_at' | 'updated_at'>) => {
     const { data, error } = await supabase
       .from('teams')
-      .insert(newTeam)
+      .insert({
+        ...newTeam,
+        product_id: newTeam.product_id || null
+      })
       .select('*, product:products(*)')
       .single();
 
