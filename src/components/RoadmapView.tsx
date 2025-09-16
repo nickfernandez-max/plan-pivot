@@ -339,10 +339,6 @@ export function RoadmapView({
 
   // Filter projects to only include those that intersect with the visible timeline
   const visibleProjects = useMemo(() => {
-    console.log('🔍🔍🔍 ROADMAPVIEW START - isFuturePlanning:', isFuturePlanning);
-    console.log('🔍🔍🔍 ROADMAPVIEW projects received:', projects.length);
-    console.log('🔍🔍🔍 Timeline bounds:', timelineBounds.start, 'to', timelineBounds.end);
-
     const filtered = projects.filter(project => {
       const projectStart = new Date(project.start_date);
       const projectEnd = new Date(project.end_date);
@@ -351,29 +347,10 @@ export function RoadmapView({
       const intersects = projectStart <= timelineBounds.end && projectEnd >= timelineBounds.start;
       
       // For main roadmap, only show published projects
-      // For future planning, show all projects
-      const visibilityMatch = isFuturePlanning || project.status_visibility === 'published';
+      // For future planning, show all projects (including tentative)
+      const visibilityMatch = isFuturePlanning ? true : project.status_visibility === 'published';
       
-      const passes = intersects && visibilityMatch;
-      
-      if (project.status_visibility === 'tentative') {
-        console.log('🔍🔍🔍 TENTATIVE PROJECT:', {
-          name: project.name,
-          start_date: project.start_date,
-          end_date: project.end_date,
-          intersects,
-          visibilityMatch,
-          isFuturePlanning,
-          passes
-        });
-      }
-      
-      return passes;
-    });
-    
-    console.log('🔍🔍🔍 ROADMAPVIEW RESULT:', {
-      filtered: filtered.length,
-      tentative: filtered.filter(p => p.status_visibility === 'tentative').length
+      return intersects && visibilityMatch;
     });
     
     return filtered;
