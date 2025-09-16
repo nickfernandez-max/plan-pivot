@@ -62,11 +62,7 @@ export function useDateValidation({
         const member = teamMembers.find(m => m.id === assignment.team_member_id);
         return {
           ...assignment,
-          memberName: member?.name || 'Unknown Member',
-          currentDates: {
-            start: assignment.start_date || project.start_date,
-            end: assignment.end_date || project.end_date
-          }
+          member: member
         };
       });
 
@@ -161,7 +157,7 @@ export function useDateValidation({
         }
         break;
         
-      case 'keep_custom_dates':
+      case 'keep_custom':
         // Only update project dates, keep assignment dates as they are
         if (onUpdateProject) {
           await onUpdateProject(project.id, newDates);
