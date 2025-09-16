@@ -67,15 +67,16 @@ export function DraggableProject({
       ref={setNodeRef}
       className={`absolute rounded-md shadow-sm transition-all duration-200 hover:shadow-lg group animate-fade-in cursor-grab active:cursor-grabbing ${
         isTentative 
-          ? 'border-2 border-dashed opacity-90 ring-2 ring-primary/30' 
-          : 'border border-solid opacity-100'
+          ? 'border-2 border-dashed bg-gradient-to-r from-orange-100/90 to-yellow-100/90 border-orange-400' 
+          : 'border border-solid'
       }`}
       style={{
         ...style,
         ...dragStyle,
-        backgroundColor: project.color || 'hsl(var(--primary))',
-        borderColor: project.color || 'hsl(var(--primary))',
-        minHeight: isTentative ? '30px' : undefined,
+        backgroundColor: isTentative ? undefined : (project.color || 'hsl(var(--primary))'),
+        borderColor: isTentative ? 'orange' : (project.color || 'hsl(var(--primary))'),
+        minHeight: isTentative ? '35px' : undefined,
+        backgroundImage: isTentative ? 'repeating-linear-gradient(45deg, transparent, transparent 5px, rgba(255,165,0,0.1) 5px, rgba(255,165,0,0.1) 10px)' : undefined,
       }}
       onClick={(e) => {
         if (!isDragging && onClick) {
@@ -101,8 +102,11 @@ export function DraggableProject({
           title={project.name} // Add native tooltip as fallback
         >
           <div className="flex-1 min-w-0">
-            <div className="text-white text-[10px] font-medium leading-tight break-words hyphens-auto" style={{ wordBreak: 'break-word' }}>
+            <div className={`text-[10px] font-medium leading-tight break-words hyphens-auto ${
+              isTentative ? 'text-orange-800' : 'text-white'
+            }`} style={{ wordBreak: 'break-word' }}>
               {project.name}
+              {isTentative && <span className="ml-1 text-[8px] font-bold">[TENTATIVE]</span>}
             </div>
           </div>
         </div>
