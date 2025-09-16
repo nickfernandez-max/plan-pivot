@@ -506,6 +506,7 @@ export default function RoadmapApp() {
               products={products}
               assignments={assignments}
               workAssignments={workAssignments}
+              memberships={memberships}
               selectedTeam={selectedTeam}
               selectedProduct={selectedProduct}
               onUpdateProject={handleUpdateProject}
@@ -525,15 +526,16 @@ export default function RoadmapApp() {
 
           {isAdmin && (
             <TabsContent value="future-planning">
-              <FuturePlanningView 
-                projects={allProjects} 
-                teamMembers={filteredTeamMembers} 
-                teams={teams}
-                products={products}
-                assignments={assignments}
-                workAssignments={workAssignments}
-                selectedTeam={selectedTeam}
-                selectedProduct={selectedProduct}
+          <FuturePlanningView 
+            projects={allProjects}
+            teamMembers={filteredTeamMembers}
+            teams={teams}
+            products={products}
+            assignments={assignments}
+            workAssignments={workAssignments}
+            memberships={memberships}
+            selectedTeam={selectedTeam}
+            selectedProduct={selectedProduct}
                 onUpdateProject={handleUpdateProject}
                 onUpdateProjectAssignees={async (projectId: string, assigneeIds: string[]) => {
                   await updateProjectAssignees(projectId, assigneeIds);

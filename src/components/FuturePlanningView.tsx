@@ -3,7 +3,7 @@ import { RoadmapView } from '@/components/RoadmapView';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Project, TeamMember, Team, Product, ProjectAssignment, WorkAssignment } from '@/types/roadmap';
+import { Project, TeamMember, Team, Product, ProjectAssignment, WorkAssignment, TeamMembership } from '@/types/roadmap';
 import { CheckCircle, Clock, Eye, Filter } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
@@ -14,6 +14,7 @@ interface FuturePlanningViewProps {
   products: Product[];
   assignments: ProjectAssignment[];
   workAssignments: WorkAssignment[];
+  memberships: TeamMembership[];
   selectedTeam?: string;
   selectedProduct?: string;
   onUpdateProject: (id: string, updates: Partial<Project>) => Promise<void>;
@@ -26,13 +27,14 @@ interface FuturePlanningViewProps {
   onDeleteWorkAssignment: (id: string) => Promise<void>;
 }
 
-export function FuturePlanningView({
-  projects,
-  teamMembers,
-  teams,
-  products,
+export function FuturePlanningView({ 
+  projects, 
+  teamMembers, 
+  teams, 
+  products, 
   assignments,
   workAssignments,
+  memberships,
   selectedTeam = 'all',
   selectedProduct = 'all',
   onUpdateProject,
@@ -228,6 +230,7 @@ export function FuturePlanningView({
         products={products}
         assignments={assignments}
         workAssignments={workAssignments}
+        memberships={memberships}
         selectedTeam={selectedTeam}
         selectedProduct={selectedProduct}
         onUpdateProject={onUpdateProject}

@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Project, TeamMember, Team, Product, ProjectAssignment, WorkAssignment } from '@/types/roadmap';
+import { Project, TeamMember, Team, Product, ProjectAssignment, WorkAssignment, TeamMembership } from '@/types/roadmap';
 import { format, differenceInDays, addDays, startOfMonth, endOfMonth, addMonths, subMonths, startOfWeek, addWeeks, differenceInWeeks } from 'date-fns';
 import { useDragAndDrop } from '@/hooks/useDragAndDrop';
 import { DraggableProject } from '@/components/DraggableProject';
@@ -25,6 +25,7 @@ interface RoadmapViewProps {
   products: Product[];
   assignments: ProjectAssignment[];
   workAssignments: WorkAssignment[];
+  memberships: TeamMembership[];
   selectedTeam?: string;
   selectedProduct?: string;
   onUpdateProject: (id: string, updates: Partial<Project>) => Promise<void>;
@@ -231,6 +232,7 @@ export function RoadmapView({
   products,
   assignments,
   workAssignments,
+  memberships,
   selectedTeam = 'all',
   selectedProduct = 'all',
   onUpdateProject, 
@@ -516,10 +518,38 @@ export function RoadmapView({
     const calculateTeamRows = (teamsToProcess: Team[]) => {
       const teamGroups: Array<{ team: Team; memberRows: MemberRow[]; totalHeight: number }> = [];
       
-      teamsToProcess.forEach(team => {
-        const membersInTeam = teamMembers
-          .filter(member => member.team_id === team.id)
-          .sort((a, b) => {
+         teamsToProcess.forEach(team => {
+           // Get all memberships for this team
+           const teamMemberships = memberships.filter(membership => 
+             membership.team_id === team.id
+           );
+           
+           const membersInTeam = teamMembers.filter(member => {
+             // Check if member has active membership in this team during timeline
+             const hasActiveMembership = teamMemberships.some(membership => {
+               if (membership.team_member_id !== member.id) return false;
+               
+               const membershipStart = new Date(membership.start_month);
+               const membershipEnd = membership.end_month ? new Date(membership.end_month) : new Date('9999-12-01');
+               return membershipStart <= timelineBounds.end &&
+                      membershipEnd >= timelineBounds.start;
+             });
+             
+             // Debug logging for Bob Smith
+             if (member.name === 'Bob Smith' && hasActiveMembership) {
+               console.log(`✅ Bob Smith correctly assigned to team: ${team.name} (Product: ${team.product?.name || 'None'})`);
+             }
+             
+             return hasActiveMembership;
+           })
+           .sort((a, b) => {
+             // Primary sort by role (ascending)
+             const roleCompare = (a.role?.display_name || a.role?.name || '').localeCompare(b.role?.display_name || b.role?.name || '');
+             if (roleCompare !== 0) return roleCompare;
+             
+             // Secondary sort by name (ascending)
+             return a.name.localeCompare(b.name);
+           });
             // Primary sort by role (ascending)
             const roleCompare = (a.role?.display_name || a.role?.name || '').localeCompare(b.role?.display_name || b.role?.name || '');
             if (roleCompare !== 0) return roleCompare;
@@ -620,7 +650,7 @@ export function RoadmapView({
     const unassignedTeamGroups = calculateTeamRows(teamsWithoutProduct);
 
     return { processedProductGroups, unassignedTeamGroups };
-  }, [teams, teamMembers, visibleProjects, products, timelineBounds, totalDays]);
+  }, [teams, teamMembers, visibleProjects, products, timelineBounds, totalDays, memberships]);
 
   const allTeamGroups = useMemo(() => {
     const allGroups = [
