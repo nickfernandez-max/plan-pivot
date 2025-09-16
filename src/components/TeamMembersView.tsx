@@ -188,7 +188,27 @@ export function TeamMembersView({
     return months;
   }, [timelineStartDate]);
 
-  // Group teams by product, then team members by team based on timeline memberships
+  // Function to get ideal member count for a team in a specific month
+  const getIdealMemberCount = useMemo(() => {
+    return (teamId: string, date: Date) => {
+      const monthStr = format(date, 'yyyy-MM-01');
+      
+      // Find the ideal size that applies to this month
+      const applicableIdeal = (teamIdealSizes || [])
+        .filter(ideal => ideal.team_id === teamId)
+        .filter(ideal => {
+          const startMonth = ideal.start_month;
+          const endMonth = ideal.end_month;
+          
+          return monthStr >= startMonth && (!endMonth || monthStr <= endMonth);
+        })
+        .sort((a, b) => b.start_month.localeCompare(a.start_month))[0]; // Get most recent
+      
+      return applicableIdeal?.ideal_size || 1; // Default to 1 if no ideal size is set
+    };
+  }, [teamIdealSizes]);
+
+  // Function to get actual member count for a team in a specific month
   const groupedData = useMemo(() => {
     const timelineStart = format(timelineMonths[0].date, 'yyyy-MM-01');
     const timelineEnd = format(timelineMonths[timelineMonths.length - 1].date, 'yyyy-MM-01');
@@ -197,7 +217,7 @@ export function TeamMembersView({
     const getTimelineMembers = (teamId: string) => {
       return teamMembers.filter(member => {
         // Check if member has any membership for this team that overlaps with timeline
-        return memberships.some(membership => {
+        return (memberships || []).some(membership => {
           const membershipStart = membership.start_month;
           const membershipEnd = membership.end_month || '9999-12-01'; // Use far future if no end date
           
@@ -371,7 +391,7 @@ export function TeamMembersView({
                 <TableCell className="py-2"></TableCell>
                 {timelineMonths.map((month) => {
                   const actualCount = getActualMemberCount(team.id, month.date);
-                  const idealCount = 1; // Will use getIdealMemberCount once function is properly defined
+                  const idealCount = getIdealMemberCount(team.id, month.date);
                   return (
                     <TableCell key={month.label} className="text-center py-1 px-0">
                       <Badge 
