@@ -323,6 +323,7 @@ export function AddProjectAssignmentDialog({
           value_score: data.newProjectValueScore!,
           is_rd: data.newProjectIsRD || false,
           status: 'Logged' as ProjectStatus,
+          status_visibility: 'published' as const,
         };
         
         await onAddProject(newProject);

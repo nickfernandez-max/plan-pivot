@@ -1,0 +1,201 @@
+import { useMemo, useState } from 'react';
+import { RoadmapView } from '@/components/RoadmapView';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Project, TeamMember, Team, Product, ProjectAssignment, WorkAssignment } from '@/types/roadmap';
+import { CheckCircle, Clock, Eye, Filter } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
+
+interface FuturePlanningViewProps {
+  projects: Project[];
+  teamMembers: TeamMember[];
+  teams: Team[];
+  products: Product[];
+  assignments: ProjectAssignment[];
+  workAssignments: WorkAssignment[];
+  selectedTeam?: string;
+  selectedProduct?: string;
+  onUpdateProject: (id: string, updates: Partial<Project>) => Promise<void>;
+  onUpdateProjectAssignees: (projectId: string, assigneeIds: string[]) => Promise<void>;
+  onUpdateProjectProducts: (projectId: string, productIds: string[]) => Promise<void>;
+  onUpdateProjectAssignments: (projectId: string, assignments: { teamMemberId: string; percentAllocation: number; startDate?: string; endDate?: string }[]) => Promise<void>;
+  onAddProject: (project: Omit<Project, 'id' | 'created_at' | 'updated_at'>) => Promise<any>;
+  onAddWorkAssignment: (assignment: Omit<WorkAssignment, 'id' | 'created_at' | 'updated_at'>) => Promise<any>;
+  onUpdateWorkAssignment: (id: string, updates: Partial<WorkAssignment>) => Promise<any>;
+  onDeleteWorkAssignment: (id: string) => Promise<void>;
+}
+
+export function FuturePlanningView({
+  projects,
+  teamMembers,
+  teams,
+  products,
+  assignments,
+  workAssignments,
+  selectedTeam = 'all',
+  selectedProduct = 'all',
+  onUpdateProject,
+  onUpdateProjectAssignees,
+  onUpdateProjectProducts,
+  onUpdateProjectAssignments,
+  onAddProject,
+  onAddWorkAssignment,
+  onUpdateWorkAssignment,
+  onDeleteWorkAssignment
+}: FuturePlanningViewProps) {
+  const { toast } = useToast();
+  const [publishingAll, setPublishingAll] = useState(false);
+
+  // Get filtered tentative projects based on current filters
+  const filteredTentativeProjects = useMemo(() => {
+    return projects.filter(project => {
+      if (project.status_visibility !== 'tentative') return false;
+
+      // Apply team filter
+      if (selectedTeam !== 'all') {
+        const team = teams.find(t => t.id === project.team_id);
+        if (!team || team.name !== selectedTeam) return false;
+      }
+
+      // Apply product filter
+      if (selectedProduct !== 'all') {
+        if (!project.products?.some(p => p.name === selectedProduct)) return false;
+      }
+
+      return true;
+    });
+  }, [projects, selectedTeam, selectedProduct, teams]);
+
+  // Handle publishing a single project
+  const handlePublishProject = async (projectId: string) => {
+    try {
+      await onUpdateProject(projectId, { status_visibility: 'published' });
+      toast({
+        title: "Project Published",
+        description: "Project is now visible on the main roadmap.",
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to publish project. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Handle publishing all filtered tentative projects
+  const handlePublishAll = async () => {
+    if (filteredTentativeProjects.length === 0) {
+      toast({
+        title: "No Projects",
+        description: "No tentative projects to publish with current filters.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setPublishingAll(true);
+    try {
+      await Promise.all(
+        filteredTentativeProjects.map(project =>
+          onUpdateProject(project.id, { status_visibility: 'published' })
+        )
+      );
+      toast({
+        title: "Projects Published",
+        description: `${filteredTentativeProjects.length} project(s) are now visible on the main roadmap.`,
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to publish some projects. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setPublishingAll(false);
+    }
+  };
+
+  // Custom add project handler that creates tentative projects by default
+  const handleAddTentativeProject = async (projectData: Omit<Project, 'id' | 'created_at' | 'updated_at'>) => {
+    return await onAddProject({
+      ...projectData,
+      status_visibility: 'tentative'
+    });
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* Header with publish controls */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div className="space-y-1">
+              <CardTitle className="text-2xl">Future Planning</CardTitle>
+              <p className="text-muted-foreground">
+                Plan tentative projects and publish them when ready
+              </p>
+            </div>
+            <div className="flex items-center gap-3">
+              <Badge variant="outline" className="flex items-center gap-2">
+                <Eye className="h-4 w-4" />
+                {filteredTentativeProjects.length} tentative projects
+              </Badge>
+              {filteredTentativeProjects.length > 0 && (
+                <Button 
+                  onClick={handlePublishAll}
+                  disabled={publishingAll}
+                  className="flex items-center gap-2"
+                >
+                  <CheckCircle className="h-4 w-4" />
+                  {publishingAll ? 'Publishing...' : `Publish All (${filteredTentativeProjects.length})`}
+                </Button>
+              )}
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center gap-4 text-sm text-muted-foreground">
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 rounded-sm bg-primary/60 border-2 border-primary/80" />
+              <span>Tentative projects (planning)</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 rounded-sm bg-primary border" />
+              <span>Published projects</span>
+            </div>
+            {selectedTeam !== 'all' || selectedProduct !== 'all' ? (
+              <div className="flex items-center gap-2 ml-4">
+                <Filter className="h-4 w-4" />
+                <span>Filtered view - only filtered projects will be published</span>
+              </div>
+            ) : null}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Roadmap View */}
+      <RoadmapView
+        projects={projects} // Show all projects (published + tentative)
+        teamMembers={teamMembers}
+        teams={teams}
+        products={products}
+        assignments={assignments}
+        workAssignments={workAssignments}
+        selectedTeam={selectedTeam}
+        selectedProduct={selectedProduct}
+        onUpdateProject={onUpdateProject}
+        onUpdateProjectAssignees={onUpdateProjectAssignees}
+        onUpdateProjectProducts={onUpdateProjectProducts}
+        onUpdateProjectAssignments={onUpdateProjectAssignments}
+        onAddProject={handleAddTentativeProject}
+        onAddWorkAssignment={onAddWorkAssignment}
+        onUpdateWorkAssignment={onUpdateWorkAssignment}
+        onDeleteWorkAssignment={onDeleteWorkAssignment}
+        isFuturePlanning={true}
+        onPublishProject={handlePublishProject}
+      />
+    </div>
+  );
+}

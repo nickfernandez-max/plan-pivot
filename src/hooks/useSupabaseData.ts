@@ -154,6 +154,7 @@ export function useSupabaseData() {
       // Transform the data to match our interface
       const transformedProjects = projectsData?.map(project => ({
         ...project,
+        status_visibility: (project.status_visibility || 'published') as 'published' | 'tentative',
         assignees: project.assignees?.map((a: any) => a.team_member) || [],
         products: project.products?.map((p: any) => p.product) || []
       })) || [];
@@ -200,6 +201,7 @@ export function useSupabaseData() {
 
       const transformedProject = {
         ...data,
+        status_visibility: (data.status_visibility || 'published') as 'published' | 'tentative',
         assignees: data.assignees?.map((assignee: any) => assignee.team_member).filter(Boolean) || [],
         products: data.products?.map((p: any) => p.product).filter(Boolean) || []
       };
@@ -230,6 +232,7 @@ export function useSupabaseData() {
 
       const transformedProject = {
         ...data,
+        status_visibility: (data.status_visibility || 'published') as 'published' | 'tentative',
         assignees: data.assignees?.map((assignee: any) => assignee.team_member).filter(Boolean) || [],
         products: data.products?.map((p: any) => p.product).filter(Boolean) || []
       };
@@ -464,6 +467,7 @@ export function useSupabaseData() {
       if (projectResult.data) {
         const transformedProject = {
           ...projectResult.data,
+          status_visibility: (projectResult.data.status_visibility || 'published') as 'published' | 'tentative',
           assignees: projectResult.data.assignees?.map((a: any) => a.team_member) || [],
           products: projectResult.data.products?.map((p: any) => p.product) || []
         };

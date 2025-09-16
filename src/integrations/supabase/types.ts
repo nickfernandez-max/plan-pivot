@@ -170,6 +170,7 @@ export type Database = {
           name: string
           start_date: string
           status: Database["public"]["Enums"]["project_status"]
+          status_visibility: string
           team_id: string
           updated_at: string
           value_score: number
@@ -185,6 +186,7 @@ export type Database = {
           name: string
           start_date: string
           status?: Database["public"]["Enums"]["project_status"]
+          status_visibility?: string
           team_id: string
           updated_at?: string
           value_score?: number
@@ -200,6 +202,7 @@ export type Database = {
           name?: string
           start_date?: string
           status?: Database["public"]["Enums"]["project_status"]
+          status_visibility?: string
           team_id?: string
           updated_at?: string
           value_score?: number

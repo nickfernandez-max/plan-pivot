@@ -41,6 +41,7 @@ export interface Project {
   value_score: number;
   is_rd: boolean;
   status: ProjectStatus;
+  status_visibility: 'published' | 'tentative';
   color?: string;
   description?: string;
   link?: string;

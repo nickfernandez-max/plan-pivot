@@ -168,6 +168,7 @@ export function AddProjectDialog({
         value_score: data.value_score,
         is_rd: data.is_rd,
         status: data.status,
+        status_visibility: 'published',
         description: data.description || undefined,
         color: data.color || undefined,
         link: data.link || undefined,

@@ -35,6 +35,8 @@ interface RoadmapViewProps {
   onAddWorkAssignment: (assignment: Omit<WorkAssignment, 'id' | 'created_at' | 'updated_at'>) => Promise<any>;
   onUpdateWorkAssignment: (id: string, updates: Partial<WorkAssignment>) => Promise<any>;
   onDeleteWorkAssignment: (id: string) => Promise<void>;
+  isFuturePlanning?: boolean;
+  onPublishProject?: (projectId: string) => Promise<void>;
 }
 
 interface ProjectWithPosition extends Project {
@@ -236,7 +238,9 @@ export function RoadmapView({
   onAddProject,
   onAddWorkAssignment,
   onUpdateWorkAssignment,
-  onDeleteWorkAssignment
+  onDeleteWorkAssignment,
+  isFuturePlanning = false,
+  onPublishProject
 }: RoadmapViewProps) {
   
   // Initialize date validation hook
@@ -340,10 +344,16 @@ export function RoadmapView({
       const projectEnd = new Date(project.end_date);
       
       // Project intersects if it starts before timeline ends and ends after timeline starts
-      return projectStart <= timelineBounds.end && projectEnd >= timelineBounds.start;
+      const intersects = projectStart <= timelineBounds.end && projectEnd >= timelineBounds.start;
+      
+      // For main roadmap, only show published projects
+      // For future planning, show all projects
+      const visibilityMatch = isFuturePlanning || project.status_visibility === 'published';
+      
+      return intersects && visibilityMatch;
     });
     return filtered;
-  }, [projects, timelineBounds]);
+  }, [projects, timelineBounds, isFuturePlanning]);
 
   // Filter work assignments to only include those that intersect with the visible timeline
   const visibleWorkAssignments = useMemo(() => {

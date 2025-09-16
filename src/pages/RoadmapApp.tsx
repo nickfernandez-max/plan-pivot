@@ -1,12 +1,14 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useSupabaseData } from '@/hooks/useSupabaseData';
+import { useUserRole } from '@/hooks/useUserRole';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
 import { ProjectList } from '@/components/ProjectList';
 import { RoadmapView } from '@/components/RoadmapView';
+import { FuturePlanningView } from '@/components/FuturePlanningView';
 import { TeamMembersView } from '@/components/TeamMembersView';
 import { ReportsView } from '@/components/ReportsView';
 import { FinancialsView } from '@/components/FinancialsView';
@@ -19,6 +21,7 @@ import { startOfMonth, addMonths, format } from 'date-fns';
 
 export default function RoadmapApp() {
   const { toast } = useToast();
+  const { isAdmin } = useUserRole();
   const [selectedTeam, setSelectedTeam] = useState<string>('all');
   const [selectedProduct, setSelectedProduct] = useState<string>('all');
   const [isAddMemberDialogOpen, setIsAddMemberDialogOpen] = useState(false);
@@ -85,6 +88,9 @@ export default function RoadmapApp() {
     deleteWorkAssignment,
     refetch,
   } = useSupabaseData();
+
+  // Store all projects for filtering
+  const allProjects = projects;
 
   // Load user preferences for default filters
   useEffect(() => {
@@ -303,6 +309,61 @@ export default function RoadmapApp() {
     }
   };
 
+  // Work assignment handlers
+  const handleAddWorkAssignment = async (assignment: any) => {
+    try {
+      await addWorkAssignment(assignment);
+      toast({
+        title: "Work assignment added",
+        description: "Work assignment has been created successfully.",
+      });
+    } catch (error) {
+      console.error('Error adding work assignment:', error);
+      toast({
+        title: "Error",
+        description: "Failed to add work assignment. Please try again.",
+        variant: "destructive",
+      });
+      throw error;
+    }
+  };
+
+  const handleUpdateWorkAssignment = async (id: string, updates: any) => {
+    try {
+      await updateWorkAssignment(id, updates);
+      toast({
+        title: "Work assignment updated",
+        description: "Work assignment has been updated successfully.",
+      });
+    } catch (error) {
+      console.error('Error updating work assignment:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update work assignment. Please try again.",
+        variant: "destructive",
+      });
+      throw error;
+    }
+  };
+
+  const handleDeleteWorkAssignment = async (id: string) => {
+    try {
+      await deleteWorkAssignment(id);
+      toast({
+        title: "Work assignment deleted",
+        description: "Work assignment has been deleted successfully.",
+      });
+    } catch (error) {
+      console.error('Error deleting work assignment:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete work assignment. Please try again.",
+        variant: "destructive",
+      });
+      throw error;
+    }
+  };
+
   const handleUpdateProjectAssignments = async (
     projectId: string, 
     assignments: Array<{ teamMemberId: string; percentAllocation: number; startDate?: string; endDate?: string; }>
@@ -398,7 +459,7 @@ export default function RoadmapApp() {
         </div>
 
         <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-5 max-w-3xl">
+          <TabsList className="grid w-full grid-cols-6 max-w-4xl">
             <TabsTrigger value="projects" className="text-sm font-medium">
               Projects
             </TabsTrigger>
@@ -411,6 +472,11 @@ export default function RoadmapApp() {
             <TabsTrigger value="reports" className="text-sm font-medium">
               Reports
             </TabsTrigger>
+            {isAdmin && (
+              <TabsTrigger value="future-planning" className="text-sm font-medium">
+                Future Planning
+              </TabsTrigger>
+            )}
             <TabsTrigger value="financials" className="text-sm font-medium">
               Admin
             </TabsTrigger>
@@ -456,6 +522,33 @@ export default function RoadmapApp() {
               onDeleteWorkAssignment={deleteWorkAssignment}
             />
           </TabsContent>
+
+          {isAdmin && (
+            <TabsContent value="future-planning">
+              <FuturePlanningView 
+                projects={allProjects} 
+                teamMembers={filteredTeamMembers} 
+                teams={teams}
+                products={products}
+                assignments={assignments}
+                workAssignments={workAssignments}
+                selectedTeam={selectedTeam}
+                selectedProduct={selectedProduct}
+                onUpdateProject={handleUpdateProject}
+                onUpdateProjectAssignees={async (projectId: string, assigneeIds: string[]) => {
+                  await updateProjectAssignees(projectId, assigneeIds);
+                }}
+                onUpdateProjectProducts={async (projectId: string, productIds: string[]) => {
+                  await updateProjectProducts(projectId, productIds);
+                }}
+                onUpdateProjectAssignments={handleUpdateProjectAssignments}
+                onAddProject={handleAddProject}
+                onAddWorkAssignment={handleAddWorkAssignment}
+                onUpdateWorkAssignment={handleUpdateWorkAssignment}
+                onDeleteWorkAssignment={handleDeleteWorkAssignment}
+              />
+            </TabsContent>
+          )}
 
           <TabsContent value="members">
             <div className="flex gap-2 mb-6">
