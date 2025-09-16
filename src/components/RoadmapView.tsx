@@ -1255,6 +1255,7 @@ export function RoadmapView({
       onOpenChange={handleAssignmentDialogClose}
       onAddProject={onAddProject}
       onUpdateProjectAssignments={onUpdateProjectAssignments}
+      onUpdateProjectProducts={onUpdateProjectProducts}
     />
 
     {/* Add Work Assignment Dialog */}

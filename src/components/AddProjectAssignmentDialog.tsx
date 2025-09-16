@@ -90,6 +90,7 @@ interface AddProjectAssignmentDialogProps {
   onOpenChange: (open: boolean) => void;
   onAddProject: (project: Omit<Project, 'id' | 'created_at' | 'updated_at'>) => Promise<any>;
   onUpdateProjectAssignments: (projectId: string, assignments: { teamMemberId: string; percentAllocation: number; startDate?: string; endDate?: string }[]) => Promise<void>;
+  onUpdateProjectProducts?: (projectId: string, productIds: string[]) => Promise<void>;
 }
 
 export function AddProjectAssignmentDialog({
@@ -105,6 +106,7 @@ export function AddProjectAssignmentDialog({
   onOpenChange,
   onAddProject,
   onUpdateProjectAssignments,
+  onUpdateProjectProducts
 }: AddProjectAssignmentDialogProps) {
   const [projectSearchTerm, setProjectSearchTerm] = useState('');
   const [memberSearchTerm, setMemberSearchTerm] = useState('');
@@ -330,6 +332,13 @@ export function AddProjectAssignmentDialog({
         const createdProject = await onAddProject(newProject);
         console.log('🔧 Created project result:', createdProject);
         projectId = createdProject.id;
+        
+        // Auto-assign the team's product to the project if team has a product
+        const selectedTeamData = teams.find(t => t.id === data.newProjectTeamId);
+        if (selectedTeamData?.product_id) {
+          console.log('🔧 Auto-assigning team product to project:', selectedTeamData.product_id);
+          await onUpdateProjectProducts?.(projectId, [selectedTeamData.product_id]);
+        }
       } else {
         projectId = data.existingProjectId!;
       }
