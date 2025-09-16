@@ -67,14 +67,15 @@ export function DraggableProject({
       ref={setNodeRef}
       className={`absolute rounded-md shadow-sm transition-all duration-200 hover:shadow-lg group animate-fade-in cursor-grab active:cursor-grabbing ${
         isTentative 
-          ? 'border-2 border-dashed opacity-75' 
-          : 'border border-solid'
+          ? 'border-2 border-dashed opacity-90 ring-2 ring-primary/30' 
+          : 'border border-solid opacity-100'
       }`}
       style={{
         ...style,
         ...dragStyle,
         backgroundColor: project.color || 'hsl(var(--primary))',
         borderColor: project.color || 'hsl(var(--primary))',
+        minHeight: isTentative ? '30px' : undefined,
       }}
       onClick={(e) => {
         if (!isDragging && onClick) {

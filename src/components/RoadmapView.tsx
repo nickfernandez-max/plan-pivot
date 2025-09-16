@@ -92,7 +92,9 @@ const assignAllocationPositions = (
     const endDate = assignment?.end_date ? new Date(assignment.end_date) : new Date(project.end_date);
     
     // Calculate height proportional to allocation (minimum 20px for visibility)
-    const itemHeight = Math.max(Math.round((allocation / 100) * AVAILABLE_HEIGHT), 20);
+    // For tentative projects, use a minimum of 30px to ensure visibility
+    const minHeight = project.status_visibility === 'tentative' ? 30 : 20;
+    const itemHeight = Math.max(Math.round((allocation / 100) * AVAILABLE_HEIGHT), minHeight);
     
     return {
       ...project,
