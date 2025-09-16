@@ -326,14 +326,7 @@ export function AddProjectAssignmentDialog({
           status_visibility: 'published' as const,
         };
         
-        await onAddProject(newProject);
-        
-        // Since we can't get the ID from the promise, we'll need to find it by name
-        // This is a limitation - ideally onAddProject would return the created project
-        const createdProject = projects.find(p => p.name === newProject.name && p.team_id === newProject.team_id);
-        if (!createdProject) {
-          throw new Error('Failed to find created project');
-        }
+        const createdProject = await onAddProject(newProject);
         projectId = createdProject.id;
       } else {
         projectId = data.existingProjectId!;
