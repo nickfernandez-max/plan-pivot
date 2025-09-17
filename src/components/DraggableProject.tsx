@@ -36,30 +36,16 @@ export function DraggableProject({
   });
   // Handle resize detection
   const handleResizeStart = (e: React.MouseEvent, handle: 'left' | 'right') => {
-    e.stopPropagation();
-    e.preventDefault();
-    
     console.log('🔧 Resize handle clicked:', handle, 'for project:', project.name);
     
-    // Store resize data on the element for the drag system to detect
+    // Store resize data globally for the drag system to detect
     const element = e.currentTarget.closest('[data-project-id]') as HTMLElement;
     if (element) {
       element.setAttribute('data-resize-handle', handle);
       console.log('🔧 Set resize handle attribute:', handle, 'on element:', element);
-      
-      // Force a drag start by creating a synthetic mouse event on the draggable element
-      const draggableElement = element.querySelector('[data-draggable="true"]') as HTMLElement;
-      if (draggableElement) {
-        console.log('🔧 Triggering drag on draggable element');
-        const mouseEvent = new MouseEvent('mousedown', {
-          bubbles: true,
-          cancelable: true,
-          clientX: e.clientX,
-          clientY: e.clientY
-        });
-        draggableElement.dispatchEvent(mouseEvent);
-      }
     }
+    
+    // Don't prevent default or stop propagation - let the drag system handle it
   };
 
   const {
@@ -137,6 +123,8 @@ export function DraggableProject({
       <div className="h-full flex items-center overflow-hidden relative">
         {/* Left resize handle */}
         <div
+          {...listeners}
+          {...attributes}
           className="absolute left-0 top-0 w-3 h-full cursor-ew-resize hover:bg-white/30 opacity-0 group-hover:opacity-90 transition-opacity z-20 bg-red-500/50"
           data-resize-handle="left"
           onMouseDown={(e) => {
@@ -151,6 +139,8 @@ export function DraggableProject({
         
         {/* Right resize handle */}
         <div
+          {...listeners}
+          {...attributes}
           className="absolute right-0 top-0 w-3 h-full cursor-ew-resize hover:bg-white/30 opacity-0 group-hover:opacity-90 transition-opacity z-20 bg-red-500/50"
           data-resize-handle="right"
           onMouseDown={(e) => {
