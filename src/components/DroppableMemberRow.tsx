@@ -35,7 +35,12 @@ export function DroppableMemberRow({
   });
 
   const handleDoubleClick = (event: React.MouseEvent) => {
-    if (!onDoubleClick || !timelineBounds || totalDays === 0) return;
+    console.log('🖱️ DroppableMemberRow handleDoubleClick called for member:', member.name);
+    
+    if (!onDoubleClick || !timelineBounds || totalDays === 0) {
+      console.log('❌ Early return:', { onDoubleClick: !!onDoubleClick, timelineBounds: !!timelineBounds, totalDays });
+      return;
+    }
     
     // Calculate the clicked date based on mouse position
     const rect = event.currentTarget.getBoundingClientRect();
@@ -43,16 +48,43 @@ export function DroppableMemberRow({
     const timelineWidth = rect.width - sidebarWidth;
     const clickX = event.clientX - rect.left - sidebarWidth;
     
-    if (clickX < 0) return; // Clicked in sidebar area
+    console.log('📐 Click position calculation:', {
+      rectWidth: rect.width,
+      sidebarWidth,
+      timelineWidth,
+      clickX,
+      clientX: event.clientX,
+      rectLeft: rect.left
+    });
+    
+    if (clickX < 0) {
+      console.log('❌ Clicked in sidebar area, returning');
+      return; // Clicked in sidebar area
+    }
     
     // Calculate which day was clicked
     const pixelsPerDay = timelineWidth / totalDays;
     const dayOffset = Math.floor(clickX / pixelsPerDay);
     const clickedDate = addDays(timelineBounds.start, dayOffset);
     
+    console.log('📅 Date calculation:', {
+      pixelsPerDay,
+      dayOffset,
+      timelineBoundsStart: timelineBounds.start,
+      clickedDate,
+      clickedDateString: clickedDate.toISOString()
+    });
+    
     // Snap to start of week for better UX
     const weekStartDate = startOfWeek(clickedDate, { weekStartsOn: 1 }); // Monday start
     
+    console.log('📅 Final snapped date:', {
+      originalDate: clickedDate,
+      weekStartDate,
+      weekStartDateString: weekStartDate.toISOString()
+    });
+    
+    console.log('🚀 Calling onDoubleClick with:', member.id, weekStartDate);
     onDoubleClick(member.id, weekStartDate);
   };
 

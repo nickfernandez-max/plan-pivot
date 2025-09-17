@@ -599,10 +599,19 @@ export function RoadmapView({
 
   // Handle double-click on member row to add assignment
   const handleMemberRowDoubleClick = (memberId: string, clickedDate: Date) => {
+    console.log('🎯 RoadmapView handleMemberRowDoubleClick called:', {
+      memberId,
+      clickedDate,
+      clickedDateString: clickedDate.toISOString(),
+      dateOnly: clickedDate.toISOString().split('T')[0]
+    });
+    
     setPreSelectedMember({
       id: memberId,
       startDate: clickedDate.toISOString().split('T')[0]
     });
+    
+    console.log('🎯 Setting dialog state to open and pre-selected member');
     setIsAssignmentDialogOpen(true);
   };
 

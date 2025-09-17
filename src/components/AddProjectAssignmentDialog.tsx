@@ -129,10 +129,18 @@ export function AddProjectAssignmentDialog({
 
   // Handle pre-selected values when dialog opens
   useEffect(() => {
+    console.log('💬 AddProjectAssignmentDialog useEffect triggered:', {
+      open,
+      preSelectedMemberId,
+      preSelectedStartDate
+    });
+    
     if (open && preSelectedMemberId) {
+      console.log('💬 Setting form memberId to:', preSelectedMemberId);
       form.setValue('memberId', preSelectedMemberId);
     }
     if (open && preSelectedStartDate) {
+      console.log('💬 Setting form startDate to:', preSelectedStartDate);
       form.setValue('startDate', preSelectedStartDate);
     }
   }, [open, preSelectedMemberId, preSelectedStartDate, form]);
