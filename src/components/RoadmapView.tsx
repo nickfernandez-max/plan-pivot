@@ -880,45 +880,50 @@ export function RoadmapView({
             Use two-finger scroll or shift+scroll to navigate the timeline horizontally. Drag projects between team members to reassign them.
           </p>
         </CardHeader>
-        <CardContent>
-          <div 
-            ref={timelineRef}
-            className="relative timeline-container select-none"
-            onWheel={handleWheel}
-          >
-          {/* Month headers - sticky */}
-          <div className="sticky top-0 z-20 h-6 mb-2 border-b border-border ml-48 bg-background">
-            {monthHeaders.map((month, index) => (
-              <div
-                key={index}
-                className="absolute text-xs font-medium text-muted-foreground"
-                style={{
-                  left: `${month.left}%`,
-                  width: `${month.width}%`
-                }}
-              >
-                {month.label}
-              </div>
-            ))}
-          </div>
+        <CardContent className="p-0">
+          {/* Scrollable roadmap container with fixed height */}
+          <div className="h-[70vh] overflow-auto">
+            <div 
+              ref={timelineRef}
+              className="relative timeline-container select-none"
+              onWheel={handleWheel}
+            >
+              {/* Sticky header container */}
+              <div className="sticky top-0 z-30 bg-background border-b border-border">
+                {/* Month headers - sticky */}
+                <div className="relative h-6 mb-2 ml-48 bg-background">
+                  {monthHeaders.map((month, index) => (
+                    <div
+                      key={index}
+                      className="absolute text-xs font-medium text-muted-foreground"
+                      style={{
+                        left: `${month.left}%`,
+                        width: `${month.width}%`
+                      }}
+                    >
+                      {month.label}
+                    </div>
+                  ))}
+                </div>
 
-          {/* Week headers with date numbers only - sticky */}
-          <div className="sticky top-6 z-20 h-6 mb-1 ml-48 border-b border-border/50 bg-background">
-            {weeklyGrid.weeks.map((week, index) => (
-              <div
-                key={index}
-                className="absolute text-sm font-medium text-muted-foreground flex items-center justify-center"
-                style={{
-                  left: `${week.left}%`,
-                  height: '100%',
-                  minWidth: '24px'
-                }}
-                title={`Week of ${week.label}`}
-              >
-                {format(week.date, 'd')}
+                {/* Week headers with date numbers only - sticky */}
+                <div className="relative h-6 mb-1 ml-48 border-b border-border/50 bg-background">
+                  {weeklyGrid.weeks.map((week, index) => (
+                    <div
+                      key={index}
+                      className="absolute text-sm font-medium text-muted-foreground flex items-center justify-center"
+                      style={{
+                        left: `${week.left}%`,
+                        height: '100%',
+                        minWidth: '24px'
+                      }}
+                      title={`Week of ${week.label}`}
+                    >
+                      {format(week.date, 'd')}
+                    </div>
+                  ))}
+                </div>
               </div>
-            ))}
-          </div>
 
           {/* Team sections and member rows grouped by product */}
           <div className="flex">
@@ -1356,9 +1361,10 @@ export function RoadmapView({
                 return memberElements;
               })()}
             </div>
+            </div>
+            </div>
           </div>
-        </div>
-      </CardContent>
+        </CardContent>
     </Card>
 
     {/* Edit Project Dialog */}
