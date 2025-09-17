@@ -451,7 +451,7 @@ export function TeamMembersView({
                   <TableCell className="text-muted-foreground text-sm py-2">
                     {member.role?.display_name || member.role?.name}
                   </TableCell>
-                  <TableCell className="text-sm py-2">{format(new Date(member.start_date), 'MMM d, yy')}</TableCell>
+                  <TableCell className="text-sm py-2">{format(new Date(member.start_date), 'MMM - yy')}</TableCell>
                   {timelineMonthsArray.map((month) => {
                     const involvement = getMemberInvolvement(member, month.date, team.id);
                     return (
