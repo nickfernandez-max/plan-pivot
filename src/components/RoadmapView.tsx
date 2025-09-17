@@ -249,14 +249,6 @@ export function RoadmapView({
   onPublishProject
 }: RoadmapViewProps) {
   
-  // Force complete re-render to break any stale state
-  const componentKey = useMemo(() => 
-    JSON.stringify({ pCount: projects?.length, tmCount: teamMembers?.length, timestamp: Date.now() }), 
-    [projects?.length, teamMembers?.length]
-  );
-  
-  console.log('🔄 ROADMAP RENDER KEY:', componentKey);
-  
   // Initialize date validation hook
   const { conflictDialog, closeConflictDialog } = useDateValidation({
     onUpdateProject,
@@ -466,9 +458,9 @@ export function RoadmapView({
   console.log('📊 Projects received:', projects?.length || 0);
   console.log('👥 Team members received:', teamMembers?.length || 0);
   
-  // Filter projects to only include those that intersect with the visible timeline
-  const visibleProjects = useMemo(() => {
-    console.log('🔄 FILTERING PROJECTS...');
+  // Filter projects to only include those that intersect with the visible timeline - NO CACHING
+  const visibleProjects = (() => {
+    console.log('🔄 FILTERING PROJECTS... (NO CACHE)');
     console.log(`🕐 Timeline: ${timelineBounds.start.toISOString().slice(0,10)} to ${timelineBounds.end.toISOString().slice(0,10)}`);
     
     const result = projects.filter(project => {
@@ -487,7 +479,7 @@ export function RoadmapView({
     
     console.log(`✅ Visible projects: ${result.map(p => p.name).join(', ')}`);
     return result;
-  }, [projects, timelineBounds, isFuturePlanning]);
+  })(); // NO MEMOIZATION - Calculate fresh every time
 
   // Filter work assignments to only include those that intersect with the visible timeline
   const visibleWorkAssignments = useMemo(() => {
@@ -631,11 +623,11 @@ export function RoadmapView({
 
   // Group teams by product and calculate member rows with allocation slots
   const productGroups = useMemo(() => {
-    // Force fresh calculation - no caching of stale data
-    const timestamp = Date.now();
-    console.log('🔄 Recalculating productGroups at:', timestamp);
-    console.log('📊 Using visible projects:', visibleProjects.map(p => p.name));
-    console.log('👥 Using team members:', teamMembers.map(tm => tm.name));
+    // BREAK ALL CACHING - Force completely fresh calculation every time
+    const forceRefreshKey = `${Date.now()}-${Math.random()}`;
+    console.log('🔄 FORCE REFRESH productGroups:', forceRefreshKey);
+    console.log('📊 Fresh visibleProjects:', visibleProjects.map(p => `${p.name} (${p.id})`));
+    console.log('👥 Fresh teamMembers:', teamMembers.map(tm => `${tm.name} (${tm.id})`));
     
     const FIXED_ROW_HEIGHT = 100; // Increased to accommodate all 4 allocation slots (4 * 24px + padding)
     const ALLOCATION_SLOTS = 4;
@@ -837,15 +829,18 @@ export function RoadmapView({
     const unassignedTeamGroups = calculateTeamRows(teamsWithoutProduct);
 
     return { processedProductGroups, unassignedTeamGroups };
-  }, [teams, teamMembers, visibleProjects, products, timelineBounds, totalDays, memberships, componentKey]);
+  }, []); // NO DEPENDENCIES - Force recalculation every render to break cache
 
   const allTeamGroups = useMemo(() => {
     const allGroups = [
       ...productGroups.processedProductGroups.flatMap(pg => pg.teamGroups),
       ...productGroups.unassignedTeamGroups
     ];
+    
+    console.log('🔢 Total team groups calculated:', allGroups.length);
+    
     return allGroups;
-  }, [productGroups]);
+  }, []); // NO DEPENDENCIES - Always recalculate
 
   if (teamMembers.length === 0) {
     return (
