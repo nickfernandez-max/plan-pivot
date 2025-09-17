@@ -453,21 +453,31 @@ export function RoadmapView({
     }
   };
 
+  console.log('🚨 ROADMAP COMPONENT MOUNTED');
+  console.log('📊 Projects received:', projects?.length || 0);
+  console.log('👥 Team members received:', teamMembers?.length || 0);
+  
   // Filter projects to only include those that intersect with the visible timeline
   const visibleProjects = useMemo(() => {
-    return projects.filter(project => {
+    console.log('🔄 FILTERING PROJECTS...');
+    console.log(`🕐 Timeline: ${timelineBounds.start.toISOString().slice(0,10)} to ${timelineBounds.end.toISOString().slice(0,10)}`);
+    
+    const result = projects.filter(project => {
       const projectStart = new Date(project.start_date);
       const projectEnd = new Date(project.end_date);
       
       // STRICT: Project must actually overlap with timeline bounds
-      // Project ends AFTER timeline starts AND project starts BEFORE timeline ends
       const actuallyOverlaps = projectEnd >= timelineBounds.start && projectStart <= timelineBounds.end;
-      
-      // For main roadmap, only show published projects  
       const isPublished = isFuturePlanning ? true : project.status_visibility === 'published';
+      const shouldShow = actuallyOverlaps && isPublished;
       
-      return actuallyOverlaps && isPublished;
+      console.log(`📊 "${project.name}": ${project.start_date} to ${project.end_date} | overlaps=${actuallyOverlaps} | show=${shouldShow}`);
+      
+      return shouldShow;
     });
+    
+    console.log(`✅ Visible projects: ${result.map(p => p.name).join(', ')}`);
+    return result;
   }, [projects, timelineBounds, isFuturePlanning]);
 
   // Filter work assignments to only include those that intersect with the visible timeline
@@ -662,11 +672,22 @@ export function RoadmapView({
         const memberRows: MemberRow[] = [];
         
         membersInTeam.forEach(member => {
+          console.log(`👤 MEMBER: ${member.name} (ID: ${member.id})`);
+          
           // STRICT filtering: Only show projects that are actually assigned to this specific member
           const memberProjects = visibleProjects
             .filter(project => {
+              console.log(`  🔍 Checking "${project.name}" for ${member.name}`);
+              console.log(`    Project assignees:`, project.assignees?.map(a => `${a.name} (${a.id})`));
+              
               // Must be explicitly assigned to this member
-              const isDirectlyAssigned = project.assignees?.some(assignee => assignee.id === member.id);
+              const isDirectlyAssigned = project.assignees?.some(assignee => {
+                const match = assignee.id === member.id;
+                console.log(`    Comparing ${assignee.id} === ${member.id} = ${match}`);
+                return match;
+              });
+              
+              console.log(`    Is ${member.name} assigned to "${project.name}"? ${isDirectlyAssigned}`);
               
               if (!isDirectlyAssigned) {
                 return false;
@@ -677,7 +698,10 @@ export function RoadmapView({
               const projectEnd = new Date(project.end_date);
               
               const membership = teamMemberships.find(m => m.team_member_id === member.id);
-              if (!membership) return false;
+              if (!membership) {
+                console.log(`    ❌ No membership found for ${member.name}`);
+                return false;
+              }
               
               const membershipStart = new Date(membership.start_month);
               const membershipEnd = membership.end_month ? new Date(membership.end_month) : new Date('9999-12-31');
@@ -685,8 +709,10 @@ export function RoadmapView({
               // Member must overlap with project timeline
               const memberOverlapsProject = membershipEnd >= projectStart && membershipStart <= projectEnd;
               
+              console.log(`    Timeline check: member ${membershipStart.toISOString().slice(0,10)} to ${membershipEnd.toISOString().slice(0,10)} vs project ${projectStart.toISOString().slice(0,10)} to ${projectEnd.toISOString().slice(0,10)} = ${memberOverlapsProject}`);
+              
               return memberOverlapsProject;
-             })
+            })
             .map(project => {
               // Get the assignment for this specific member to use their dates
               const assignment = assignments.find(a => 
