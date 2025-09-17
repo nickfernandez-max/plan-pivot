@@ -667,10 +667,31 @@ export function RoadmapView({
         
         membersInTeam.forEach(member => {
           // Find visible projects specifically assigned to this member
+          // Only show projects where the member is in the team during the project timeline
           const memberProjects = visibleProjects
-            .filter(project => 
-              project.assignees?.some(assignee => assignee.id === member.id)
-            )
+            .filter(project => {
+              // Check if this member is assigned to the project
+              const isAssigned = project.assignees?.some(assignee => assignee.id === member.id);
+              if (!isAssigned) return false;
+              
+              // Check if member is in the team during the project timeline
+              const projectStart = new Date(project.start_date);
+              const projectEnd = new Date(project.end_date);
+              
+              const membershipInTeam = teamMemberships.find(membership => 
+                membership.team_member_id === member.id
+              );
+              
+              if (!membershipInTeam) return false;
+              
+              const membershipStart = new Date(membershipInTeam.start_month);
+              const membershipEnd = membershipInTeam.end_month ? 
+                new Date(membershipInTeam.end_month) : 
+                new Date('9999-12-01');
+              
+              // Member must be in team during at least part of the project timeline
+              return membershipStart <= projectEnd && membershipEnd >= projectStart;
+            })
             .map(project => {
               // Get the assignment for this specific member to use their dates
               const assignment = assignments.find(a => 
