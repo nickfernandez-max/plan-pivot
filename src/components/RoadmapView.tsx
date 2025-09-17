@@ -399,24 +399,25 @@ export function RoadmapView({
     setResizeDialog(prev => ({ ...prev, open: false }));
   }, []);
 
-  // Calculate the full timeline bounds to determine navigation limits
+  // Calculate the full timeline bounds to determine navigation limits - UNLIMITED EXTENSION
   const fullTimelineBounds = useMemo(() => {
     const now = new Date();
     const currentMonth = startOfMonth(now);
     
-    if (projects.length === 0) {
-      return {
-        start: currentMonth,
-        end: endOfMonth(addDays(now, 365))
-      };
-    }
-
-    const allDates = projects.flatMap(p => [new Date(p.start_date), new Date(p.end_date)]);
-    // Always include current month in the bounds
-    allDates.push(currentMonth);
+    // Get project dates if they exist, otherwise use current month
+    let minDate = currentMonth;
+    let maxDate = addMonths(currentMonth, 24); // Default to 2 years from now
     
-    const minDate = new Date(Math.min(...allDates.map(d => d.getTime())));
-    const maxDate = new Date(Math.max(...allDates.map(d => d.getTime())));
+    if (projects.length > 0) {
+      const allDates = projects.flatMap(p => [new Date(p.start_date), new Date(p.end_date)]);
+      allDates.push(currentMonth);
+      
+      minDate = new Date(Math.min(...allDates.map(d => d.getTime())));
+      const projectMaxDate = new Date(Math.max(...allDates.map(d => d.getTime())));
+      
+      // Extend timeline significantly beyond latest project - allow unlimited future navigation
+      maxDate = addMonths(projectMaxDate, 60); // Extend 5 years beyond latest project
+    }
     
     return {
       start: startOfMonth(minDate),
@@ -443,9 +444,9 @@ export function RoadmapView({
   }, [viewportStart, fullTimelineBounds.start]);
 
   const canNavigateRight = useMemo(() => {
-    const viewportEnd = endOfMonth(addMonths(viewportStart, monthsToShow - 1));
-    return viewportEnd < fullTimelineBounds.end;
-  }, [viewportStart, monthsToShow, fullTimelineBounds.end]);
+    // Allow unlimited forward navigation - don't limit by fullTimelineBounds
+    return true;
+  }, []);
 
   const navigateLeft = () => {
     if (canNavigateLeft) {
@@ -688,11 +689,18 @@ export function RoadmapView({
         membersInTeam.forEach(member => {
           console.log(`👤 MEMBER: ${member.name} (ID: ${member.id})`);
           
-          // STRICT filtering: Only show projects that are actually assigned to this specific member
+          // STRICT filtering: Only show projects that are actually assigned to this specific member AND belong to this team
           const memberProjects = visibleProjects
             .filter(project => {
               console.log(`  🔍 Checking "${project.name}" for ${member.name}`);
               console.log(`    Project assignees:`, project.assignees?.map(a => `${a.name} (${a.id})`));
+              console.log(`    Project team: ${project.team?.name}, Current team: ${team.name}`);
+              
+              // CRITICAL: Project must belong to the current team being processed
+              if (project.team_id !== team.id) {
+                console.log(`    ❌ Project belongs to different team (${project.team?.name} vs ${team.name})`);
+                return false;
+              }
               
               // Must be explicitly assigned to this member
               const isDirectlyAssigned = project.assignees?.some(assignee => {
