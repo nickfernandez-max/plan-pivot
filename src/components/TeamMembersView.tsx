@@ -617,6 +617,44 @@ export function TeamMembersView({
           </Tabs>
         </CardContent>
       </Card>
+
+      {/* Edit Dialogs */}
+      {editingMember && (
+        <EditTeamMemberDialog
+          isOpen={!!editingMember}
+          onClose={() => setEditingMember(null)}
+          member={editingMember}
+          teams={teams}
+          roles={roles}
+          teamMembers={teamMembers}
+          memberships={memberships}
+          onUpdateMember={onUpdateTeamMember}
+          onAddMembership={onAddMembership}
+          onUpdateMembership={onUpdateMembership}
+          onDeleteMembership={onDeleteMembership}
+          onAddRole={onAddRole}
+        />
+      )}
+
+      {editingTeam && (
+        <EditTeamDialog
+          open={!!editingTeam}
+          onOpenChange={(open) => !open && setEditingTeam(null)}
+          team={editingTeam}
+          products={products}
+          onUpdateTeam={onUpdateTeam}
+          onArchiveTeam={onArchiveTeam}
+        />
+      )}
+
+      {editingProduct && (
+        <EditProductDialog
+          open={!!editingProduct}
+          onOpenChange={(open) => !open && setEditingProduct(null)}
+          product={editingProduct}
+          onUpdateProduct={onUpdateProduct}
+        />
+      )}
     </div>
   );
 }
