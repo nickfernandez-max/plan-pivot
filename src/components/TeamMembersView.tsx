@@ -356,13 +356,13 @@ export function TeamMembersView({
     return (
       <ScrollArea className="h-[70vh] w-full">
         <Table>
-          <TableHeader className="sticky top-0 z-20 bg-background">
-            <TableRow className="h-8 bg-background">
-              <TableHead className="sticky left-0 w-36 text-xs bg-background z-30 border-r">Team / Member</TableHead>
-              <TableHead className="sticky left-36 w-28 text-xs bg-background z-30 border-r">Role</TableHead>
-              <TableHead className="sticky left-64 w-24 text-xs bg-background z-30 border-r">Start Date</TableHead>
+          <TableHeader className="sticky top-0 z-20 bg-background/95 backdrop-blur-sm border-b">
+            <TableRow className="h-8 bg-background/95 backdrop-blur-sm">
+              <TableHead className="sticky left-0 w-36 text-xs bg-background/95 backdrop-blur-sm z-30 border-r">Team / Member</TableHead>
+              <TableHead className="sticky left-36 w-28 text-xs bg-background/95 backdrop-blur-sm z-30 border-r">Role</TableHead>
+              <TableHead className="sticky left-64 w-24 text-xs bg-background/95 backdrop-blur-sm z-30 border-r">Start Date</TableHead>
             {timelineMonthsArray.map((month) => (
-              <TableHead key={month.label} className="text-center w-8 px-0 bg-background">
+              <TableHead key={month.label} className="text-center w-8 px-0 bg-background/95 backdrop-blur-sm z-20 sticky top-0">
                 <div className="text-xs font-medium">
                   {format(month.date, 'MMM - yy')}
                 </div>
