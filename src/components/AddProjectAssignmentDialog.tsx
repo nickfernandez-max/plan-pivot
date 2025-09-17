@@ -377,100 +377,128 @@ export function AddProjectAssignmentDialog({
             <FormField
               control={form.control}
               name="memberId"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Select Team Member</FormLabel>
-                  <div className="space-y-2">
-                    <Input
-                      placeholder="Search team members..."
-                      value={memberSearchTerm}
-                      onChange={(e) => setMemberSearchTerm(e.target.value)}
-                      className="w-full"
-                    />
-                    
-                    {/* Show filtered results as a visible list */}
-                    {memberSearchTerm.trim() ? (
-                      <div className="border rounded-md max-h-64 overflow-y-auto bg-background">
-                        {filteredTeamMembers && filteredTeamMembers.length > 0 ? (
-                          <div className="p-1">
-                            <div className="text-xs text-muted-foreground px-2 py-1 mb-1">
-                              {filteredTeamMembers.length} team member{filteredTeamMembers.length !== 1 ? 's' : ''} found
+              render={({ field }) => {
+                const selectedMember = teamMembers.find(m => m.id === field.value);
+                
+                return (
+                  <FormItem>
+                    <FormLabel>Team Member</FormLabel>
+                    {preSelectedMemberId ? (
+                      // Show pre-selected member (read-only)
+                      <div className="rounded-md border bg-muted/50 p-3">
+                        <div className="flex items-center gap-2">
+                          <div className="h-2 w-2 rounded-full bg-primary"></div>
+                          <span className="text-sm text-muted-foreground">Selected from roadmap:</span>
+                        </div>
+                        {selectedMember && (
+                          <div className="mt-2 flex items-center gap-2">
+                            <div className="flex-1">
+                              <div className="font-medium">{selectedMember.name}</div>
                             </div>
-                            {filteredTeamMembers.map((member) => {
-                              const isSelected = field.value === member.id;
-                              
-                              return (
-                                <div
-                                  key={member.id}
-                                  className={`flex items-center gap-2 p-2 rounded-md cursor-pointer hover:bg-accent hover:text-accent-foreground transition-colors ${
-                                    isSelected ? 'bg-primary text-primary-foreground' : ''
-                                  }`}
-                                  onClick={() => {
-                                    field.onChange(member.id);
-                                    setMemberSearchTerm(''); // Clear search after selection
-                                  }}
-                                >
-                                  <div className="flex-1 min-w-0">
-                                    <div className="font-medium">{member.name}</div>
-                                  </div>
-                                  <div className="flex gap-1 flex-shrink-0">
-                                    <Badge variant="outline" className="text-xs">{member.team?.name}</Badge>
-                                     {member.role?.display_name && (
-                                       <Badge variant="secondary" className="text-xs">{member.role.display_name || member.role.name}</Badge>
-                                     )}
-                                  </div>
-                                </div>
-                              );
-                            })}
-                          </div>
-                        ) : (
-                          <div className="p-4 text-center text-muted-foreground text-sm">
-                            No team members match "{memberSearchTerm}"
+                            <div className="flex gap-1">
+                              <Badge variant="outline" className="text-xs">{selectedMember.team?.name}</Badge>
+                              {selectedMember.role?.display_name && (
+                                <Badge variant="secondary" className="text-xs">{selectedMember.role.display_name || selectedMember.role.name}</Badge>
+                              )}
+                            </div>
                           </div>
                         )}
                       </div>
                     ) : (
-                      // Show dropdown selector when not searching
-                      <Select onValueChange={field.onChange} value={field.value}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Choose a team member to assign" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent className="max-h-64">
-                          {filteredTeamMembers && filteredTeamMembers.length > 0 ? (
-                            filteredTeamMembers.map((member) => (
-                              <SelectItem key={member.id} value={member.id}>
-                                <div className="flex items-center gap-2 w-full">
-                                  <span className="flex-1">{member.name}</span>
-                                  <div className="flex gap-1">
-                                    <Badge variant="outline" className="text-xs">{member.team?.name}</Badge>
-                                     {member.role?.display_name && (
-                                       <Badge variant="secondary" className="text-xs">{member.role.display_name || member.role.name}</Badge>
-                                     )}
-                                  </div>
+                      // Show member selection UI when not pre-selected
+                      <div className="space-y-2">
+                        <Input
+                          placeholder="Search team members..."
+                          value={memberSearchTerm}
+                          onChange={(e) => setMemberSearchTerm(e.target.value)}
+                          className="w-full"
+                        />
+                        
+                        {/* Show filtered results as a visible list */}
+                        {memberSearchTerm.trim() ? (
+                          <div className="border rounded-md max-h-64 overflow-y-auto bg-background">
+                            {filteredTeamMembers && filteredTeamMembers.length > 0 ? (
+                              <div className="p-1">
+                                <div className="text-xs text-muted-foreground px-2 py-1 mb-1">
+                                  {filteredTeamMembers.length} team member{filteredTeamMembers.length !== 1 ? 's' : ''} found
                                 </div>
-                              </SelectItem>
-                            ))
-                          ) : (
-                            <SelectItem value="no-members" disabled>
-                              No team members available  
-                            </SelectItem>
-                          )}
-                        </SelectContent>
-                      </Select>
-                    )}
-                    
-                    {/* Show selected member */}
-                    {field.value && !memberSearchTerm.trim() && (
-                      <div className="text-sm text-muted-foreground">
-                        Selected: {filteredTeamMembers.find(m => m.id === field.value)?.name}
+                                {filteredTeamMembers.map((member) => {
+                                  const isSelected = field.value === member.id;
+                                  
+                                  return (
+                                    <div
+                                      key={member.id}
+                                      className={`flex items-center gap-2 p-2 rounded-md cursor-pointer hover:bg-accent hover:text-accent-foreground transition-colors ${
+                                        isSelected ? 'bg-primary text-primary-foreground' : ''
+                                      }`}
+                                      onClick={() => {
+                                        field.onChange(member.id);
+                                        setMemberSearchTerm(''); // Clear search after selection
+                                      }}
+                                    >
+                                      <div className="flex-1 min-w-0">
+                                        <div className="font-medium">{member.name}</div>
+                                      </div>
+                                      <div className="flex gap-1 flex-shrink-0">
+                                        <Badge variant="outline" className="text-xs">{member.team?.name}</Badge>
+                                         {member.role?.display_name && (
+                                           <Badge variant="secondary" className="text-xs">{member.role.display_name || member.role.name}</Badge>
+                                         )}
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            ) : (
+                              <div className="p-4 text-center text-muted-foreground text-sm">
+                                No team members match "{memberSearchTerm}"
+                              </div>
+                            )}
+                          </div>
+                        ) : (
+                          // Show dropdown selector when not searching
+                          <Select onValueChange={field.onChange} value={field.value}>
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Choose a team member to assign" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent className="max-h-64">
+                              {filteredTeamMembers && filteredTeamMembers.length > 0 ? (
+                                filteredTeamMembers.map((member) => (
+                                  <SelectItem key={member.id} value={member.id}>
+                                    <div className="flex items-center gap-2 w-full">
+                                      <span className="flex-1">{member.name}</span>
+                                      <div className="flex gap-1">
+                                        <Badge variant="outline" className="text-xs">{member.team?.name}</Badge>
+                                         {member.role?.display_name && (
+                                           <Badge variant="secondary" className="text-xs">{member.role.display_name || member.role.name}</Badge>
+                                         )}
+                                      </div>
+                                    </div>
+                                  </SelectItem>
+                                ))
+                              ) : (
+                                <SelectItem value="no-members" disabled>
+                                  No team members available  
+                                </SelectItem>
+                              )}
+                            </SelectContent>
+                          </Select>
+                        )}
+                        
+                        {/* Show selected member */}
+                        {field.value && !memberSearchTerm.trim() && (
+                          <div className="text-sm text-muted-foreground">
+                            Selected: {filteredTeamMembers.find(m => m.id === field.value)?.name}
+                          </div>
+                        )}
                       </div>
                     )}
-                  </div>
-                  <FormMessage />
-                </FormItem>
-              )}
+                    <FormMessage />
+                  </FormItem>
+                );
+              }}
             />
 
             {selectedMemberId && (
