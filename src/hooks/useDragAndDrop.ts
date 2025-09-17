@@ -40,10 +40,23 @@ export function useDragAndDrop({
     newStartDate: Date | null;
     isValidDrop: boolean;
   }>({ memberId: null, newStartDate: null, isValidDrop: false });
+  
+  const [lastClickTime, setLastClickTime] = useState<number>(0);
+  const [clickTimeoutId, setClickTimeoutId] = useState<number | null>(null);
 
   const handleDragStart = useCallback((event: DragStartEvent) => {
     const { active } = event;
     if (!active.data.current) return;
+
+    const now = Date.now();
+    const timeSinceLastClick = now - lastClickTime;
+    
+    // If this is a potential double-click (within 300ms), don't start drag
+    if (timeSinceLastClick < 300) {
+      return;
+    }
+    
+    setLastClickTime(now);
 
     const assignment = assignments.find(a => 
       a.project_id === active.data.current.projectId && 
@@ -57,7 +70,7 @@ export function useDragAndDrop({
       originalEndDate: active.data.current.endDate,
       originalAllocation: assignment?.percent_allocation || 25,
     });
-  }, [assignments]);
+  }, [assignments, lastClickTime]);
 
   const handleDragOver = useCallback((event: DragOverEvent) => {
     const { over } = event;
@@ -84,10 +97,22 @@ export function useDragAndDrop({
       return;
     }
 
-    // Handle clicks
+    // Handle clicks with delay to allow for double-clicks
     const isDragAction = Math.abs(delta.x) > 10 || Math.abs(delta.y) > 10;
     if (!isDragAction && active.data.current?.onClick) {
-      active.data.current.onClick();
+      // Clear any existing timeout
+      if (clickTimeoutId) {
+        clearTimeout(clickTimeoutId);
+        setClickTimeoutId(null);
+      }
+      
+      // Set a timeout to handle single clicks after double-click window
+      const timeoutId = window.setTimeout(() => {
+        active.data.current?.onClick();
+        setClickTimeoutId(null);
+      }, 250);
+      
+      setClickTimeoutId(timeoutId);
       setActiveDrag(null);
       setDragOverData({ memberId: null, newStartDate: null, isValidDrop: false });
       return;
@@ -207,7 +232,7 @@ export function useDragAndDrop({
 
     setActiveDrag(null);
     setDragOverData({ memberId: null, newStartDate: null, isValidDrop: false });
-  }, [activeDrag, timelineBounds, totalDays, assignments, onUpdateProject, onUpdateProjectAssignments]);
+  }, [activeDrag, timelineBounds, totalDays, assignments, onUpdateProject, onUpdateProjectAssignments, clickTimeoutId]);
 
   const calculatePreviewPosition = useCallback((project: Project, delta: { x: number; y: number }) => {
     if (!activeDrag || project.id !== activeDrag.projectId) {
