@@ -692,26 +692,37 @@ export function RoadmapView({
           // STRICT filtering: Only show projects that are actually assigned to this specific member AND belong to this team
           const memberProjects = visibleProjects
             .filter(project => {
-              console.log(`  🔍 Checking "${project.name}" for ${member.name}`);
-              console.log(`    Project assignees:`, project.assignees?.map(a => `${a.name} (${a.id})`));
-              console.log(`    Project team: ${project.team?.name}, Current team: ${team.name}`);
+              console.log(`  🔍 Checking "${project.name}" for ${member.name} in team ${team.name}`);
+              console.log(`    Project data:`, {
+                id: project.id,
+                name: project.name,
+                team_id: project.team_id,
+                team_name: project.team?.name,
+                current_team_id: team.id,
+                current_team_name: team.name,
+                assignees: project.assignees?.map(a => `${a.name} (${a.id})`)
+              });
               
               // CRITICAL: Project must belong to the current team being processed
               if (project.team_id !== team.id) {
-                console.log(`    ❌ Project belongs to different team (${project.team?.name} vs ${team.name})`);
+                console.log(`    ❌ PROJECT REJECTED: team_id mismatch (${project.team_id} !== ${team.id})`);
+                console.log(`    ❌ Project team: "${project.team?.name}" vs Current team: "${team.name}"`);
                 return false;
               }
+              
+              console.log(`    ✅ Project belongs to correct team: ${team.name}`);
               
               // Must be explicitly assigned to this member
               const isDirectlyAssigned = project.assignees?.some(assignee => {
                 const match = assignee.id === member.id;
-                console.log(`    Comparing ${assignee.id} === ${member.id} = ${match}`);
+                console.log(`    Assignee check: ${assignee.name} (${assignee.id}) === ${member.name} (${member.id}) = ${match}`);
                 return match;
               });
               
               console.log(`    Is ${member.name} assigned to "${project.name}"? ${isDirectlyAssigned}`);
               
               if (!isDirectlyAssigned) {
+                console.log(`    ❌ PROJECT REJECTED: Member not assigned`);
                 return false;
               }
               
@@ -719,9 +730,9 @@ export function RoadmapView({
               const projectStart = new Date(project.start_date);
               const projectEnd = new Date(project.end_date);
               
-              const membership = teamMemberships.find(m => m.team_member_id === member.id);
+              const membership = teamMemberships.find(m => m.team_member_id === member.id && m.team_id === team.id);
               if (!membership) {
-                console.log(`    ❌ No membership found for ${member.name}`);
+                console.log(`    ❌ PROJECT REJECTED: No membership found for ${member.name} in team ${team.name}`);
                 return false;
               }
               
@@ -733,7 +744,13 @@ export function RoadmapView({
               
               console.log(`    Timeline check: member ${membershipStart.toISOString().slice(0,10)} to ${membershipEnd.toISOString().slice(0,10)} vs project ${projectStart.toISOString().slice(0,10)} to ${projectEnd.toISOString().slice(0,10)} = ${memberOverlapsProject}`);
               
-              return memberOverlapsProject;
+              if (!memberOverlapsProject) {
+                console.log(`    ❌ PROJECT REJECTED: Timeline mismatch`);
+                return false;
+              }
+              
+              console.log(`    ✅ PROJECT ACCEPTED: All checks passed`);
+              return true;
             })
             .map(project => {
               // Get the assignment for this specific member to use their dates
@@ -896,17 +913,18 @@ export function RoadmapView({
               </div>
               
               {/* Navigation controls */}
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 min-w-0">
                 <Button 
                   variant="outline" 
                   size="sm" 
                   onClick={navigateLeft}
                   disabled={!canNavigateLeft}
+                  className="shrink-0"
                 >
                   <ChevronLeft className="h-4 w-4" />
                   Previous
                 </Button>
-                <span className="text-sm text-muted-foreground px-2 min-w-fit">
+                <span className="text-sm text-muted-foreground px-2 shrink-0 text-center">
                   {format(timelineBounds.start, 'MMM yyyy')} - {format(timelineBounds.end, 'MMM yyyy')}
                 </span>
                 <Button 
@@ -914,6 +932,7 @@ export function RoadmapView({
                   size="sm" 
                   onClick={navigateRight}
                   disabled={!canNavigateRight}
+                  className="shrink-0"
                 >
                   Next
                   <ChevronRight className="h-4 w-4" />
