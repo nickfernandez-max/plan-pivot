@@ -341,6 +341,33 @@ export function TeamMembersView({
     return relevantMembership ? 1 : 0;
   };
 
+  // Calculate dynamic timeline months based on available space
+  const calculateOptimalMonths = () => {
+    const viewportWidth = window.innerWidth;
+    const maxContainerWidth = Math.min(viewportWidth - 100, 1400); // Leave some margin and cap at 1400px
+    const fixedColumnsWidth = 200 + 130 + 110; // Team/Member + Role + Start Date
+    const availableWidth = maxContainerWidth - fixedColumnsWidth;
+    const monthColumnWidth = 56; // Wider month columns
+    const maxMonths = Math.floor(availableWidth / monthColumnWidth);
+    return Math.max(6, Math.min(maxMonths, timelineMonths)); // Min 6 months, max timelineMonths
+  };
+
+  const [optimalMonths, setOptimalMonths] = React.useState(calculateOptimalMonths);
+
+  React.useEffect(() => {
+    const handleResize = () => {
+      setOptimalMonths(calculateOptimalMonths());
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [timelineMonths]);
+
+  // Use optimal months for timeline display
+  const displayTimelineMonths = useMemo(() => {
+    return timelineMonthsArray.slice(0, optimalMonths);
+  }, [timelineMonthsArray, optimalMonths]);
+
   // Render table for a set of teams
   const renderTable = (teams: Array<{ team: Team; members: TeamMember[] }>) => {
     if (teams.length === 0) {
@@ -353,8 +380,8 @@ export function TeamMembersView({
       );
     }
     
-    // Calculate grid columns: 3 fixed columns + timeline months
-    const gridCols = `144px 112px 96px ${Array(timelineMonthsArray.length).fill('32px').join(' ')}`;
+    // Calculate grid columns: 3 fixed columns + timeline months (wider columns)
+    const gridCols = `200px 130px 110px ${Array(displayTimelineMonths.length).fill('56px').join(' ')}`;
 
     return (
       <div className="relative">
@@ -366,20 +393,20 @@ export function TeamMembersView({
               className="grid"
               style={{ 
                 gridTemplateColumns: gridCols,
-                minWidth: `${144 + 112 + 96 + (timelineMonthsArray.length * 32)}px`
+                minWidth: `${200 + 130 + 110 + (displayTimelineMonths.length * 56)}px`
               }}
             >
           {/* Header Row - spans all columns */}
           <div className="sticky top-0 left-0 z-40 bg-background border-r border-b px-4 py-2 text-xs font-medium flex items-center">
             Team / Member
           </div>
-          <div className="sticky top-0 left-[144px] z-40 bg-background border-r border-b px-4 py-2 text-xs font-medium flex items-center">
+          <div className="sticky top-0 left-[200px] z-40 bg-background border-r border-b px-4 py-2 text-xs font-medium flex items-center">
             Role
           </div>
-          <div className="sticky top-0 left-[256px] z-40 bg-background border-r border-b px-4 py-2 text-xs font-medium flex items-center">
+          <div className="sticky top-0 left-[330px] z-40 bg-background border-r border-b px-4 py-2 text-xs font-medium flex items-center">
             Start Date
           </div>
-          {timelineMonthsArray.map((month) => (
+          {displayTimelineMonths.map((month) => (
             <div key={`header-${month.label}`} className="sticky top-0 z-30 bg-background border-r border-b px-0 py-2 text-xs font-medium text-center flex items-center justify-center">
               {format(month.date, 'MMM - yy')}
             </div>
@@ -409,11 +436,11 @@ export function TeamMembersView({
                   <Settings className="w-3 h-3 text-blue-600 dark:text-blue-400" />
                 </Button>
               </div>
-              <div className="sticky left-[144px] z-20 bg-gradient-to-r from-blue-100 to-blue-50 dark:from-blue-950 dark:to-blue-900 border-r border-b px-4 py-2 flex items-center">
+              <div className="sticky left-[200px] z-20 bg-gradient-to-r from-blue-100 to-blue-50 dark:from-blue-950 dark:to-blue-900 border-r border-b px-4 py-2 flex items-center">
                 <span className="text-xs font-medium text-blue-700 dark:text-blue-300">Count →</span>
               </div>
-              <div className="sticky left-[256px] z-20 bg-gradient-to-r from-blue-100 to-blue-50 dark:from-blue-950 dark:to-blue-900 border-r border-b px-4 py-2"></div>
-              {timelineMonthsArray.map((month) => {
+              <div className="sticky left-[330px] z-20 bg-gradient-to-r from-blue-100 to-blue-50 dark:from-blue-950 dark:to-blue-900 border-r border-b px-4 py-2"></div>
+              {displayTimelineMonths.map((month) => {
                 const actualCount = getActualMemberCount(team.id, month.date);
                 const idealCount = getIdealMemberCount(team.id, month.date);
                 return (
@@ -455,27 +482,27 @@ export function TeamMembersView({
                         <Edit2 className="w-2.5 h-2.5" />
                       </Button>
                     </div>
-                    <div className="sticky left-[144px] z-10 bg-background border-r border-b px-4 py-2 text-muted-foreground text-sm flex items-center">
+                    <div className="sticky left-[200px] z-10 bg-background border-r border-b px-4 py-2 text-muted-foreground text-sm flex items-center">
                       {member.role?.display_name || member.role?.name}
                     </div>
-                    <div className="sticky left-[256px] z-10 bg-background border-r border-b px-4 py-2 text-sm flex items-center">
+                    <div className="sticky left-[330px] z-10 bg-background border-r border-b px-4 py-2 text-sm flex items-center">
                       {format(new Date(member.start_date), 'MMM - yy')}
                     </div>
-                    {timelineMonthsArray.map((month) => {
+                    {displayTimelineMonths.map((month) => {
                       const involvement = getMemberInvolvement(member, month.date, team.id);
                       return (
-                        <div key={`member-${member.id}-${month.label}`} className="border-r border-b py-1 px-0 flex items-center justify-center">
+                        <div key={`member-${member.id}-${month.label}`} className="border-r border-b py-2 px-1 flex items-center justify-center">
                           <div 
-                            className="w-3 h-3 rounded flex items-center justify-center text-xs font-medium"
+                            className="w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold"
                             style={{
                               backgroundColor: involvement > 0 
                                 ? 'hsl(var(--primary/20))'
                                 : 'transparent',
                               color: involvement > 0 
-                                ? 'black'
+                                ? 'hsl(var(--primary))'
                                 : 'hsl(var(--muted-foreground))',
                               border: involvement > 0 
-                                ? '1px solid hsl(var(--primary))'
+                                ? '2px solid hsl(var(--primary))'
                                 : '1px solid hsl(var(--border))'
                             }}
                           >
