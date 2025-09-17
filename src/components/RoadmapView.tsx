@@ -396,10 +396,13 @@ export function RoadmapView({
     const now = new Date();
     const currentMonth = startOfMonth(now);
     
+    // Always extend at least 2 years into the future for continuous scrolling
+    const futureEnd = endOfMonth(addMonths(now, 24));
+    
     if (projects.length === 0) {
       return {
         start: currentMonth,
-        end: endOfMonth(addDays(now, 365))
+        end: futureEnd
       };
     }
 
@@ -412,7 +415,8 @@ export function RoadmapView({
     
     return {
       start: startOfMonth(minDate),
-      end: endOfMonth(maxDate)
+      // Ensure timeline extends at least 2 years into future, or project end date, whichever is later
+      end: endOfMonth(maxDate > futureEnd ? maxDate : futureEnd)
     };
   }, [projects]);
 
