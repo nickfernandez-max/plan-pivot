@@ -808,29 +808,30 @@ export function RoadmapView({
               <Calendar className="h-4 w-4" />
               Team Roadmap Timeline
             </CardTitle>
-            <div className="flex items-center gap-4">
-              {/* Add Project Button */}
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={() => setIsAddProjectDialogOpen(true)}
-              >
-                <Plus className="w-4 h-4 mr-2" />
-                Add Project
-              </Button>
-              
-              {/* Add Project Assignment Button */}
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={() => setIsAssignmentDialogOpen(true)}
-              >
-                <UserPlus className="w-4 h-4 mr-2" />
-                Add Assignment
-              </Button>
+            <div className="flex flex-wrap items-center gap-3 min-w-0">
+              {/* Action buttons group */}
+              <div className="flex items-center gap-2">
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => setIsAddProjectDialogOpen(true)}
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  Add Project
+                </Button>
+                
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => setIsAssignmentDialogOpen(true)}
+                >
+                  <UserPlus className="w-4 h-4 mr-2" />
+                  Add Assignment
+                </Button>
+              </div>
               
               {/* Month selector */}
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-shrink-0">
                 <span className="text-sm text-muted-foreground">Show:</span>
                 <Select value={monthsToShow.toString()} onValueChange={(value) => setMonthsToShow(parseInt(value))}>
                   <SelectTrigger className="w-32">
@@ -848,17 +849,18 @@ export function RoadmapView({
               </div>
               
               {/* Navigation controls */}
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-shrink-0 ml-auto">
                 <Button 
                   variant="outline" 
                   size="sm" 
                   onClick={navigateLeft}
                   disabled={!canNavigateLeft}
+                  className="flex-shrink-0"
                 >
                   <ChevronLeft className="h-4 w-4" />
                   Previous
                 </Button>
-                <span className="text-sm text-muted-foreground px-2 min-w-fit">
+                <span className="text-sm text-muted-foreground px-2 whitespace-nowrap">
                   {format(timelineBounds.start, 'MMM yyyy')} - {format(timelineBounds.end, 'MMM yyyy')}
                 </span>
                 <Button 
@@ -866,6 +868,7 @@ export function RoadmapView({
                   size="sm" 
                   onClick={navigateRight}
                   disabled={!canNavigateRight}
+                  className="flex-shrink-0"
                 >
                   Next
                   <ChevronRight className="h-4 w-4" />
