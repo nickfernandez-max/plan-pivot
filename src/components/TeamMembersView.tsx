@@ -13,6 +13,8 @@ import { format, addMonths, startOfMonth, endOfMonth } from "date-fns";
 import { TimelineNavigation } from '@/components/TimelineNavigation';
 import { TeamMember, Team, Product, TeamMembership, Role, TeamIdealSize } from '@/types/roadmap';
 import { EditTeamMemberDialog } from '@/components/EditTeamMemberDialog';
+import { EditTeamDialog } from '@/components/EditTeamDialog';
+import { EditProductDialog } from '@/components/EditProductDialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -83,6 +85,9 @@ export function TeamMembersView({
   onAddRole,
   currentUserId,
 }: TeamMembersViewProps) {
+  const [editingMember, setEditingMember] = useState<TeamMember | null>(null);
+  const [editingTeam, setEditingTeam] = useState<Team | null>(null);
+  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [activeTab, setActiveTab] = useState<string>('');
   const [showArchived, setShowArchived] = useState<boolean>(false);
   
@@ -425,7 +430,7 @@ export function TeamMembersView({
                   variant="ghost"
                   size="sm"
                   className="h-6 w-6 p-0 hover:bg-blue-200 dark:hover:bg-blue-800"
-                  onClick={() => {}}
+                  onClick={() => setEditingTeam(team)}
                   title="Edit team"
                 >
                   <Settings className="w-3 h-3 text-blue-600 dark:text-blue-400" />
@@ -471,7 +476,7 @@ export function TeamMembersView({
                         variant="ghost"
                         size="sm"
                         className="h-5 w-5 p-0"
-                        onClick={() => {}}
+                        onClick={() => setEditingMember(member)}
                         title="Edit memberships"
                       >
                         <Edit2 className="w-2.5 h-2.5" />
@@ -523,23 +528,6 @@ export function TeamMembersView({
 
   return (
     <div className="max-w-7xl mx-auto px-6 py-8 space-y-8">
-      {/* Elegant Header Section */}
-      <div className="text-center space-y-2">
-        <h1 className="text-3xl font-bold tracking-tight">Team Members</h1>
-        <p className="text-muted-foreground">Manage your team members and their assignments across projects</p>
-      </div>
-
-      {/* Controls Card */}
-      <Card className="shadow-sm border-muted">
-        <CardContent className="p-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-6">
-              <h2 className="text-lg font-semibold">Timeline: {timelineRange}</h2>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
       {/* Timeline Navigation */}
       <Card className="shadow-sm border-muted">
         <CardContent className="p-6">
@@ -611,6 +599,43 @@ export function TeamMembersView({
         </CardContent>
       </Card>
 
+      {/* Edit Dialogs */}
+      {editingMember && (
+        <EditTeamMemberDialog
+          isOpen={!!editingMember}
+          onClose={() => setEditingMember(null)}
+          member={editingMember}
+          teams={teams}
+          roles={roles}
+          teamMembers={teamMembers}
+          memberships={memberships}
+          onUpdateMember={onUpdateTeamMember}
+          onAddMembership={onAddMembership}
+          onUpdateMembership={onUpdateMembership}
+          onDeleteMembership={onDeleteMembership}
+          onAddRole={onAddRole}
+        />
+      )}
+
+      {editingTeam && (
+        <EditTeamDialog
+          open={!!editingTeam}
+          onOpenChange={(open) => !open && setEditingTeam(null)}
+          team={editingTeam}
+          products={products}
+          onUpdateTeam={onUpdateTeam}
+          onArchiveTeam={onArchiveTeam}
+        />
+      )}
+
+      {editingProduct && (
+        <EditProductDialog
+          open={!!editingProduct}
+          onOpenChange={(open) => !open && setEditingProduct(null)}
+          product={editingProduct}
+          onUpdateProduct={onUpdateProduct}
+        />
+      )}
     </div>
   );
 }
