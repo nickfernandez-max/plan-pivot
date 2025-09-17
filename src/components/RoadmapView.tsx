@@ -455,6 +455,8 @@ export function RoadmapView({
 
   // Filter projects to only include those that intersect with the visible timeline
   const visibleProjects = useMemo(() => {
+    console.log(`🕐 Timeline bounds: ${timelineBounds.start.toISOString().slice(0,10)} to ${timelineBounds.end.toISOString().slice(0,10)}`);
+    
     const filtered = projects.filter(project => {
       const projectStart = new Date(project.start_date);
       const projectEnd = new Date(project.end_date);
@@ -468,9 +470,16 @@ export function RoadmapView({
         ? true  // Future Planning: show all projects
         : project.status_visibility === 'published';  // Main Roadmap: only published
       
-      return intersects && visibilityMatch;
+      const shouldShow = intersects && visibilityMatch;
+      
+      if (project.name.includes('PINless') || project.name.includes('UPC') || project.name.includes('Legacy') || project.name.includes('Advanced Analytics')) {
+        console.log(`📊 Project "${project.name}": ${projectStart.toISOString().slice(0,10)} to ${projectEnd.toISOString().slice(0,10)} -> intersects=${intersects}, visible=${shouldShow}`);
+      }
+      
+      return shouldShow;
     });
     
+    console.log(`📋 Visible projects: ${filtered.length}/${projects.length}`);
     return filtered;
   }, [projects, timelineBounds, isFuturePlanning]);
 
@@ -670,9 +679,15 @@ export function RoadmapView({
           // Only show projects where the member is in the team during the project timeline
           const memberProjects = visibleProjects
             .filter(project => {
-              // Check if this member is assigned to the project
+              // CRITICAL: Double-check that this member is actually assigned to the project
               const isAssigned = project.assignees?.some(assignee => assignee.id === member.id);
-              if (!isAssigned) return false;
+              if (!isAssigned) {
+                // Log if we're filtering out a project that somehow got through
+                if (project.name.includes('PINless') || project.name.includes('UPC') || project.name.includes('Legacy') || project.name.includes('Advanced Analytics')) {
+                  console.log(`🚫 Filtered out "${project.name}" for ${member.name} - not assigned`);
+                }
+                return false;
+              }
               
               // Check if member is in the team during the project timeline
               const projectStart = new Date(project.start_date);
@@ -682,7 +697,10 @@ export function RoadmapView({
                 membership.team_member_id === member.id
               );
               
-              if (!membershipInTeam) return false;
+              if (!membershipInTeam) {
+                console.log(`🚫 No membership found for ${member.name} in team ${team.name}`);
+                return false;
+              }
               
               const membershipStart = new Date(membershipInTeam.start_month);
               const membershipEnd = membershipInTeam.end_month ? 
@@ -690,7 +708,19 @@ export function RoadmapView({
                 new Date('9999-12-01');
               
               // Member must be in team during at least part of the project timeline
-              return membershipStart <= projectEnd && membershipEnd >= projectStart;
+              const isInTeamDuringProject = membershipStart <= projectEnd && membershipEnd >= projectStart;
+              
+              if (!isInTeamDuringProject) {
+                if (project.name.includes('PINless') || project.name.includes('UPC') || project.name.includes('Legacy') || project.name.includes('Advanced Analytics')) {
+                  console.log(`🚫 Filtered out "${project.name}" for ${member.name} - not in team during project timeline`);
+                }
+              } else {
+                if (project.name.includes('PINless') || project.name.includes('UPC') || project.name.includes('Legacy') || project.name.includes('Advanced Analytics')) {
+                  console.log(`✅ Showing "${project.name}" for ${member.name} - properly assigned and in team`);
+                }
+              }
+              
+              return isInTeamDuringProject;
             })
             .map(project => {
               // Get the assignment for this specific member to use their dates
