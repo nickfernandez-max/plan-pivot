@@ -354,31 +354,23 @@ export function TeamMembersView({
     }
     
     return (
-      <div className="h-[70vh] w-full">
-        {/* Fixed Timeline Header */}
-        <div className="sticky top-0 z-20 bg-background border-b">
-          <Table>
-            <TableHeader>
-              <TableRow className="h-8">
-                <TableHead className="sticky left-0 w-36 text-xs bg-background/95 backdrop-blur-sm z-30 border-r">Team / Member</TableHead>
-                <TableHead className="sticky left-36 w-28 text-xs bg-background/95 backdrop-blur-sm z-30 border-r">Role</TableHead>
-                <TableHead className="sticky left-64 w-24 text-xs bg-background/95 backdrop-blur-sm z-30 border-r">Start Date</TableHead>
-                {timelineMonthsArray.map((month) => (
-                  <TableHead key={month.label} className="text-center w-8 px-0 bg-background/95 backdrop-blur-sm z-20">
-                    <div className="text-xs font-medium">
-                      {format(month.date, 'MMM - yy')}
-                    </div>
-                  </TableHead>
-                ))}
-              </TableRow>
-            </TableHeader>
-          </Table>
-        </div>
-        
-        {/* Scrollable Content */}
-        <ScrollArea className="h-[calc(70vh-40px)] w-full">
-          <Table>
-            <TableBody>
+      <ScrollArea className="h-[70vh] w-full">
+        <Table>
+          <TableHeader className="sticky top-0 z-20 bg-background/95 backdrop-blur-sm border-b">
+            <TableRow className="h-8">
+              <TableHead className="sticky left-0 w-36 text-xs bg-background/95 backdrop-blur-sm z-30 border-r">Team / Member</TableHead>
+              <TableHead className="sticky left-36 w-28 text-xs bg-background/95 backdrop-blur-sm z-30 border-r">Role</TableHead>
+              <TableHead className="sticky left-64 w-24 text-xs bg-background/95 backdrop-blur-sm z-30 border-r">Start Date</TableHead>
+              {timelineMonthsArray.map((month) => (
+                <TableHead key={month.label} className="text-center w-8 px-0 bg-background/95 backdrop-blur-sm z-20">
+                  <div className="text-xs font-medium">
+                    {format(month.date, 'MMM - yy')}
+                  </div>
+                </TableHead>
+              ))}
+            </TableRow>
+          </TableHeader>
+          <TableBody>
               {teams.map(({ team, members }) => (
             <Fragment key={team.id}>
               {/* Team header row */}
@@ -492,7 +484,6 @@ export function TeamMembersView({
         </TableBody>
         </Table>
       </ScrollArea>
-      </div>
     );
   };
 
