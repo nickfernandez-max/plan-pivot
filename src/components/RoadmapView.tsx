@@ -950,8 +950,14 @@ export function RoadmapView({
                           key={member.id}
                           className="flex items-center px-8 py-1 text-xs border-b border-border/40 bg-background/50 cursor-pointer hover:bg-muted/30 transition-colors"
                           style={{ height: `${rowHeight}px` }}
-                          onClick={() => handleOpenWorkAssignmentDialog(member.id, member.name)}
-                          title="Click to add work assignment"
+                          onClick={() => {
+                            setPreSelectedMember({
+                              id: member.id,
+                              startDate: new Date().toISOString().split('T')[0]
+                            });
+                            setIsAssignmentDialogOpen(true);
+                          }}
+                          title="Click to add project assignment"
                         >
                           <div className="flex-1 min-w-0">
                             <div className="font-medium truncate text-sm">{member.name}</div>
