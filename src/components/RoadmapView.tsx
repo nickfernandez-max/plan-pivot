@@ -920,9 +920,6 @@ export function RoadmapView({
                   >
                     <Users className="w-4 h-4 mr-2" />
                     <span className="truncate text-sm">{product.name}</span>
-                    <Badge variant="secondary" className="ml-2 text-xs">
-                      {teamGroups.reduce((sum, tg) => sum + tg.memberRows.length, 0)} member{teamGroups.reduce((sum, tg) => sum + tg.memberRows.length, 0) !== 1 ? 's' : ''}
-                    </Badge>
                   </div>
                   
                   {/* Teams within this product */}
@@ -979,9 +976,6 @@ export function RoadmapView({
                   >
                     <Users className="w-4 h-4 mr-2" />
                     <span className="truncate text-sm">Unassigned Teams</span>
-                    <Badge variant="secondary" className="ml-2 text-xs">
-                      {productGroups.unassignedTeamGroups.reduce((sum, tg) => sum + tg.memberRows.length, 0)} member{productGroups.unassignedTeamGroups.reduce((sum, tg) => sum + tg.memberRows.length, 0) !== 1 ? 's' : ''}
-                    </Badge>
                   </div>
                   
                   {productGroups.unassignedTeamGroups.map(({ team, memberRows: teamMemberRows }) => (

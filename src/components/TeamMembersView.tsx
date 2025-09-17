@@ -401,7 +401,7 @@ export function TeamMembersView({
                   </div>
                 </TableCell>
                 <TableCell className="font-medium text-blue-700 dark:text-blue-300 py-2">
-                  <span className="text-xs font-medium">Actual →</span>
+                  <span className="text-xs font-medium">Count →</span>
                 </TableCell>
                 <TableCell className="py-2"></TableCell>
                 {timelineMonths.map((month) => {
@@ -409,12 +409,17 @@ export function TeamMembersView({
                   const idealCount = getIdealMemberCount(team.id, month.date);
                   return (
                     <TableCell key={month.label} className="text-center py-1 px-0">
-                      <Badge 
-                        variant="outline" 
-                        className={`text-xs px-0.5 py-0 min-w-[12px] justify-center h-4 ${getStaffingColorClass(actualCount, idealCount)}`}
-                      >
-                        {actualCount}
-                      </Badge>
+                      <div className="flex flex-col items-center gap-0.5">
+                        <Badge 
+                          variant="outline" 
+                          className={`text-xs px-0.5 py-0 min-w-[16px] justify-center h-4 ${getStaffingColorClass(actualCount, idealCount)}`}
+                        >
+                          {actualCount}
+                        </Badge>
+                        <span className="text-xs text-muted-foreground">
+                          /{idealCount}
+                        </span>
+                      </div>
                     </TableCell>
                   );
                 })}
