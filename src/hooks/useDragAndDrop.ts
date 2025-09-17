@@ -51,17 +51,39 @@ export function useDragAndDrop({
     const { active } = event;
     if (!active.data.current) return;
 
-    console.log('🚀 DRAG START:', {
+    const now = Date.now();
+    const timeSinceLastClick = now - lastClickTime;
+    
+    // Check if dragging from a resize handle
+    const dragElement = document.querySelector(`[data-project-id="${active.data.current.projectId}"]`) as HTMLElement;
+    const resizeHandle = dragElement?.getAttribute('data-resize-handle') as 'left' | 'right' | null;
+    
+    console.log('🔧 Drag start - checking for resize handle:', {
       projectId: active.data.current.projectId,
-      memberId: active.data.current.memberId,
-      startDate: active.data.current.startDate,
-      endDate: active.data.current.endDate
+      resizeHandle,
+      dragElement,
+      timeSinceLastClick
     });
+    
+    // If this is a potential double-click (within 300ms) and not a resize, don't start drag
+    if (timeSinceLastClick < 300 && !resizeHandle) {
+      console.log('🔧 Skipping drag start - potential double click');
+      return;
+    }
+    
+    setLastClickTime(now);
 
     const assignment = assignments.find(a => 
       a.project_id === active.data.current.projectId && 
       a.team_member_id === active.data.current.memberId
     );
+    
+    console.log('🔧 Starting drag with data:', {
+      projectId: active.data.current.projectId,
+      memberId: active.data.current.memberId,
+      resizeHandle,
+      assignment: assignment?.percent_allocation
+    });
     
     setActiveDrag({
       projectId: active.data.current.projectId,
@@ -69,9 +91,9 @@ export function useDragAndDrop({
       originalStartDate: active.data.current.startDate,
       originalEndDate: active.data.current.endDate,
       originalAllocation: assignment?.percent_allocation || 25,
-      resizeHandle: active.data.current.resizeHandle || undefined,
+      resizeHandle: resizeHandle || undefined,
     });
-  }, [assignments]);
+  }, [assignments, lastClickTime]);
 
   const handleDragOver = useCallback((event: DragOverEvent) => {
     const { over } = event;
@@ -92,27 +114,34 @@ export function useDragAndDrop({
   const handleDragEnd = useCallback(async (event: DragEndEvent) => {
     const { over, delta, active } = event;
     
-    console.log('🎯 DRAG END:', { 
-      activeDrag: !!activeDrag, 
-      delta, 
-      over: over?.id 
-    });
-
     if (!activeDrag) {
-      console.log('❌ No active drag, returning');
       setActiveDrag(null);
       setDragOverData({ memberId: null, newStartDate: null, isValidDrop: false });
       return;
     }
 
-    // Check if this is actually a drag movement
-    const isDragAction = Math.abs(delta.x) > 5 || Math.abs(delta.y) > 5;
-    
-    if (!isDragAction) {
-      console.log('👆 Click detected, not drag');
-      if (active.data.current?.onClick) {
-        active.data.current.onClick();
+    // Handle clicks with delay to allow for double-clicks
+    const isDragAction = Math.abs(delta.x) > 10 || Math.abs(delta.y) > 10;
+    if (!isDragAction && active.data.current?.onClick) {
+      // Clear any existing timeout
+      if (clickTimeoutId) {
+        clearTimeout(clickTimeoutId);
+        setClickTimeoutId(null);
       }
+      
+      // Set a timeout to handle single clicks after double-click window
+      const timeoutId = window.setTimeout(() => {
+        active.data.current?.onClick();
+        setClickTimeoutId(null);
+      }, 250);
+      
+      setClickTimeoutId(timeoutId);
+      setActiveDrag(null);
+      setDragOverData({ memberId: null, newStartDate: null, isValidDrop: false });
+      return;
+    }
+
+    if (!over || !isDragAction) {
       setActiveDrag(null);
       setDragOverData({ memberId: null, newStartDate: null, isValidDrop: false });
       return;
@@ -127,65 +156,69 @@ export function useDragAndDrop({
       let newStartDate = originalStart;
       let newEndDate = originalEnd;
 
-      console.log('🎯 Processing drag end with deltas:', { x: delta.x, y: delta.y });
-
       // Handle member reassignment
-      if (over && over.data.current?.type === 'member-row' && 
+      if (over.data.current?.type === 'member-row' && 
           over.data.current.memberId !== activeDrag.originalMemberId) {
         newMemberId = over.data.current.memberId;
-        console.log('👤 Member reassignment:', newMemberId);
       }
 
       // Calculate new dates based on horizontal drag distance
-      console.log('📏 Calculating date changes:', { deltaX: delta.x, totalDays });
-      
-      // Get timeline container to calculate pixel-to-day ratio
-      const container = document.querySelector('.timeline-container');
-      if (container) {
-        const containerRect = container.getBoundingClientRect();
-        const timelineWidth = containerRect.width - 200; // Account for sidebar
-        const pixelsPerDay = timelineWidth / totalDays;
-        
-        console.log('📐 Timeline calculations:', {
-          containerWidth: containerRect.width,
-          timelineWidth,
-          pixelsPerDay,
-          totalDays
-        });
-        
-        if (pixelsPerDay > 0) {
-          const dayOffset = Math.round(delta.x / pixelsPerDay);
-          console.log('📅 Day offset calculated:', dayOffset);
+      if (Math.abs(delta.x) > 10) {
+        // Get timeline container to calculate pixel-to-day ratio
+        const container = document.querySelector('.timeline-container');
+        if (container) {
+          const containerRect = container.getBoundingClientRect();
+          const timelineWidth = containerRect.width - 192; // Subtract sidebar width
+          const pixelsPerDay = timelineWidth / totalDays;
           
-          if (activeDrag.resizeHandle) {
-            console.log('🔄 Resize operation:', activeDrag.resizeHandle);
-            // Handle resizing
-            if (activeDrag.resizeHandle === 'left') {
-              newStartDate = addDays(originalStart, dayOffset);
-              newEndDate = originalEnd;
-              
-              if (newStartDate >= newEndDate) {
-                newStartDate = addDays(newEndDate, -1);
+          if (pixelsPerDay > 0) {
+            const dayOffset = Math.round(delta.x / pixelsPerDay);
+            
+            if (activeDrag.resizeHandle) {
+              // Handle resizing
+              if (activeDrag.resizeHandle === 'left') {
+                // Resize from left edge - change start date only
+                newStartDate = addDays(originalStart, dayOffset);
+                newEndDate = originalEnd; // Keep end date unchanged
+                
+                // Ensure start date doesn't go past end date
+                if (newStartDate >= newEndDate) {
+                  newStartDate = addDays(newEndDate, -1); // At least 1 day duration
+                }
+              } else if (activeDrag.resizeHandle === 'right') {
+                // Resize from right edge - change end date only
+                newStartDate = originalStart; // Keep start date unchanged
+                newEndDate = addDays(originalEnd, dayOffset);
+                
+                // Ensure end date doesn't go before start date
+                if (newEndDate <= newStartDate) {
+                  newEndDate = addDays(newStartDate, 1); // At least 1 day duration
+                }
               }
-            } else if (activeDrag.resizeHandle === 'right') {
-              newStartDate = originalStart;
-              newEndDate = addDays(originalEnd, dayOffset);
               
-              if (newEndDate <= newStartDate) {
-                newEndDate = addDays(newStartDate, 1);
+              // Constrain to timeline bounds
+              if (newStartDate < timelineBounds.start) {
+                newStartDate = new Date(timelineBounds.start);
+              }
+              if (newEndDate > timelineBounds.end) {
+                newEndDate = new Date(timelineBounds.end);
+              }
+            } else {
+              // Handle moving (existing logic)
+              newStartDate = addDays(originalStart, dayOffset);
+              newEndDate = addDays(newStartDate, projectDuration);
+              
+              // Constrain to timeline bounds
+              if (newStartDate < timelineBounds.start) {
+                newStartDate = new Date(timelineBounds.start);
+                newEndDate = addDays(newStartDate, projectDuration);
+              }
+              if (newEndDate > timelineBounds.end) {
+                newEndDate = new Date(timelineBounds.end);
+                newStartDate = addDays(newEndDate, -projectDuration);
               }
             }
-          } else {
-            console.log('↔️ Move operation');
-            // Handle moving
-            newStartDate = addDays(originalStart, dayOffset);
-            newEndDate = addDays(newStartDate, projectDuration);
           }
-          
-          console.log('📅 New dates calculated:', {
-            original: { start: originalStart, end: originalEnd },
-            new: { start: newStartDate, end: newEndDate }
-          });
         }
       }
 
@@ -195,12 +228,18 @@ export function useDragAndDrop({
       
       const memberChanged = newMemberId !== activeDrag.originalMemberId;
 
-      console.log('🔄 Changes detected:', { datesChanged, memberChanged });
-
       if (datesChanged || memberChanged) {
         // If this is a resize operation, show dialog to ask about scope
         if (activeDrag.resizeHandle && datesChanged && onShowResizeDialog) {
-          console.log('📊 Showing resize dialog');
+          console.log('🔧 Resize operation detected, showing dialog:', {
+            projectId: activeDrag.projectId,
+            memberId: activeDrag.originalMemberId,
+            handle: activeDrag.resizeHandle,
+            newDates: {
+              startDate: newStartDate.toISOString().split('T')[0],
+              endDate: newEndDate.toISOString().split('T')[0]
+            }
+          });
           
           onShowResizeDialog(
             activeDrag.projectId,
@@ -212,8 +251,6 @@ export function useDragAndDrop({
             activeDrag.resizeHandle
           );
         } else {
-          console.log('💾 Updating project data');
-          
           // Handle regular move operations
           const currentAssignments = assignments.filter(a => a.project_id === activeDrag.projectId);
           
@@ -246,9 +283,8 @@ export function useDragAndDrop({
             }));
           }
 
-          // Update project dates first
+          // Update project dates
           if (datesChanged) {
-            console.log('📅 Updating project dates');
             await onUpdateProject(activeDrag.projectId, {
               start_date: newStartDate.toISOString().split('T')[0],
               end_date: newEndDate.toISOString().split('T')[0],
@@ -256,7 +292,6 @@ export function useDragAndDrop({
           }
 
           // Update assignments
-          console.log('👥 Updating project assignments');
           await onUpdateProjectAssignments(activeDrag.projectId, updatedAssignments);
           
           const actionText = memberChanged ? 'Project reassigned' : 'Timeline updated';
@@ -267,7 +302,7 @@ export function useDragAndDrop({
         }
       }
     } catch (error) {
-      console.error('❌ Drag and drop error:', error);
+      console.error('Drag and drop error:', error);
       toast({ 
         title: "Error", 
         description: "Failed to update project. Please try again.", 

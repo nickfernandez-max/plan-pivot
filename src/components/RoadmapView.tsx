@@ -391,25 +391,24 @@ export function RoadmapView({
     setResizeDialog(prev => ({ ...prev, open: false }));
   }, []);
 
-  // Calculate the full timeline bounds to determine navigation limits - UNLIMITED EXTENSION
+  // Calculate the full timeline bounds to determine navigation limits
   const fullTimelineBounds = useMemo(() => {
     const now = new Date();
     const currentMonth = startOfMonth(now);
     
-    // Get project dates if they exist, otherwise use current month
-    let minDate = currentMonth;
-    let maxDate = addMonths(currentMonth, 24); // Default to 2 years from now
-    
-    if (projects.length > 0) {
-      const allDates = projects.flatMap(p => [new Date(p.start_date), new Date(p.end_date)]);
-      allDates.push(currentMonth);
-      
-      minDate = new Date(Math.min(...allDates.map(d => d.getTime())));
-      const projectMaxDate = new Date(Math.max(...allDates.map(d => d.getTime())));
-      
-      // Extend timeline significantly beyond latest project - allow unlimited future navigation
-      maxDate = addMonths(projectMaxDate, 60); // Extend 5 years beyond latest project
+    if (projects.length === 0) {
+      return {
+        start: currentMonth,
+        end: endOfMonth(addDays(now, 365))
+      };
     }
+
+    const allDates = projects.flatMap(p => [new Date(p.start_date), new Date(p.end_date)]);
+    // Always include current month in the bounds
+    allDates.push(currentMonth);
+    
+    const minDate = new Date(Math.min(...allDates.map(d => d.getTime())));
+    const maxDate = new Date(Math.max(...allDates.map(d => d.getTime())));
     
     return {
       start: startOfMonth(minDate),
@@ -436,9 +435,9 @@ export function RoadmapView({
   }, [viewportStart, fullTimelineBounds.start]);
 
   const canNavigateRight = useMemo(() => {
-    // Allow unlimited forward navigation - don't limit by fullTimelineBounds
-    return true;
-  }, []);
+    const viewportEnd = endOfMonth(addMonths(viewportStart, monthsToShow - 1));
+    return viewportEnd < fullTimelineBounds.end;
+  }, [viewportStart, monthsToShow, fullTimelineBounds.end]);
 
   const navigateLeft = () => {
     if (canNavigateLeft) {
@@ -454,32 +453,22 @@ export function RoadmapView({
     }
   };
 
-  console.log('🚨 ROADMAP COMPONENT MOUNTED');
-  console.log('📊 Projects received:', projects?.length || 0);
-  console.log('👥 Team members received:', teamMembers?.length || 0);
-  
-  // Filter projects to only include those that intersect with the visible timeline - NO CACHING
-  const visibleProjects = (() => {
-    console.log('🔄 FILTERING PROJECTS... (NO CACHE)');
-    console.log(`🕐 Timeline: ${timelineBounds.start.toISOString().slice(0,10)} to ${timelineBounds.end.toISOString().slice(0,10)}`);
-    
-    const result = projects.filter(project => {
+  // Filter projects to only include those that intersect with the visible timeline
+  const visibleProjects = useMemo(() => {
+    return projects.filter(project => {
       const projectStart = new Date(project.start_date);
       const projectEnd = new Date(project.end_date);
       
       // STRICT: Project must actually overlap with timeline bounds
+      // Project ends AFTER timeline starts AND project starts BEFORE timeline ends
       const actuallyOverlaps = projectEnd >= timelineBounds.start && projectStart <= timelineBounds.end;
+      
+      // For main roadmap, only show published projects  
       const isPublished = isFuturePlanning ? true : project.status_visibility === 'published';
-      const shouldShow = actuallyOverlaps && isPublished;
       
-      console.log(`📊 "${project.name}": ${project.start_date} to ${project.end_date} | overlaps=${actuallyOverlaps} | show=${shouldShow}`);
-      
-      return shouldShow;
+      return actuallyOverlaps && isPublished;
     });
-    
-    console.log(`✅ Visible projects: ${result.map(p => p.name).join(', ')}`);
-    return result;
-  })(); // NO MEMOIZATION - Calculate fresh every time
+  }, [projects, timelineBounds, isFuturePlanning]);
 
   // Filter work assignments to only include those that intersect with the visible timeline
   const visibleWorkAssignments = useMemo(() => {
@@ -623,12 +612,6 @@ export function RoadmapView({
 
   // Group teams by product and calculate member rows with allocation slots
   const productGroups = useMemo(() => {
-    // BREAK ALL CACHING - Force completely fresh calculation every time
-    const forceRefreshKey = `${Date.now()}-${Math.random()}`;
-    console.log('🔄 FORCE REFRESH productGroups:', forceRefreshKey);
-    console.log('📊 Fresh visibleProjects:', visibleProjects.map(p => `${p.name} (${p.id})`));
-    console.log('👥 Fresh teamMembers:', teamMembers.map(tm => `${tm.name} (${tm.id})`));
-    
     const FIXED_ROW_HEIGHT = 100; // Increased to accommodate all 4 allocation slots (4 * 24px + padding)
     const ALLOCATION_SLOTS = 4;
     
@@ -645,53 +628,47 @@ export function RoadmapView({
       const teamGroups: Array<{ team: Team; memberRows: MemberRow[]; totalHeight: number }> = [];
       
          teamsToProcess.forEach(team => {
-          // Get all memberships for this team
-          const teamMemberships = memberships.filter(membership => 
-            membership.team_id === team.id
-          );
-          
-          const membersInTeam = teamMembers.filter(member => {
-            // Check if member has active membership in this team during timeline
-            const hasActiveMembership = teamMemberships.some(membership => {
-              if (membership.team_member_id !== member.id) return false;
-              
-              const membershipStart = new Date(membership.start_month);
-              const membershipEnd = membership.end_month ? new Date(membership.end_month) : new Date('9999-12-01');
-              return membershipStart <= timelineBounds.end &&
-                     membershipEnd >= timelineBounds.start;
+           // Get all memberships for this team
+           const teamMemberships = memberships.filter(membership => 
+             membership.team_id === team.id
+           );
+           
+           const membersInTeam = teamMembers.filter(member => {
+             // Check if member has active membership in this team during timeline
+             const hasActiveMembership = teamMemberships.some(membership => {
+               if (membership.team_member_id !== member.id) return false;
+               
+               const membershipStart = new Date(membership.start_month);
+               const membershipEnd = membership.end_month ? new Date(membership.end_month) : new Date('9999-12-01');
+               return membershipStart <= timelineBounds.end &&
+                      membershipEnd >= timelineBounds.start;
+             });
+             
+             // Debug logging for Bob Smith
+             if (member.name === 'Bob Smith' && hasActiveMembership) {
+               console.log(`✅ Bob Smith correctly assigned to team: ${team.name} (Product: ${team.product?.name || 'None'})`);
+             }
+             
+             return hasActiveMembership;
+           })
+           .sort((a, b) => {
+             // Primary sort by role (ascending)
+             const roleCompare = (a.role?.display_name || a.role?.name || '').localeCompare(b.role?.display_name || b.role?.name || '');
+             if (roleCompare !== 0) return roleCompare;
+             
+             // Secondary sort by name (ascending)
+             return a.name.localeCompare(b.name);
             });
-            
-            return hasActiveMembership;
-          })
-          .sort((a, b) => {
-            // Primary sort by role (ascending)
-            const roleCompare = (a.role?.display_name || a.role?.name || '').localeCompare(b.role?.display_name || b.role?.name || '');
-            if (roleCompare !== 0) return roleCompare;
-            
-            // Secondary sort by name (ascending)
-            return a.name.localeCompare(b.name);
-           });
         const memberRows: MemberRow[] = [];
         
         membersInTeam.forEach(member => {
-          console.log(`👤 PROCESSING MEMBER: ${member.name} (ID: ${member.id}) for team: ${team.name}`);
-          
-          // STRICT filtering: Only show projects that are actually assigned to this specific member AND belong to this team
+          // STRICT filtering: Only show projects that are actually assigned to this specific member
           const memberProjects = visibleProjects
             .filter(project => {
-              console.log(`  🔍 Checking "${project.name}" for ${member.name} in team ${team.name}`);
-              
-              // CRITICAL: Project must belong to the current team being processed
-              if (project.team_id !== team.id) {
-                console.log(`    ❌ PROJECT REJECTED: team_id mismatch (${project.team_id} !== ${team.id})`);
-                return false;
-              }
-              
               // Must be explicitly assigned to this member
               const isDirectlyAssigned = project.assignees?.some(assignee => assignee.id === member.id);
               
               if (!isDirectlyAssigned) {
-                console.log(`    ❌ PROJECT REJECTED: Member not assigned`);
                 return false;
               }
               
@@ -699,11 +676,8 @@ export function RoadmapView({
               const projectStart = new Date(project.start_date);
               const projectEnd = new Date(project.end_date);
               
-              const membership = teamMemberships.find(m => m.team_member_id === member.id && m.team_id === team.id);
-              if (!membership) {
-                console.log(`    ❌ PROJECT REJECTED: No membership found for ${member.name} in team ${team.name}`);
-                return false;
-              }
+              const membership = teamMemberships.find(m => m.team_member_id === member.id);
+              if (!membership) return false;
               
               const membershipStart = new Date(membership.start_month);
               const membershipEnd = membership.end_month ? new Date(membership.end_month) : new Date('9999-12-31');
@@ -711,24 +685,9 @@ export function RoadmapView({
               // Member must overlap with project timeline
               const memberOverlapsProject = membershipEnd >= projectStart && membershipStart <= projectEnd;
               
-              if (!memberOverlapsProject) {
-                console.log(`    ❌ PROJECT REJECTED: Timeline mismatch`);
-                return false;
-              }
-              
-              console.log(`    ✅ PROJECT ACCEPTED: All checks passed for "${project.name}"`);
-              return true;
-            })
+              return memberOverlapsProject;
+             })
             .map(project => {
-              // FRESH CALCULATION - No caching of positions
-              console.log(`📐 CALCULATING POSITION for "${project.name}":`, {
-                project_start: project.start_date,
-                project_end: project.end_date,
-                timeline_start: timelineBounds.start.toISOString().slice(0,10),
-                timeline_end: timelineBounds.end.toISOString().slice(0,10),
-                total_days: totalDays
-              });
-              
               // Get the assignment for this specific member to use their dates
               const assignment = assignments.find(a => 
                 a.project_id === project.id && a.team_member_id === member.id
@@ -738,13 +697,6 @@ export function RoadmapView({
               const startDate = assignment?.start_date ? new Date(assignment.start_date) : new Date(project.start_date);
               const endDate = assignment?.end_date ? new Date(assignment.end_date) : new Date(project.end_date);
               
-              console.log(`📅 Using dates for "${project.name}":`, {
-                assignment_start: assignment?.start_date || 'none',
-                assignment_end: assignment?.end_date || 'none',
-                calculated_start: startDate.toISOString().slice(0,10),
-                calculated_end: endDate.toISOString().slice(0,10)
-              });
-              
               // Clamp dates to visible timeline bounds
               const clampedStart = startDate < timelineBounds.start ? timelineBounds.start : startDate;
               const clampedEnd = endDate > timelineBounds.end ? timelineBounds.end : endDate;
@@ -752,22 +704,10 @@ export function RoadmapView({
               const daysFromStart = differenceInDays(clampedStart, timelineBounds.start);
               const duration = differenceInDays(clampedEnd, clampedStart) + 1;
               
-              const leftPercent = (daysFromStart / totalDays) * 100;
-              const widthPercent = Math.max((duration / totalDays) * 100, 2);
-              
-              console.log(`📊 POSITION CALCULATED for "${project.name}":`, {
-                daysFromStart,
-                duration,
-                leftPercent: leftPercent.toFixed(2),
-                widthPercent: widthPercent.toFixed(2),
-                clampedStart: clampedStart.toISOString().slice(0,10),
-                clampedEnd: clampedEnd.toISOString().slice(0,10)
-              });
-              
               return {
                 ...project,
-                left: leftPercent,
-                width: widthPercent
+                left: (daysFromStart / totalDays) * 100,
+                width: Math.max((duration / totalDays) * 100, 2) // Minimum width for visibility
               };
             });
 
@@ -832,18 +772,15 @@ export function RoadmapView({
     const unassignedTeamGroups = calculateTeamRows(teamsWithoutProduct);
 
     return { processedProductGroups, unassignedTeamGroups };
-  }, []); // NO DEPENDENCIES - Force recalculation every render to break cache
+  }, [teams, teamMembers, visibleProjects, products, timelineBounds, totalDays, memberships]);
 
   const allTeamGroups = useMemo(() => {
     const allGroups = [
       ...productGroups.processedProductGroups.flatMap(pg => pg.teamGroups),
       ...productGroups.unassignedTeamGroups
     ];
-    
-    console.log('🔢 Total team groups calculated:', allGroups.length);
-    
     return allGroups;
-  }, []); // NO DEPENDENCIES - Always recalculate
+  }, [productGroups]);
 
   if (teamMembers.length === 0) {
     return (
@@ -911,18 +848,17 @@ export function RoadmapView({
               </div>
               
               {/* Navigation controls */}
-              <div className="flex items-center gap-2 min-w-0">
+              <div className="flex items-center gap-2">
                 <Button 
                   variant="outline" 
                   size="sm" 
                   onClick={navigateLeft}
                   disabled={!canNavigateLeft}
-                  className="shrink-0"
                 >
                   <ChevronLeft className="h-4 w-4" />
                   Previous
                 </Button>
-                <span className="text-sm text-muted-foreground px-2 shrink-0 text-center">
+                <span className="text-sm text-muted-foreground px-2 min-w-fit">
                   {format(timelineBounds.start, 'MMM yyyy')} - {format(timelineBounds.end, 'MMM yyyy')}
                 </span>
                 <Button 
@@ -930,7 +866,6 @@ export function RoadmapView({
                   size="sm" 
                   onClick={navigateRight}
                   disabled={!canNavigateRight}
-                  className="shrink-0"
                 >
                   Next
                   <ChevronRight className="h-4 w-4" />
