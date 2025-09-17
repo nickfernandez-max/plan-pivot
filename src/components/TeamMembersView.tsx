@@ -326,108 +326,6 @@ export function TeamMembersView({
     return "text-foreground"; // Neutral for perfectly staffed
   };
 
-  // Handle toggling team membership for a specific month
-  const handleToggleMembership = async (memberId: string, teamId: string, monthDate: Date) => {
-    const monthString = format(monthDate, 'yyyy-MM-01');
-    
-    // Find existing membership that covers this month
-    const existingMembership = memberships.find(m => 
-      m.team_member_id === memberId && 
-      m.team_id === teamId &&
-      m.start_month <= monthString &&
-      (!m.end_month || m.end_month >= monthString)
-    );
-
-    try {
-      if (existingMembership) {
-        // Member is currently assigned - remove them for this month
-        const membershipStart = existingMembership.start_month;
-        const membershipEnd = existingMembership.end_month;
-        
-        if (membershipStart === monthString && membershipEnd === monthString) {
-          // Single month membership - just delete it
-          await onDeleteMembership(existingMembership.id);
-        } else if (membershipStart === monthString) {
-          // Clicking first month - move start forward
-          const newStartMonth = format(addMonths(new Date(monthString), 1), 'yyyy-MM-01');
-          await onUpdateMembership(existingMembership.id, {
-            start_month: newStartMonth
-          });
-        } else if (membershipEnd === monthString) {
-          // Clicking last month - move end backward  
-          const newEndMonth = format(addMonths(new Date(monthString), -1), 'yyyy-MM-01');
-          await onUpdateMembership(existingMembership.id, {
-            end_month: newEndMonth
-          });
-        } else {
-          // Clicking middle month - split membership
-          const beforeEndMonth = format(addMonths(new Date(monthString), -1), 'yyyy-MM-01');
-          const afterStartMonth = format(addMonths(new Date(monthString), 1), 'yyyy-MM-01');
-          
-          // First update existing to end before clicked month
-          await onUpdateMembership(existingMembership.id, {
-            end_month: beforeEndMonth
-          });
-          
-          // Then create new membership after clicked month (if there's room)
-          if (membershipEnd && afterStartMonth <= membershipEnd) {
-            await onAddMembership({
-              team_member_id: memberId,
-              team_id: teamId,
-              start_month: afterStartMonth,
-              end_month: membershipEnd
-            });
-          }
-        }
-      } else {
-        // Member is not currently assigned - add them for this month
-        // First try to extend adjacent memberships
-        const prevMonth = format(addMonths(monthDate, -1), 'yyyy-MM-01');
-        const nextMonth = format(addMonths(monthDate, 1), 'yyyy-MM-01');
-        
-        const prevMembership = memberships.find(m => 
-          m.team_member_id === memberId && 
-          m.team_id === teamId &&
-          m.end_month === prevMonth
-        );
-        
-        const nextMembership = memberships.find(m => 
-          m.team_member_id === memberId && 
-          m.team_id === teamId &&
-          m.start_month === nextMonth
-        );
-        
-        if (prevMembership && nextMembership) {
-          // Bridge two memberships - extend first and delete second
-          await onUpdateMembership(prevMembership.id, {
-            end_month: nextMembership.end_month
-          });
-          await onDeleteMembership(nextMembership.id);
-        } else if (prevMembership) {
-          // Extend previous membership forward
-          await onUpdateMembership(prevMembership.id, {
-            end_month: monthString
-          });
-        } else if (nextMembership) {
-          // Extend next membership backward
-          await onUpdateMembership(nextMembership.id, {
-            start_month: monthString
-          });
-        } else {
-          // Create new single-month membership
-          await onAddMembership({
-            team_member_id: memberId,
-            team_id: teamId,
-            start_month: monthString,
-            end_month: monthString
-          });
-        }
-      }
-    } catch (error) {
-      console.error('Error toggling membership:', error);
-    }
-  };
-
   // Calculate member involvement based on team memberships
   const getMemberInvolvement = (member: TeamMember, monthDate: Date, teamId: string) => {
     const monthString = monthDate.toISOString().split('T')[0].substring(0, 7) + '-01'; // Format as YYYY-MM-01
@@ -595,7 +493,7 @@ export function TeamMembersView({
                       return (
                         <div key={`member-${member.id}-${month.label}`} className="border-r border-b py-2 px-1 flex items-center justify-center">
                           <div 
-                            className="w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold cursor-pointer hover:scale-110 transition-transform"
+                            className="w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold"
                             style={{
                               backgroundColor: involvement > 0 
                                 ? 'hsl(var(--primary/20))'
@@ -607,8 +505,6 @@ export function TeamMembersView({
                                 ? '2px solid hsl(var(--primary))'
                                 : '1px solid hsl(var(--border))'
                             }}
-                            onClick={() => handleToggleMembership(member.id, team.id, month.date)}
-                            title={`Click to ${involvement > 0 ? 'remove from' : 'add to'} team for ${format(month.date, 'MMM yyyy')}`}
                           >
                             {involvement > 0 ? involvement : ''}
                           </div>
