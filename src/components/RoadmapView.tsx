@@ -625,8 +625,6 @@ export function RoadmapView({
       teams: teams.filter(team => team.product_id === product.id)
     })).filter(group => group.teams.length > 0);
 
-    const teamsWithoutProduct = teams.filter(team => !team.product_id);
-
     // Calculate rows for each group
     const calculateTeamRows = (teamsToProcess: Team[]) => {
       const teamGroups: Array<{ team: Team; memberRows: MemberRow[]; totalHeight: number }> = [];
@@ -773,15 +771,12 @@ export function RoadmapView({
       teamGroups: calculateTeamRows(productTeams)
     }));
 
-    const unassignedTeamGroups = calculateTeamRows(teamsWithoutProduct);
-
-    return { processedProductGroups, unassignedTeamGroups };
+    return { processedProductGroups };
   }, [teams, teamMembers, visibleProjects, products, timelineBounds, totalDays, memberships]);
 
   const allTeamGroups = useMemo(() => {
     const allGroups = [
-      ...productGroups.processedProductGroups.flatMap(pg => pg.teamGroups),
-      ...productGroups.unassignedTeamGroups
+      ...productGroups.processedProductGroups.flatMap(pg => pg.teamGroups)
     ];
     return allGroups;
   }, [productGroups]);
@@ -992,60 +987,6 @@ export function RoadmapView({
                 </div>
               ))}
 
-              {/* Teams without products */}
-              {productGroups.unassignedTeamGroups.length > 0 && (
-                <div>
-                  <div 
-                    className="flex items-center px-4 py-1 font-bold text-sm border-b-2 border-border"
-                    style={{ 
-                      height: `${PRODUCT_HEADER_HEIGHT}px`,
-                      backgroundColor: 'hsl(var(--accent))'
-                    }}
-                  >
-                    <Users className="w-4 h-4 mr-2" />
-                    <span className="truncate text-sm">Unassigned Teams</span>
-                  </div>
-                  
-                  {productGroups.unassignedTeamGroups.map(({ team, memberRows: teamMemberRows }) => (
-                    <div key={team.id}>
-                      {/* Team header */}
-                      <div 
-                        className="flex items-center px-6 py-2 font-bold text-sm border-b-2 border-border/30 bg-muted/80 shadow-sm"
-                        style={{ 
-                          height: `${TEAM_HEADER_HEIGHT}px`,
-                          borderLeftColor: team.color || 'hsl(var(--primary))',
-                          borderLeftWidth: '6px',
-                          borderLeftStyle: 'solid'
-                        }}
-                      >
-                        <div className="flex items-center gap-2">
-                          <div 
-                            className="w-3 h-3 rounded-full border-2 border-white/50"
-                            style={{ backgroundColor: team.color || 'hsl(var(--primary))' }}
-                          />
-                          <span className="truncate text-foreground/90">{team.name}</span>
-                        </div>
-                      </div>
-                      
-                      {/* Team members with allocation display */}
-                      {teamMemberRows.map(({ member, rowHeight, allocatedPercentage }) => (
-                        <div
-                          key={member.id}
-                          className="flex items-center px-8 py-1 text-xs border-b border-border/40 bg-background/50 cursor-pointer hover:bg-muted/30 transition-colors"
-                          style={{ height: `${rowHeight}px` }}
-                          onClick={() => handleOpenWorkAssignmentDialog(member.id, member.name)}
-                          title="Click to add work assignment"
-                        >
-                          <div className="flex-1 min-w-0">
-                            <div className="font-medium truncate text-sm">{member.name}</div>
-                            <div className="text-xs text-muted-foreground truncate">{member.role?.display_name || member.role?.name}</div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  ))}
-                </div>
-              )}
             </div>
 
             {/* Right timeline area */}
@@ -1089,37 +1030,6 @@ export function RoadmapView({
                   });
                 });
 
-                // Unassigned teams
-                if (productGroups.unassignedTeamGroups.length > 0) {
-                  // Unassigned header
-                  elements.push(
-                    <div
-                      key="unassigned-header"
-                      className="absolute w-full border-b-2 border-border"
-                      style={{
-                        top: `${currentTop}px`,
-                        height: `${PRODUCT_HEADER_HEIGHT}px`,
-                        backgroundColor: 'hsl(var(--accent/50))'
-                      }}
-                    />
-                  );
-                  currentTop += PRODUCT_HEADER_HEIGHT;
-
-                  productGroups.unassignedTeamGroups.forEach(({ team, memberRows: teamMemberRows, totalHeight }) => {
-                    elements.push(
-                      <div
-                        key={`${team.id}-header-unassigned`}
-                        className="absolute w-full border-b border-border"
-                        style={{
-                          top: `${currentTop}px`,
-                          height: `${TEAM_HEADER_HEIGHT}px`,
-                          backgroundColor: 'hsl(var(--muted/50))'
-                        }}
-                      />
-                    );
-                    currentTop += TEAM_HEADER_HEIGHT + totalHeight;
-                  });
-                }
 
                 // Calculate overall container height for week backgrounds and grid lines
                 const containerHeight = currentTop;
@@ -1262,105 +1172,6 @@ export function RoadmapView({
                     });
                   });
                 });
-
-                // Unassigned teams
-                if (productGroups.unassignedTeamGroups.length > 0) {
-                  memberTopOffset += PRODUCT_HEADER_HEIGHT; // Skip unassigned header
-
-                  productGroups.unassignedTeamGroups.forEach(({ team, memberRows: teamMemberRows }) => {
-                    memberTopOffset += TEAM_HEADER_HEIGHT; // Skip team header
-                    
-                    teamMemberRows.forEach(({ member, projects, workAssignments, rowHeight }) => {
-                      const currentMemberTop = memberTopOffset;
-                      memberTopOffset += rowHeight;
-                      
-                      const ROW_PADDING = 4; // Padding for the row
-                      
-                      const isDropTarget = dragOverData.memberId === member.id;
-                      
-                      memberElements.push(
-                        <DroppableMemberRow
-                          key={member.id}
-                          member={member}
-                          rowHeight={rowHeight}
-                          top={currentMemberTop}
-                          isOver={isDropTarget}
-                          timelineBounds={timelineBounds}
-                          totalDays={totalDays}
-                          onDoubleClick={handleMemberRowDoubleClick}
-                        >
-                          {/* Week grid lines for better alignment during drag */}
-                          {activeDrag && dragOverData.memberId === member.id && (
-                            <div className="absolute inset-0 pointer-events-none">
-                              {Array.from({ length: Math.ceil(totalDays / 7) }, (_, weekIndex) => (
-                                <div
-                                  key={weekIndex}
-                                  className="absolute top-0 bottom-0 w-px bg-primary/30 z-50"
-                                  style={{ left: `${(weekIndex * 7 / totalDays) * 100}%` }}
-                                />
-                              ))}
-                            </div>
-                          )}
-
-                          
-                          {/* Projects with flexible positioning */}
-                          {projects.map(project => {
-                             return (
-                               <DraggableProject
-                                 key={`${member.id}-${project.id}`}
-                                 project={project}
-                                 team={team}
-                                 memberId={member.id}
-                                  onEdit={() => {
-                                    console.log('🔧 Setting editing project:', project.name, project.id);
-                                    setEditingProject(project);
-                                  }}
-                                  onClick={() => setFrontProject(project.id)}
-                                  isFront={frontProject === project.id}
-                                  style={{
-                                    left: `${project.left}%`,
-                                    width: `${project.width}%`,
-                                    top: `${project.topOffset}px`,
-                                    height: `${project.itemHeight}px`,
-                                  }}
-                                />
-                             );
-                           })}
-                          
-                          {/* Work assignments with flexible positioning */}
-                          {workAssignments.map(workAssignment => {
-                            return (
-                              <div
-                                key={`work-${member.id}-${workAssignment.id}`}
-                                className="absolute border border-secondary/50 bg-secondary/20 rounded px-1 text-xs font-medium truncate cursor-pointer hover:bg-secondary/30 transition-colors"
-                                style={{
-                                  left: `${workAssignment.left}%`,
-                                  width: `${workAssignment.width}%`,
-                                  top: `${workAssignment.topOffset}px`,
-                                  height: `${workAssignment.itemHeight}px`,
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  borderColor: workAssignment.color || 'hsl(var(--secondary))',
-                                  backgroundColor: workAssignment.color ? `${workAssignment.color}20` : 'hsl(var(--secondary/20))',
-                                }}
-                                title={`${workAssignment.name} (${workAssignment.type}) - ${workAssignment.percent_allocation}%`}
-                              >
-                                <span className="truncate text-secondary-foreground">
-                                  {workAssignment.name} ({workAssignment.percent_allocation}%)
-                                </span>
-                              </div>
-                            );
-                          })}
-
-                          {/* Smooth drop zone indicator */}
-                          {activeDrag && dragOverData.memberId === member.id && dragOverData.isValidDrop && (
-                            <div className="absolute inset-0 bg-primary/10 border-2 border-primary/40 rounded-lg pointer-events-none animate-pulse" />
-                          )}
-                        </DroppableMemberRow>
-                      );
-                    });
-                  });
-                }
 
                 return memberElements;
               })()}
