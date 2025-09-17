@@ -252,7 +252,7 @@ export function TeamMembersView({
         team,
         members: sortMembers(getTimelineMembers(team.id))
       }))
-    })).filter(group => group.teams.length > 0);
+    })); // Show all products, even if they have no teams
 
     const teamsWithoutProduct = teams.filter(team => 
       !team.product_id && 
@@ -337,7 +337,18 @@ export function TeamMembersView({
   };
 
   // Render table for a set of teams
-  const renderTable = (teams: Array<{ team: Team; members: TeamMember[] }>) => (
+  const renderTable = (teams: Array<{ team: Team; members: TeamMember[] }>) => {
+    if (teams.length === 0) {
+      return (
+        <div className="text-center py-8 text-muted-foreground">
+          <Users className="w-8 h-8 mx-auto mb-2 opacity-50" />
+          <p className="text-sm">No teams assigned to this product yet</p>
+          <p className="text-xs mt-1">Create teams and assign them to this product to see them here</p>
+        </div>
+      );
+    }
+    
+    return (
     <div className="overflow-x-auto">
       <Table>
         <TableHeader>
@@ -488,7 +499,8 @@ export function TeamMembersView({
         </TableBody>
       </Table>
     </div>
-  );
+    );
+  };
 
   // Get timeline range display
   const timelineRange = `${format(timelineMonths[0].date, 'MMM yyyy')} - ${format(timelineMonths[timelineMonths.length - 1].date, 'MMM yyyy')}`;
