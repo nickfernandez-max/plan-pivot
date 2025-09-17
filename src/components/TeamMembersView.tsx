@@ -247,17 +247,21 @@ export function TeamMembersView({
       });
     };
 
-    const productsWithTeams = products.map(product => ({
-      product,
-      teams: teams.filter(team => 
-        team.product_id === product.id && 
-        (showArchived || !team.archived) &&
-        (selectedTeam === 'all' || team.name === selectedTeam)
-      ).map(team => ({
-        team,
-        members: sortMembers(getTimelineMembers(team.id))
-      }))
-    })); // Show all products, even if they have no teams
+    const productsWithTeams = products
+      .filter(product => 
+        selectedProduct === 'all' || product.name === selectedProduct
+      )
+      .map(product => ({
+        product,
+        teams: teams.filter(team => 
+          team.product_id === product.id && 
+          (showArchived || !team.archived) &&
+          (selectedTeam === 'all' || team.name === selectedTeam)
+        ).map(team => ({
+          team,
+          members: sortMembers(getTimelineMembers(team.id))
+        }))
+      }));
 
     const teamsWithoutProduct = teams.filter(team => 
       !team.product_id && 
