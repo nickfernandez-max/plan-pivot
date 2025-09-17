@@ -196,7 +196,7 @@ export function DraggableProject({
         {/* Show assignment dates clearly labeled */}
         <div className="text-xs text-gray-300 mt-1">
           <div className="text-yellow-300 font-medium">Assignment Period:</div>
-          <div>{format(new Date(project.start_date), 'MMM d, yyyy')} - {format(new Date(project.end_date), 'MMM d, yyyy')}</div>
+          <div>{format(new Date(project.start_date), 'MM/yy')} - {format(new Date(project.end_date), 'MM/yy')}</div>
         </div>
         
         {project.description && (
