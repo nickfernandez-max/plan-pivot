@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo, Fragment } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { User, Edit2, Settings, Users, ChevronLeft, ChevronRight, Calendar } from 'lucide-react';
@@ -353,13 +354,13 @@ export function TeamMembersView({
     }
     
     return (
-    <div className="overflow-x-auto">
-      <Table>
-        <TableHeader className="sticky top-0 z-10 bg-background">
-          <TableRow className="h-8 bg-background">
-            <TableHead className="w-36 text-xs bg-background">Team / Member</TableHead>
-            <TableHead className="w-28 text-xs bg-background">Role</TableHead>
-            <TableHead className="w-24 text-xs bg-background">Start Date</TableHead>
+      <ScrollArea className="h-[70vh] w-full">
+        <Table>
+          <TableHeader className="sticky top-0 z-20 bg-background">
+            <TableRow className="h-8 bg-background">
+              <TableHead className="sticky left-0 w-36 text-xs bg-background z-30 border-r">Team / Member</TableHead>
+              <TableHead className="sticky left-36 w-28 text-xs bg-background z-30 border-r">Role</TableHead>
+              <TableHead className="sticky left-64 w-24 text-xs bg-background z-30 border-r">Start Date</TableHead>
             {timelineMonthsArray.map((month) => (
               <TableHead key={month.label} className="text-center w-8 px-0 bg-background">
                 <div className="text-xs font-medium">
@@ -375,7 +376,7 @@ export function TeamMembersView({
               {/* Team header row */}
               <TableRow className="bg-gradient-to-r from-blue-100 to-blue-50 dark:from-blue-950 dark:to-blue-900 border-l-4 border-l-blue-500 shadow-sm h-9">
                 <TableCell 
-                  className="font-semibold text-sm py-2"
+                  className="sticky left-0 font-semibold text-sm py-2 bg-gradient-to-r from-blue-100 to-blue-50 dark:from-blue-950 dark:to-blue-900 z-20 border-r"
                 >
                   <div className="flex items-center justify-between gap-2">
                      <div className="flex items-center gap-3">
@@ -398,10 +399,10 @@ export function TeamMembersView({
                     </Button>
                   </div>
                 </TableCell>
-                <TableCell className="font-medium text-blue-700 dark:text-blue-300 py-2">
+                <TableCell className="sticky left-36 font-medium text-blue-700 dark:text-blue-300 py-2 bg-gradient-to-r from-blue-100 to-blue-50 dark:from-blue-950 dark:to-blue-900 z-20 border-r">
                   <span className="text-xs font-medium">Count →</span>
                 </TableCell>
-                <TableCell className="py-2"></TableCell>
+                <TableCell className="sticky left-64 py-2 bg-gradient-to-r from-blue-100 to-blue-50 dark:from-blue-950 dark:to-blue-900 z-20 border-r"></TableCell>
                 {timelineMonthsArray.map((month) => {
                   const actualCount = getActualMemberCount(team.id, month.date);
                   const idealCount = getIdealMemberCount(team.id, month.date);
@@ -423,35 +424,35 @@ export function TeamMembersView({
                 })}
               </TableRow>
              
-              {/* Team member rows */}
-              {members.map((member) => {
-                // Debug log to check role structure
-                console.log('Member role object:', member.role);
-                return (
-                <TableRow key={member.id} className="h-8">
-                  <TableCell className="font-medium text-sm py-2">
-                    <div className="flex items-center justify-between gap-2">
-                      <div className="flex items-center gap-3">
-                          <User className="w-3.5 h-3.5 text-muted-foreground ml-2" />
-                          <span className="truncate text-sm">
-                            {member.name}
-                          </span>
-                        </div>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-5 w-5 p-0"
-                        onClick={() => setEditingMember(member)}
-                        title="Edit memberships"
-                      >
-                        <Edit2 className="w-2.5 h-2.5" />
-                      </Button>
-                    </div>
-                  </TableCell>
-                  <TableCell className="text-muted-foreground text-sm py-2">
-                    {member.role?.display_name || member.role?.name}
-                  </TableCell>
-                  <TableCell className="text-sm py-2">{format(new Date(member.start_date), 'MMM - yy')}</TableCell>
+               {/* Team member rows */}
+               {members.map((member) => {
+                 // Debug log to check role structure
+                 console.log('Member role object:', member.role);
+                 return (
+                 <TableRow key={member.id} className="h-8">
+                   <TableCell className="sticky left-0 font-medium text-sm py-2 bg-background z-10 border-r">
+                     <div className="flex items-center justify-between gap-2">
+                       <div className="flex items-center gap-3">
+                           <User className="w-3.5 h-3.5 text-muted-foreground ml-2" />
+                           <span className="truncate text-sm">
+                             {member.name}
+                           </span>
+                         </div>
+                       <Button
+                         variant="ghost"
+                         size="sm"
+                         className="h-5 w-5 p-0"
+                         onClick={() => setEditingMember(member)}
+                         title="Edit memberships"
+                       >
+                         <Edit2 className="w-2.5 h-2.5" />
+                       </Button>
+                     </div>
+                   </TableCell>
+                   <TableCell className="sticky left-36 text-muted-foreground text-sm py-2 bg-background z-10 border-r">
+                     {member.role?.display_name || member.role?.name}
+                   </TableCell>
+                   <TableCell className="sticky left-64 text-sm py-2 bg-background z-10 border-r">{format(new Date(member.start_date), 'MMM - yy')}</TableCell>
                   {timelineMonthsArray.map((month) => {
                     const involvement = getMemberInvolvement(member, month.date, team.id);
                     return (
@@ -481,8 +482,8 @@ export function TeamMembersView({
             </Fragment>
           ))}
         </TableBody>
-      </Table>
-    </div>
+        </Table>
+      </ScrollArea>
     );
   };
 
