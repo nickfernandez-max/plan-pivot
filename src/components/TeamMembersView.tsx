@@ -531,16 +531,33 @@ export function TeamMembersView({
         </CardContent>
       </Card>
 
-      {/* Main content with simplified structure */}
-      <Card>
-        <CardContent className="p-3">
-          <div className="text-center py-8 text-muted-foreground">
-            <Users className="w-8 h-8 mx-auto mb-2 opacity-50" />
-            <p className="text-sm">Team member sorting is now configured in user preferences</p>
-            <p className="text-xs mt-1">Access user preferences from the main navigation menu</p>
-          </div>
-        </CardContent>
-      </Card>
+      {/* Main content with team members tables */}
+      <Tabs defaultValue={groupedData.productsWithTeams[0]?.product.id || "unassigned"} className="w-full">
+        <TabsList className="grid w-full grid-cols-4 mb-4">
+          {groupedData.productsWithTeams.map((group) => (
+            <TabsTrigger key={group.product.id} value={group.product.id}>
+              {group.product.name}
+            </TabsTrigger>
+          ))}
+          {groupedData.teamsWithoutProduct.length > 0 && (
+            <TabsTrigger value="unassigned">
+              Unassigned
+            </TabsTrigger>
+          )}
+        </TabsList>
+        
+        {groupedData.productsWithTeams.map((group) => (
+          <TabsContent key={group.product.id} value={group.product.id}>
+            {renderTable(group.teams)}
+          </TabsContent>
+        ))}
+        
+        {groupedData.teamsWithoutProduct.length > 0 && (
+          <TabsContent value="unassigned">
+            {renderTable(groupedData.teamsWithoutProduct)}
+          </TabsContent>
+        )}
+      </Tabs>
     </div>
   );
 }
