@@ -340,51 +340,48 @@ export function TeamMembersView({
 
     try {
       if (existingMembership) {
-        // Member is currently assigned - we need to remove them for this month
-        const membershipStart = new Date(existingMembership.start_month);
-        const membershipEnd = existingMembership.end_month ? new Date(existingMembership.end_month) : null;
-        const clickedMonth = new Date(monthString);
+        // Member is currently assigned - remove them for this month
+        const membershipStart = existingMembership.start_month;
+        const membershipEnd = existingMembership.end_month;
         
-        if (format(membershipStart, 'yyyy-MM-01') === monthString) {
-          // Clicking on the first month - move start date forward by one month
-          const newStartMonth = format(addMonths(clickedMonth, 1), 'yyyy-MM-01');
-          if (!membershipEnd || newStartMonth <= format(membershipEnd, 'yyyy-MM-01')) {
-            await onUpdateMembership(existingMembership.id, {
-              start_month: newStartMonth
-            });
-          } else {
-            // This would make the membership invalid, so delete it
-            await onDeleteMembership(existingMembership.id);
-          }
-        } else if (!membershipEnd || format(membershipEnd, 'yyyy-MM-01') === monthString) {
-          // Clicking on the last month - move end date backward by one month
-          const newEndMonth = format(addMonths(clickedMonth, -1), 'yyyy-MM-01');
+        if (membershipStart === monthString && membershipEnd === monthString) {
+          // Single month membership - just delete it
+          await onDeleteMembership(existingMembership.id);
+        } else if (membershipStart === monthString) {
+          // Clicking first month - move start forward
+          const newStartMonth = format(addMonths(new Date(monthString), 1), 'yyyy-MM-01');
+          await onUpdateMembership(existingMembership.id, {
+            start_month: newStartMonth
+          });
+        } else if (membershipEnd === monthString) {
+          // Clicking last month - move end backward  
+          const newEndMonth = format(addMonths(new Date(monthString), -1), 'yyyy-MM-01');
           await onUpdateMembership(existingMembership.id, {
             end_month: newEndMonth
           });
         } else {
-          // Clicking in the middle - need to split the membership
-          const newEndMonth = format(addMonths(clickedMonth, -1), 'yyyy-MM-01');
-          const newStartMonth = format(addMonths(clickedMonth, 1), 'yyyy-MM-01');
+          // Clicking middle month - split membership
+          const beforeEndMonth = format(addMonths(new Date(monthString), -1), 'yyyy-MM-01');
+          const afterStartMonth = format(addMonths(new Date(monthString), 1), 'yyyy-MM-01');
           
-          // Update existing membership to end before clicked month
+          // First update existing to end before clicked month
           await onUpdateMembership(existingMembership.id, {
-            end_month: newEndMonth
+            end_month: beforeEndMonth
           });
           
-          // Create new membership starting after clicked month
-          if (membershipEnd && newStartMonth <= format(membershipEnd, 'yyyy-MM-01')) {
+          // Then create new membership after clicked month (if there's room)
+          if (membershipEnd && afterStartMonth <= membershipEnd) {
             await onAddMembership({
               team_member_id: memberId,
               team_id: teamId,
-              start_month: newStartMonth,
-              end_month: existingMembership.end_month
+              start_month: afterStartMonth,
+              end_month: membershipEnd
             });
           }
         }
       } else {
         // Member is not currently assigned - add them for this month
-        // Check if there are adjacent memberships we can extend
+        // First try to extend adjacent memberships
         const prevMonth = format(addMonths(monthDate, -1), 'yyyy-MM-01');
         const nextMonth = format(addMonths(monthDate, 1), 'yyyy-MM-01');
         
@@ -401,18 +398,18 @@ export function TeamMembersView({
         );
         
         if (prevMembership && nextMembership) {
-          // Connect two adjacent memberships
+          // Bridge two memberships - extend first and delete second
           await onUpdateMembership(prevMembership.id, {
             end_month: nextMembership.end_month
           });
           await onDeleteMembership(nextMembership.id);
         } else if (prevMembership) {
-          // Extend previous membership
+          // Extend previous membership forward
           await onUpdateMembership(prevMembership.id, {
             end_month: monthString
           });
         } else if (nextMembership) {
-          // Extend next membership backwards
+          // Extend next membership backward
           await onUpdateMembership(nextMembership.id, {
             start_month: monthString
           });
@@ -428,7 +425,6 @@ export function TeamMembersView({
       }
     } catch (error) {
       console.error('Error toggling membership:', error);
-      // You might want to show a toast notification here
     }
   };
 
