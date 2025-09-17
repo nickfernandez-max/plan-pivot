@@ -35,56 +35,25 @@ export function DroppableMemberRow({
   });
 
   const handleDoubleClick = (event: React.MouseEvent) => {
-    console.log('🖱️ DroppableMemberRow handleDoubleClick called for member:', member.name);
-    
-    if (!onDoubleClick || !timelineBounds || totalDays === 0) {
-      console.log('❌ Early return:', { onDoubleClick: !!onDoubleClick, timelineBounds: !!timelineBounds, totalDays });
-      return;
-    }
+    if (!onDoubleClick || !timelineBounds || totalDays === 0) return;
     
     // Calculate the clicked date based on mouse position
+    // Since DroppableMemberRow is positioned within the timeline area (no sidebar offset),
+    // we use the full width for calculations
     const rect = event.currentTarget.getBoundingClientRect();
-    const sidebarWidth = 192; // Same as used in drag calculations
-    const timelineWidth = rect.width - sidebarWidth;
-    const clickX = event.clientX - rect.left - sidebarWidth;
+    const timelineWidth = rect.width;
+    const clickX = event.clientX - rect.left;
     
-    console.log('📐 Click position calculation:', {
-      rectWidth: rect.width,
-      sidebarWidth,
-      timelineWidth,
-      clickX,
-      clientX: event.clientX,
-      rectLeft: rect.left
-    });
-    
-    if (clickX < 0) {
-      console.log('❌ Clicked in sidebar area, returning');
-      return; // Clicked in sidebar area
-    }
+    if (clickX < 0) return; // Clicked outside area
     
     // Calculate which day was clicked
     const pixelsPerDay = timelineWidth / totalDays;
     const dayOffset = Math.floor(clickX / pixelsPerDay);
     const clickedDate = addDays(timelineBounds.start, dayOffset);
     
-    console.log('📅 Date calculation:', {
-      pixelsPerDay,
-      dayOffset,
-      timelineBoundsStart: timelineBounds.start,
-      clickedDate,
-      clickedDateString: clickedDate.toISOString()
-    });
-    
     // Snap to start of week for better UX
     const weekStartDate = startOfWeek(clickedDate, { weekStartsOn: 1 }); // Monday start
     
-    console.log('📅 Final snapped date:', {
-      originalDate: clickedDate,
-      weekStartDate,
-      weekStartDateString: weekStartDate.toISOString()
-    });
-    
-    console.log('🚀 Calling onDoubleClick with:', member.id, weekStartDate);
     onDoubleClick(member.id, weekStartDate);
   };
 
