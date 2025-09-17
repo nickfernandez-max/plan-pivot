@@ -357,15 +357,18 @@ export function TeamMembersView({
     const gridCols = `144px 112px 96px ${Array(timelineMonthsArray.length).fill('32px').join(' ')}`;
 
     return (
-      <div className="h-[70vh] w-full overflow-auto">
-        {/* CSS Grid Container */}
-        <div 
-          className="grid border border-border"
-          style={{ 
-            gridTemplateColumns: gridCols,
-            minWidth: `${144 + 112 + 96 + (timelineMonthsArray.length * 32)}px`
-          }}
-        >
+      <div className="relative">
+        {/* Centered Container with max width */}
+        <div className="w-full">
+          <div className="h-[65vh] w-full overflow-auto rounded-lg border border-border bg-card shadow-sm">
+            {/* CSS Grid Container */}
+            <div 
+              className="grid"
+              style={{ 
+                gridTemplateColumns: gridCols,
+                minWidth: `${144 + 112 + 96 + (timelineMonthsArray.length * 32)}px`
+              }}
+            >
           {/* Header Row - spans all columns */}
           <div className="sticky top-0 left-0 z-40 bg-background border-r border-b px-4 py-2 text-xs font-medium flex items-center">
             Team / Member
@@ -486,6 +489,8 @@ export function TeamMembersView({
               })}
             </Fragment>
           ))}
+            </div>
+          </div>
         </div>
       </div>
     );
@@ -495,14 +500,22 @@ export function TeamMembersView({
   const timelineRange = `${format(timelineMonthsArray[0].date, 'MMM yyyy')} - ${format(timelineMonthsArray[timelineMonthsArray.length - 1].date, 'MMM yyyy')}`;
 
   return (
-    <div className="space-y-3">
-      {/* Team Members Header */}
-      <Card>
-        <CardContent className="p-3">
-          <div className="flex items-center justify-between gap-4">
-            <h3 className="text-sm font-medium">Team Members</h3>
-            <div className="flex items-center gap-2">
-              <label className="flex items-center gap-2 text-xs">
+    <div className="max-w-7xl mx-auto px-6 py-8 space-y-8">
+      {/* Elegant Header Section */}
+      <div className="text-center space-y-2">
+        <h1 className="text-3xl font-bold tracking-tight">Team Members</h1>
+        <p className="text-muted-foreground">Manage your team members and their assignments across projects</p>
+      </div>
+
+      {/* Controls Card */}
+      <Card className="shadow-sm border-muted">
+        <CardContent className="p-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-6">
+              <h2 className="text-lg font-semibold">Timeline: {timelineRange}</h2>
+            </div>
+            <div className="flex items-center gap-4">
+              <label className="flex items-center gap-2 text-sm">
                 <input
                   type="checkbox"
                   checked={showArchived}
@@ -517,8 +530,8 @@ export function TeamMembersView({
       </Card>
 
       {/* Timeline Navigation */}
-      <Card>
-        <CardContent className="p-3">
+      <Card className="shadow-sm border-muted">
+        <CardContent className="p-6">
           <TimelineNavigation
             title="Team Members"
             timelineStart={timelineStartDate}
@@ -535,33 +548,48 @@ export function TeamMembersView({
         </CardContent>
       </Card>
 
-      {/* Main content with team members tables */}
-      <Tabs defaultValue={groupedData.productsWithTeams[0]?.product.id || "unassigned"} className="w-full">
-        <TabsList className="grid w-full grid-cols-4 mb-4">
-          {groupedData.productsWithTeams.map((group) => (
-            <TabsTrigger key={group.product.id} value={group.product.id}>
-              {group.product.name}
-            </TabsTrigger>
-          ))}
-          {groupedData.teamsWithoutProduct.length > 0 && (
-            <TabsTrigger value="unassigned">
-              Unassigned
-            </TabsTrigger>
-          )}
-        </TabsList>
-        
-        {groupedData.productsWithTeams.map((group) => (
-          <TabsContent key={group.product.id} value={group.product.id}>
-            {renderTable(group.teams)}
-          </TabsContent>
-        ))}
-        
-        {groupedData.teamsWithoutProduct.length > 0 && (
-          <TabsContent value="unassigned">
-            {renderTable(groupedData.teamsWithoutProduct)}
-          </TabsContent>
-        )}
-      </Tabs>
+      {/* Main Content Card */}
+      <Card className="shadow-lg border-muted">
+        <CardContent className="p-0">
+          <Tabs defaultValue={groupedData.productsWithTeams[0]?.product.id || "unassigned"} className="w-full">
+            {/* Elegant Tabs Header */}
+            <div className="px-6 py-4 border-b bg-muted/20">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold">Product Teams</h3>
+              </div>
+              <TabsList className="grid w-full max-w-2xl" style={{ gridTemplateColumns: `repeat(${Math.min([...groupedData.productsWithTeams, ...(groupedData.teamsWithoutProduct.length > 0 ? [1] : [])].length, 6)}, 1fr)` }}>
+                {groupedData.productsWithTeams.map((group) => (
+                  <TabsTrigger key={group.product.id} value={group.product.id} className="text-sm">
+                    {group.product.name}
+                  </TabsTrigger>
+                ))}
+                {groupedData.teamsWithoutProduct.length > 0 && (
+                  <TabsTrigger value="unassigned" className="text-sm">
+                    Unassigned
+                  </TabsTrigger>
+                )}
+              </TabsList>
+            </div>
+            
+            {/* Tab Contents with padding */}
+            {groupedData.productsWithTeams.map((group) => (
+              <TabsContent key={group.product.id} value={group.product.id} className="mt-0">
+                <div className="p-6">
+                  {renderTable(group.teams)}
+                </div>
+              </TabsContent>
+            ))}
+            
+            {groupedData.teamsWithoutProduct.length > 0 && (
+              <TabsContent value="unassigned" className="mt-0">
+                <div className="p-6">
+                  {renderTable(groupedData.teamsWithoutProduct)}
+                </div>
+              </TabsContent>
+            )}
+          </Tabs>
+        </CardContent>
+      </Card>
     </div>
   );
 }
