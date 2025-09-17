@@ -39,10 +39,26 @@ export function DraggableProject({
     e.stopPropagation();
     e.preventDefault();
     
+    console.log('🔧 Resize handle clicked:', handle, 'for project:', project.name);
+    
     // Store resize data on the element for the drag system to detect
     const element = e.currentTarget.closest('[data-project-id]') as HTMLElement;
     if (element) {
       element.setAttribute('data-resize-handle', handle);
+      console.log('🔧 Set resize handle attribute:', handle, 'on element:', element);
+      
+      // Force a drag start by creating a synthetic mouse event on the draggable element
+      const draggableElement = element.querySelector('[data-draggable="true"]') as HTMLElement;
+      if (draggableElement) {
+        console.log('🔧 Triggering drag on draggable element');
+        const mouseEvent = new MouseEvent('mousedown', {
+          bubbles: true,
+          cancelable: true,
+          clientX: e.clientX,
+          clientY: e.clientY
+        });
+        draggableElement.dispatchEvent(mouseEvent);
+      }
     }
   };
 
@@ -121,22 +137,37 @@ export function DraggableProject({
       <div className="h-full flex items-center overflow-hidden relative">
         {/* Left resize handle */}
         <div
-          className="absolute left-0 top-0 w-2 h-full cursor-ew-resize hover:bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity z-10"
+          className="absolute left-0 top-0 w-3 h-full cursor-ew-resize hover:bg-white/30 opacity-0 group-hover:opacity-90 transition-opacity z-20 bg-red-500/50"
           data-resize-handle="left"
-          onMouseDown={(e) => handleResizeStart(e, 'left')}
+          onMouseDown={(e) => {
+            console.log('🔧 Left resize handle mouse down');
+            handleResizeStart(e, 'left');
+          }}
+          onClick={(e) => {
+            console.log('🔧 Left resize handle clicked');
+            e.stopPropagation();
+          }}
         />
         
         {/* Right resize handle */}
         <div
-          className="absolute right-0 top-0 w-2 h-full cursor-ew-resize hover:bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity z-10"
+          className="absolute right-0 top-0 w-3 h-full cursor-ew-resize hover:bg-white/30 opacity-0 group-hover:opacity-90 transition-opacity z-20 bg-red-500/50"
           data-resize-handle="right"
-          onMouseDown={(e) => handleResizeStart(e, 'right')}
+          onMouseDown={(e) => {
+            console.log('🔧 Right resize handle mouse down');
+            handleResizeStart(e, 'right');
+          }}
+          onClick={(e) => {
+            console.log('🔧 Right resize handle clicked');
+            e.stopPropagation();
+          }}
         />
         
         {/* Drag handle area */}
         <div 
           {...listeners}
           {...attributes}
+          data-draggable="true"
           className="flex-1 min-w-0 h-full flex items-center px-2 cursor-grab active:cursor-grabbing touch-none"
           title={project.name} // Add native tooltip as fallback
         >

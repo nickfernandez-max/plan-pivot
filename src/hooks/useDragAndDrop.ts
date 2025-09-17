@@ -58,8 +58,16 @@ export function useDragAndDrop({
     const dragElement = document.querySelector(`[data-project-id="${active.data.current.projectId}"]`) as HTMLElement;
     const resizeHandle = dragElement?.getAttribute('data-resize-handle') as 'left' | 'right' | null;
     
+    console.log('🔧 Drag start - checking for resize handle:', {
+      projectId: active.data.current.projectId,
+      resizeHandle,
+      dragElement,
+      timeSinceLastClick
+    });
+    
     // If this is a potential double-click (within 300ms) and not a resize, don't start drag
     if (timeSinceLastClick < 300 && !resizeHandle) {
+      console.log('🔧 Skipping drag start - potential double click');
       return;
     }
     
@@ -69,6 +77,13 @@ export function useDragAndDrop({
       a.project_id === active.data.current.projectId && 
       a.team_member_id === active.data.current.memberId
     );
+    
+    console.log('🔧 Starting drag with data:', {
+      projectId: active.data.current.projectId,
+      memberId: active.data.current.memberId,
+      resizeHandle,
+      assignment: assignment?.percent_allocation
+    });
     
     setActiveDrag({
       projectId: active.data.current.projectId,
@@ -216,6 +231,16 @@ export function useDragAndDrop({
       if (datesChanged || memberChanged) {
         // If this is a resize operation, show dialog to ask about scope
         if (activeDrag.resizeHandle && datesChanged && onShowResizeDialog) {
+          console.log('🔧 Resize operation detected, showing dialog:', {
+            projectId: activeDrag.projectId,
+            memberId: activeDrag.originalMemberId,
+            handle: activeDrag.resizeHandle,
+            newDates: {
+              startDate: newStartDate.toISOString().split('T')[0],
+              endDate: newEndDate.toISOString().split('T')[0]
+            }
+          });
+          
           onShowResizeDialog(
             activeDrag.projectId,
             activeDrag.originalMemberId,
