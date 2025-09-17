@@ -156,15 +156,50 @@ export default function RoadmapApp() {
 
   // Filter data based on selected filters
   const filteredProjects = useMemo(() => {
+    // First, get visible team members (this already handles team/product filtering correctly)
+    const visibleMemberIds = new Set(
+      teamMembers.filter(member => {
+        // Calculate timeline range (9 months from timelineStartDate)
+        const timelineStart = format(timelineStartDate, 'yyyy-MM-01');
+        const timelineEnd = format(addMonths(timelineStartDate, 8), 'yyyy-MM-01');
+        
+        // Get all active team memberships for this member during the timeline period
+        const activeMemberships = memberships.filter(membership => {
+          const membershipStart = membership.start_month;
+          const membershipEnd = membership.end_month || '9999-12-01';
+          
+          return membership.team_member_id === member.id &&
+                 membershipStart <= timelineEnd &&
+                 membershipEnd >= timelineStart;
+        });
+        
+        // Get teams this member is active in during the timeline
+        const activeTeams = activeMemberships
+          .map(membership => teams.find(t => t.id === membership.team_id))
+          .filter(Boolean);
+        
+        // Check if any active team matches the selected team
+        const teamMatches = selectedTeam === 'all' || 
+          activeTeams.some(team => team?.name === selectedTeam);
+        
+        // Check if any active team is assigned to the selected product
+        const productMatches = selectedProduct === 'all' || 
+          activeTeams.some(team => team?.product?.name === selectedProduct);
+        
+        return teamMatches && productMatches;
+      }).map(member => member.id)
+    );
+
+    // Now include projects that are assigned to any visible team member
     return projects.filter(project => {
-      const teamMatches = selectedTeam === 'all' || project.team?.name === selectedTeam;
-      const productMatches = selectedProduct === 'all' || 
-        (selectedTeam === 'all' ? 
-          project.products?.some(p => p.name === selectedProduct) || project.team?.product?.name === selectedProduct :
-          project.team?.product?.name === selectedProduct);
-      return teamMatches && productMatches;
+      // Include project if any of its assignees are visible team members
+      const hasVisibleAssignee = project.assignees?.some(assignee => 
+        visibleMemberIds.has(assignee.id)
+      );
+      
+      return hasVisibleAssignee;
     });
-  }, [projects, selectedTeam, selectedProduct]);
+  }, [projects, teamMembers, teams, memberships, selectedTeam, selectedProduct, timelineStartDate]);
 
   const filteredTeamMembers = useMemo(() => {
     // Calculate timeline range (9 months from timelineStartDate)
@@ -194,21 +229,6 @@ export default function RoadmapApp() {
       // Check if any active team is assigned to the selected product
       const productMatches = selectedProduct === 'all' || 
         activeTeams.some(team => team?.product?.name === selectedProduct);
-      
-      // Debug logging for Bob Smith
-      if (member.name === 'Bob Smith') {
-        console.log('Bob Smith filtering debug:', {
-          selectedProduct,
-          selectedTeam,
-          timelineStart,
-          timelineEnd,
-          activeMemberships: activeMemberships.length,
-          activeTeams: activeTeams.map(t => ({ name: t?.name, product: t?.product?.name })),
-          teamMatches,
-          productMatches,
-          finalResult: teamMatches && productMatches
-        });
-      }
       
       return teamMatches && productMatches;
     });
