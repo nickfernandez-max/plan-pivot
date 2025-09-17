@@ -13,8 +13,6 @@ import { format, addMonths, startOfMonth, endOfMonth } from "date-fns";
 import { TimelineNavigation } from '@/components/TimelineNavigation';
 import { TeamMember, Team, Product, TeamMembership, Role, TeamIdealSize } from '@/types/roadmap';
 import { EditTeamMemberDialog } from '@/components/EditTeamMemberDialog';
-import { EditTeamDialog } from '@/components/EditTeamDialog';
-import { EditProductDialog } from '@/components/EditProductDialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -85,9 +83,6 @@ export function TeamMembersView({
   onAddRole,
   currentUserId,
 }: TeamMembersViewProps) {
-  const [editingMember, setEditingMember] = useState<TeamMember | null>(null);
-  const [editingTeam, setEditingTeam] = useState<Team | null>(null);
-  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [activeTab, setActiveTab] = useState<string>('');
   const [showArchived, setShowArchived] = useState<boolean>(false);
   
@@ -430,7 +425,7 @@ export function TeamMembersView({
                   variant="ghost"
                   size="sm"
                   className="h-6 w-6 p-0 hover:bg-blue-200 dark:hover:bg-blue-800"
-                  onClick={() => setEditingTeam(team)}
+                  onClick={() => {}}
                   title="Edit team"
                 >
                   <Settings className="w-3 h-3 text-blue-600 dark:text-blue-400" />
@@ -476,7 +471,7 @@ export function TeamMembersView({
                         variant="ghost"
                         size="sm"
                         className="h-5 w-5 p-0"
-                        onClick={() => setEditingMember(member)}
+                        onClick={() => {}}
                         title="Edit memberships"
                       >
                         <Edit2 className="w-2.5 h-2.5" />
@@ -541,17 +536,6 @@ export function TeamMembersView({
             <div className="flex items-center gap-6">
               <h2 className="text-lg font-semibold">Timeline: {timelineRange}</h2>
             </div>
-            <div className="flex items-center gap-4">
-              <label className="flex items-center gap-2 text-sm">
-                <input
-                  type="checkbox"
-                  checked={showArchived}
-                  onChange={(e) => setShowArchived(e.target.checked)}
-                  className="rounded border-gray-300"
-                />
-                Show Archived
-              </label>
-            </div>
           </div>
         </CardContent>
       </Card>
@@ -583,6 +567,15 @@ export function TeamMembersView({
             <div className="px-6 py-4 border-b bg-muted/20">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-semibold">Product Teams</h3>
+                <label className="flex items-center gap-2 text-sm">
+                  <input
+                    type="checkbox"
+                    checked={showArchived}
+                    onChange={(e) => setShowArchived(e.target.checked)}
+                    className="rounded border-gray-300"
+                  />
+                  Show Archived
+                </label>
               </div>
               <TabsList className="grid w-full max-w-2xl" style={{ gridTemplateColumns: `repeat(${Math.min([...groupedData.productsWithTeams, ...(groupedData.teamsWithoutProduct.length > 0 ? [1] : [])].length, 6)}, 1fr)` }}>
                 {groupedData.productsWithTeams.map((group) => (
@@ -618,43 +611,6 @@ export function TeamMembersView({
         </CardContent>
       </Card>
 
-      {/* Edit Dialogs */}
-      {editingMember && (
-        <EditTeamMemberDialog
-          isOpen={!!editingMember}
-          onClose={() => setEditingMember(null)}
-          member={editingMember}
-          teams={teams}
-          roles={roles}
-          teamMembers={teamMembers}
-          memberships={memberships}
-          onUpdateMember={onUpdateTeamMember}
-          onAddMembership={onAddMembership}
-          onUpdateMembership={onUpdateMembership}
-          onDeleteMembership={onDeleteMembership}
-          onAddRole={onAddRole}
-        />
-      )}
-
-      {editingTeam && (
-        <EditTeamDialog
-          open={!!editingTeam}
-          onOpenChange={(open) => !open && setEditingTeam(null)}
-          team={editingTeam}
-          products={products}
-          onUpdateTeam={onUpdateTeam}
-          onArchiveTeam={onArchiveTeam}
-        />
-      )}
-
-      {editingProduct && (
-        <EditProductDialog
-          open={!!editingProduct}
-          onOpenChange={(open) => !open && setEditingProduct(null)}
-          product={editingProduct}
-          onUpdateProduct={onUpdateProduct}
-        />
-      )}
     </div>
   );
 }
