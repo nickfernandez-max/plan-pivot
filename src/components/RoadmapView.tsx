@@ -249,6 +249,14 @@ export function RoadmapView({
   onPublishProject
 }: RoadmapViewProps) {
   
+  // Force complete re-render to break any stale state
+  const componentKey = useMemo(() => 
+    JSON.stringify({ pCount: projects?.length, tmCount: teamMembers?.length, timestamp: Date.now() }), 
+    [projects?.length, teamMembers?.length]
+  );
+  
+  console.log('🔄 ROADMAP RENDER KEY:', componentKey);
+  
   // Initialize date validation hook
   const { conflictDialog, closeConflictDialog } = useDateValidation({
     onUpdateProject,
@@ -622,6 +630,12 @@ export function RoadmapView({
 
   // Group teams by product and calculate member rows with allocation slots
   const productGroups = useMemo(() => {
+    // Force fresh calculation - no caching of stale data
+    const timestamp = Date.now();
+    console.log('🔄 Recalculating productGroups at:', timestamp);
+    console.log('📊 Using visible projects:', visibleProjects.map(p => p.name));
+    console.log('👥 Using team members:', teamMembers.map(tm => tm.name));
+    
     const FIXED_ROW_HEIGHT = 100; // Increased to accommodate all 4 allocation slots (4 * 24px + padding)
     const ALLOCATION_SLOTS = 4;
     
@@ -798,7 +812,7 @@ export function RoadmapView({
     const unassignedTeamGroups = calculateTeamRows(teamsWithoutProduct);
 
     return { processedProductGroups, unassignedTeamGroups };
-  }, [teams, teamMembers, visibleProjects, products, timelineBounds, totalDays, memberships]);
+  }, [teams, teamMembers, visibleProjects, products, timelineBounds, totalDays, memberships, componentKey]);
 
   const allTeamGroups = useMemo(() => {
     const allGroups = [
