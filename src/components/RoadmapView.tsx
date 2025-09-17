@@ -645,73 +645,50 @@ export function RoadmapView({
       const teamGroups: Array<{ team: Team; memberRows: MemberRow[]; totalHeight: number }> = [];
       
          teamsToProcess.forEach(team => {
-           // Get all memberships for this team
-           const teamMemberships = memberships.filter(membership => 
-             membership.team_id === team.id
-           );
-           
-           const membersInTeam = teamMembers.filter(member => {
-             // Check if member has active membership in this team during timeline
-             const hasActiveMembership = teamMemberships.some(membership => {
-               if (membership.team_member_id !== member.id) return false;
-               
-               const membershipStart = new Date(membership.start_month);
-               const membershipEnd = membership.end_month ? new Date(membership.end_month) : new Date('9999-12-01');
-               return membershipStart <= timelineBounds.end &&
-                      membershipEnd >= timelineBounds.start;
-             });
-             
-             // Debug logging for Bob Smith
-             if (member.name === 'Bob Smith' && hasActiveMembership) {
-               console.log(`✅ Bob Smith correctly assigned to team: ${team.name} (Product: ${team.product?.name || 'None'})`);
-             }
-             
-             return hasActiveMembership;
-           })
-           .sort((a, b) => {
-             // Primary sort by role (ascending)
-             const roleCompare = (a.role?.display_name || a.role?.name || '').localeCompare(b.role?.display_name || b.role?.name || '');
-             if (roleCompare !== 0) return roleCompare;
-             
-             // Secondary sort by name (ascending)
-             return a.name.localeCompare(b.name);
+          // Get all memberships for this team
+          const teamMemberships = memberships.filter(membership => 
+            membership.team_id === team.id
+          );
+          
+          const membersInTeam = teamMembers.filter(member => {
+            // Check if member has active membership in this team during timeline
+            const hasActiveMembership = teamMemberships.some(membership => {
+              if (membership.team_member_id !== member.id) return false;
+              
+              const membershipStart = new Date(membership.start_month);
+              const membershipEnd = membership.end_month ? new Date(membership.end_month) : new Date('9999-12-01');
+              return membershipStart <= timelineBounds.end &&
+                     membershipEnd >= timelineBounds.start;
             });
+            
+            return hasActiveMembership;
+          })
+          .sort((a, b) => {
+            // Primary sort by role (ascending)
+            const roleCompare = (a.role?.display_name || a.role?.name || '').localeCompare(b.role?.display_name || b.role?.name || '');
+            if (roleCompare !== 0) return roleCompare;
+            
+            // Secondary sort by name (ascending)
+            return a.name.localeCompare(b.name);
+           });
         const memberRows: MemberRow[] = [];
         
         membersInTeam.forEach(member => {
-          console.log(`👤 MEMBER: ${member.name} (ID: ${member.id})`);
+          console.log(`👤 PROCESSING MEMBER: ${member.name} (ID: ${member.id}) for team: ${team.name}`);
           
           // STRICT filtering: Only show projects that are actually assigned to this specific member AND belong to this team
           const memberProjects = visibleProjects
             .filter(project => {
               console.log(`  🔍 Checking "${project.name}" for ${member.name} in team ${team.name}`);
-              console.log(`    Project data:`, {
-                id: project.id,
-                name: project.name,
-                team_id: project.team_id,
-                team_name: project.team?.name,
-                current_team_id: team.id,
-                current_team_name: team.name,
-                assignees: project.assignees?.map(a => `${a.name} (${a.id})`)
-              });
               
               // CRITICAL: Project must belong to the current team being processed
               if (project.team_id !== team.id) {
                 console.log(`    ❌ PROJECT REJECTED: team_id mismatch (${project.team_id} !== ${team.id})`);
-                console.log(`    ❌ Project team: "${project.team?.name}" vs Current team: "${team.name}"`);
                 return false;
               }
               
-              console.log(`    ✅ Project belongs to correct team: ${team.name}`);
-              
               // Must be explicitly assigned to this member
-              const isDirectlyAssigned = project.assignees?.some(assignee => {
-                const match = assignee.id === member.id;
-                console.log(`    Assignee check: ${assignee.name} (${assignee.id}) === ${member.name} (${member.id}) = ${match}`);
-                return match;
-              });
-              
-              console.log(`    Is ${member.name} assigned to "${project.name}"? ${isDirectlyAssigned}`);
+              const isDirectlyAssigned = project.assignees?.some(assignee => assignee.id === member.id);
               
               if (!isDirectlyAssigned) {
                 console.log(`    ❌ PROJECT REJECTED: Member not assigned`);
@@ -734,17 +711,24 @@ export function RoadmapView({
               // Member must overlap with project timeline
               const memberOverlapsProject = membershipEnd >= projectStart && membershipStart <= projectEnd;
               
-              console.log(`    Timeline check: member ${membershipStart.toISOString().slice(0,10)} to ${membershipEnd.toISOString().slice(0,10)} vs project ${projectStart.toISOString().slice(0,10)} to ${projectEnd.toISOString().slice(0,10)} = ${memberOverlapsProject}`);
-              
               if (!memberOverlapsProject) {
                 console.log(`    ❌ PROJECT REJECTED: Timeline mismatch`);
                 return false;
               }
               
-              console.log(`    ✅ PROJECT ACCEPTED: All checks passed`);
+              console.log(`    ✅ PROJECT ACCEPTED: All checks passed for "${project.name}"`);
               return true;
             })
             .map(project => {
+              // FRESH CALCULATION - No caching of positions
+              console.log(`📐 CALCULATING POSITION for "${project.name}":`, {
+                project_start: project.start_date,
+                project_end: project.end_date,
+                timeline_start: timelineBounds.start.toISOString().slice(0,10),
+                timeline_end: timelineBounds.end.toISOString().slice(0,10),
+                total_days: totalDays
+              });
+              
               // Get the assignment for this specific member to use their dates
               const assignment = assignments.find(a => 
                 a.project_id === project.id && a.team_member_id === member.id
@@ -754,6 +738,13 @@ export function RoadmapView({
               const startDate = assignment?.start_date ? new Date(assignment.start_date) : new Date(project.start_date);
               const endDate = assignment?.end_date ? new Date(assignment.end_date) : new Date(project.end_date);
               
+              console.log(`📅 Using dates for "${project.name}":`, {
+                assignment_start: assignment?.start_date || 'none',
+                assignment_end: assignment?.end_date || 'none',
+                calculated_start: startDate.toISOString().slice(0,10),
+                calculated_end: endDate.toISOString().slice(0,10)
+              });
+              
               // Clamp dates to visible timeline bounds
               const clampedStart = startDate < timelineBounds.start ? timelineBounds.start : startDate;
               const clampedEnd = endDate > timelineBounds.end ? timelineBounds.end : endDate;
@@ -761,10 +752,22 @@ export function RoadmapView({
               const daysFromStart = differenceInDays(clampedStart, timelineBounds.start);
               const duration = differenceInDays(clampedEnd, clampedStart) + 1;
               
+              const leftPercent = (daysFromStart / totalDays) * 100;
+              const widthPercent = Math.max((duration / totalDays) * 100, 2);
+              
+              console.log(`📊 POSITION CALCULATED for "${project.name}":`, {
+                daysFromStart,
+                duration,
+                leftPercent: leftPercent.toFixed(2),
+                widthPercent: widthPercent.toFixed(2),
+                clampedStart: clampedStart.toISOString().slice(0,10),
+                clampedEnd: clampedEnd.toISOString().slice(0,10)
+              });
+              
               return {
                 ...project,
-                left: (daysFromStart / totalDays) * 100,
-                width: Math.max((duration / totalDays) * 100, 2) // Minimum width for visibility
+                left: leftPercent,
+                width: widthPercent
               };
             });
 
