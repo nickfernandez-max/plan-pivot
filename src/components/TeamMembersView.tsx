@@ -362,9 +362,8 @@ export function TeamMembersView({
             <TableHead className="w-24 text-xs">Start Date</TableHead>
             {timelineMonthsArray.map((month) => (
               <TableHead key={month.label} className="text-center w-8 px-0">
-                <div className="text-xs leading-tight">
-                  <div className="text-xs font-medium">{month.shortLabel}</div>
-                  <div className="text-xs text-muted-foreground">{format(month.date, 'yy')}</div>
+                <div className="text-xs font-medium">
+                  {format(month.date, 'MMM - yy')}
                 </div>
               </TableHead>
             ))}
