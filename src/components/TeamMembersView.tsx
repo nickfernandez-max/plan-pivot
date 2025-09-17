@@ -354,24 +354,26 @@ export function TeamMembersView({
     }
     
     return (
-      <ScrollArea className="h-[70vh] w-full">
-        <Table>
-          <TableHeader className="sticky top-0 z-20 bg-background/95 backdrop-blur-sm border-b">
-            <TableRow className="h-8 bg-background/95 backdrop-blur-sm">
-              <TableHead className="sticky left-0 w-36 text-xs bg-background/95 backdrop-blur-sm z-30 border-r">Team / Member</TableHead>
-              <TableHead className="sticky left-36 w-28 text-xs bg-background/95 backdrop-blur-sm z-30 border-r">Role</TableHead>
-              <TableHead className="sticky left-64 w-24 text-xs bg-background/95 backdrop-blur-sm z-30 border-r">Start Date</TableHead>
+      <div className="h-[70vh] w-full">
+        {/* Fixed Timeline Header */}
+        <div className="sticky top-0 z-20 bg-background border-b">
+          <div className="flex">
+            <div className="sticky left-0 w-36 text-xs bg-background z-30 border-r px-4 py-2 font-medium">Team / Member</div>
+            <div className="sticky left-36 w-28 text-xs bg-background z-30 border-r px-4 py-2 font-medium">Role</div>
+            <div className="sticky left-64 w-24 text-xs bg-background z-30 border-r px-4 py-2 font-medium">Start Date</div>
             {timelineMonthsArray.map((month) => (
-              <TableHead key={month.label} className="text-center w-8 px-0 bg-background/95 backdrop-blur-sm z-20 sticky top-0">
-                <div className="text-xs font-medium">
-                  {format(month.date, 'MMM - yy')}
-                </div>
-              </TableHead>
+              <div key={month.label} className="text-center w-8 px-0 py-2 bg-background text-xs font-medium">
+                {format(month.date, 'MMM - yy')}
+              </div>
             ))}
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {teams.map(({ team, members }) => (
+          </div>
+        </div>
+        
+        {/* Scrollable Content */}
+        <ScrollArea className="h-[calc(70vh-40px)] w-full">
+          <Table>
+            <TableBody>
+              {teams.map(({ team, members }) => (
             <Fragment key={team.id}>
               {/* Team header row */}
               <TableRow className="bg-gradient-to-r from-blue-100 to-blue-50 dark:from-blue-950 dark:to-blue-900 border-l-4 border-l-blue-500 shadow-sm h-9">
@@ -484,6 +486,7 @@ export function TeamMembersView({
         </TableBody>
         </Table>
       </ScrollArea>
+      </div>
     );
   };
 
