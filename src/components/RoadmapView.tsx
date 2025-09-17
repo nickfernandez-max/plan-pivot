@@ -455,32 +455,19 @@ export function RoadmapView({
 
   // Filter projects to only include those that intersect with the visible timeline
   const visibleProjects = useMemo(() => {
-    console.log(`🕐 Timeline bounds: ${timelineBounds.start.toISOString().slice(0,10)} to ${timelineBounds.end.toISOString().slice(0,10)}`);
-    
-    const filtered = projects.filter(project => {
+    return projects.filter(project => {
       const projectStart = new Date(project.start_date);
       const projectEnd = new Date(project.end_date);
       
-      // Project intersects if it starts before timeline ends and ends after timeline starts
-      const intersects = projectStart <= timelineBounds.end && projectEnd >= timelineBounds.start;
+      // STRICT: Project must actually overlap with timeline bounds
+      // Project ends AFTER timeline starts AND project starts BEFORE timeline ends
+      const actuallyOverlaps = projectEnd >= timelineBounds.start && projectStart <= timelineBounds.end;
       
       // For main roadmap, only show published projects  
-      // For future planning, show all projects (including tentative)
-      const visibilityMatch = isFuturePlanning 
-        ? true  // Future Planning: show all projects
-        : project.status_visibility === 'published';  // Main Roadmap: only published
+      const isPublished = isFuturePlanning ? true : project.status_visibility === 'published';
       
-      const shouldShow = intersects && visibilityMatch;
-      
-      if (project.name.includes('PINless') || project.name.includes('UPC') || project.name.includes('Legacy') || project.name.includes('Advanced Analytics')) {
-        console.log(`📊 Project "${project.name}": ${projectStart.toISOString().slice(0,10)} to ${projectEnd.toISOString().slice(0,10)} -> intersects=${intersects}, visible=${shouldShow}`);
-      }
-      
-      return shouldShow;
+      return actuallyOverlaps && isPublished;
     });
-    
-    console.log(`📋 Visible projects: ${filtered.length}/${projects.length}`);
-    return filtered;
   }, [projects, timelineBounds, isFuturePlanning]);
 
   // Filter work assignments to only include those that intersect with the visible timeline
@@ -675,53 +662,31 @@ export function RoadmapView({
         const memberRows: MemberRow[] = [];
         
         membersInTeam.forEach(member => {
-          // Find visible projects specifically assigned to this member
-          // Only show projects where the member is in the team during the project timeline
+          // STRICT filtering: Only show projects that are actually assigned to this specific member
           const memberProjects = visibleProjects
             .filter(project => {
-              // CRITICAL: Double-check that this member is actually assigned to the project
-              const isAssigned = project.assignees?.some(assignee => assignee.id === member.id);
-              if (!isAssigned) {
-                // Log if we're filtering out a project that somehow got through
-                if (project.name.includes('PINless') || project.name.includes('UPC') || project.name.includes('Legacy') || project.name.includes('Advanced Analytics')) {
-                  console.log(`🚫 Filtered out "${project.name}" for ${member.name} - not assigned`);
-                }
+              // Must be explicitly assigned to this member
+              const isDirectlyAssigned = project.assignees?.some(assignee => assignee.id === member.id);
+              
+              if (!isDirectlyAssigned) {
                 return false;
               }
               
-              // Check if member is in the team during the project timeline
+              // Must be in the team during the project timeline
               const projectStart = new Date(project.start_date);
               const projectEnd = new Date(project.end_date);
               
-              const membershipInTeam = teamMemberships.find(membership => 
-                membership.team_member_id === member.id
-              );
+              const membership = teamMemberships.find(m => m.team_member_id === member.id);
+              if (!membership) return false;
               
-              if (!membershipInTeam) {
-                console.log(`🚫 No membership found for ${member.name} in team ${team.name}`);
-                return false;
-              }
+              const membershipStart = new Date(membership.start_month);
+              const membershipEnd = membership.end_month ? new Date(membership.end_month) : new Date('9999-12-31');
               
-              const membershipStart = new Date(membershipInTeam.start_month);
-              const membershipEnd = membershipInTeam.end_month ? 
-                new Date(membershipInTeam.end_month) : 
-                new Date('9999-12-01');
+              // Member must overlap with project timeline
+              const memberOverlapsProject = membershipEnd >= projectStart && membershipStart <= projectEnd;
               
-              // Member must be in team during at least part of the project timeline
-              const isInTeamDuringProject = membershipStart <= projectEnd && membershipEnd >= projectStart;
-              
-              if (!isInTeamDuringProject) {
-                if (project.name.includes('PINless') || project.name.includes('UPC') || project.name.includes('Legacy') || project.name.includes('Advanced Analytics')) {
-                  console.log(`🚫 Filtered out "${project.name}" for ${member.name} - not in team during project timeline`);
-                }
-              } else {
-                if (project.name.includes('PINless') || project.name.includes('UPC') || project.name.includes('Legacy') || project.name.includes('Advanced Analytics')) {
-                  console.log(`✅ Showing "${project.name}" for ${member.name} - properly assigned and in team`);
-                }
-              }
-              
-              return isInTeamDuringProject;
-            })
+              return memberOverlapsProject;
+             })
             .map(project => {
               // Get the assignment for this specific member to use their dates
               const assignment = assignments.find(a => 
