@@ -11,7 +11,7 @@ import { RoadmapView } from '@/components/RoadmapView';
 import { FuturePlanningView } from '@/components/FuturePlanningView';
 import { TeamMembersView } from '@/components/TeamMembersView';
 import { ReportsView } from '@/components/ReportsView';
-import { FinancialsView } from '@/components/FinancialsView';
+import { UsersView } from '@/components/UsersView';
 import { UserMenu } from '@/components/UserMenu';
 import { AddProductDialog } from '@/components/AddProductDialog';
 import { AddTeamDialog } from '@/components/AddTeamDialog';
@@ -478,7 +478,7 @@ export default function RoadmapApp() {
               </TabsTrigger>
             )}
             <TabsTrigger value="financials" className="text-sm font-medium">
-              Admin
+              Users
             </TabsTrigger>
           </TabsList>
 
@@ -604,12 +604,10 @@ export default function RoadmapApp() {
           </TabsContent>
 
           <TabsContent value="financials">
-            <FinancialsView 
+            <UsersView 
               roles={roles} 
               teams={teams}
               products={products}
-              onUpdateRole={updateRole}
-              onAddRole={handleAddRole}
               onDataImported={() => {
                 // Refresh data after import
                 refetch();

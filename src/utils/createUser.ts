@@ -4,7 +4,7 @@ export interface CreateUserRequest {
   email: string;
   password: string;
   full_name?: string;
-  role?: 'editor' | 'admin';
+  role?: 'editor' | 'admin' | 'viewer';
 }
 
 export async function createUser({ email, password, full_name, role = 'editor' }: CreateUserRequest) {

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -12,51 +12,54 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
-import { createUser } from '@/utils/createUser';
 import { useToast } from '@/hooks/use-toast';
-import { UserPlus } from 'lucide-react';
+import { Edit } from 'lucide-react';
 
-export function AddUserDialog() {
+interface User {
+  id: string;
+  email: string;
+  full_name: string;
+  role: 'editor' | 'admin' | 'viewer';
+  created_at: string;
+}
+
+interface EditUserDialogProps {
+  user: User;
+  onSave: (updates: { full_name: string; role: 'editor' | 'admin' | 'viewer' }) => Promise<void>;
+}
+
+export function EditUserDialog({ user, onSave }: EditUserDialogProps) {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
   const [formData, setFormData] = useState({
-    email: '',
-    password: '',
-    full_name: '',
-    role: 'editor' as 'editor' | 'admin' | 'viewer'
+    full_name: user.full_name || '',
+    role: user.role as 'editor' | 'admin' | 'viewer'
   });
+
+  useEffect(() => {
+    setFormData({
+      full_name: user.full_name || '',
+      role: user.role as 'editor' | 'admin' | 'viewer'
+    });
+  }, [user]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     
     try {
-      const result = await createUser(formData);
-
-      if (result.error) {
-        toast({
-          title: "Error",
-          description: `Failed to create user: ${result.error.message || 'Unknown error'}`,
-          variant: "destructive"
-        });
-      } else {
-        toast({
-          title: "Success",
-          description: "User has been created successfully!",
-        });
-        setOpen(false);
-        setFormData({
-          email: '',
-          password: '',
-          full_name: '',
-          role: 'editor'
-        });
-      }
+      await onSave(formData);
+      toast({
+        title: "Success",
+        description: "User updated successfully!",
+      });
+      setOpen(false);
     } catch (error) {
+      console.error('Error updating user:', error);
       toast({
         title: "Error",
-        description: `Failed to create user: ${error}`,
+        description: "Failed to update user. Please try again.",
         variant: "destructive"
       });
     } finally {
@@ -66,11 +69,10 @@ export function AddUserDialog() {
 
   const handleOpenChange = (newOpen: boolean) => {
     if (newOpen) {
+      // Reset form when opening
       setFormData({
-        email: '',
-        password: '',
-        full_name: '',
-        role: 'editor'
+        full_name: user.full_name || '',
+        role: user.role as 'editor' | 'admin' | 'viewer'
       });
     }
     setOpen(newOpen);
@@ -79,16 +81,15 @@ export function AddUserDialog() {
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
-        <Button variant="outline">
-          <UserPlus className="h-4 w-4 mr-2" />
-          Add User
+        <Button variant="outline" size="sm">
+          <Edit className="h-4 w-4" />
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>Add New User</DialogTitle>
+          <DialogTitle>Edit User</DialogTitle>
           <DialogDescription>
-            Create a new user account with specified permissions.
+            Update user information and permissions for {user.email}.
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit}>
@@ -98,11 +99,11 @@ export function AddUserDialog() {
               <Input
                 id="email"
                 type="email"
-                value={formData.email}
-                onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
-                placeholder="user@example.com"
-                required
+                value={user.email}
+                disabled
+                className="bg-muted"
               />
+              <p className="text-sm text-muted-foreground">Email cannot be changed</p>
             </div>
             <div className="grid gap-2">
               <Label htmlFor="full_name">Full Name</Label>
@@ -112,18 +113,6 @@ export function AddUserDialog() {
                 onChange={(e) => setFormData(prev => ({ ...prev, full_name: e.target.value }))}
                 placeholder="John Doe"
                 required
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="password">Password</Label>
-              <Input
-                id="password"
-                type="password"
-                value={formData.password}
-                onChange={(e) => setFormData(prev => ({ ...prev, password: e.target.value }))}
-                placeholder="Enter password"
-                required
-                minLength={6}
               />
             </div>
             <div className="grid gap-2">
@@ -148,7 +137,7 @@ export function AddUserDialog() {
               Cancel
             </Button>
             <Button type="submit" disabled={loading}>
-              {loading ? "Creating..." : "Create User"}
+              {loading ? "Updating..." : "Update User"}
             </Button>
           </DialogFooter>
         </form>
