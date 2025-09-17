@@ -355,13 +355,13 @@ export function TeamMembersView({
     return (
     <div className="overflow-x-auto">
       <Table>
-        <TableHeader>
-          <TableRow className="h-8">
-            <TableHead className="w-36 text-xs">Team / Member</TableHead>
-            <TableHead className="w-28 text-xs">Role</TableHead>
-            <TableHead className="w-24 text-xs">Start Date</TableHead>
+        <TableHeader className="sticky top-0 z-10 bg-background">
+          <TableRow className="h-8 bg-background">
+            <TableHead className="w-36 text-xs bg-background">Team / Member</TableHead>
+            <TableHead className="w-28 text-xs bg-background">Role</TableHead>
+            <TableHead className="w-24 text-xs bg-background">Start Date</TableHead>
             {timelineMonthsArray.map((month) => (
-              <TableHead key={month.label} className="text-center w-8 px-0">
+              <TableHead key={month.label} className="text-center w-8 px-0 bg-background">
                 <div className="text-xs font-medium">
                   {format(month.date, 'MMM - yy')}
                 </div>
