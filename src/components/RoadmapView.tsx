@@ -886,8 +886,8 @@ export function RoadmapView({
             className="relative timeline-container select-none"
             onWheel={handleWheel}
           >
-          {/* Month headers */}
-          <div className="relative h-6 mb-2 border-b border-border ml-48">
+          {/* Month headers - sticky */}
+          <div className="sticky top-0 z-20 h-6 mb-2 border-b border-border ml-48 bg-background">
             {monthHeaders.map((month, index) => (
               <div
                 key={index}
@@ -902,8 +902,8 @@ export function RoadmapView({
             ))}
           </div>
 
-          {/* Week headers with date numbers only */}
-          <div className="relative h-6 mb-1 ml-48 border-b border-border/50">
+          {/* Week headers with date numbers only - sticky */}
+          <div className="sticky top-6 z-20 h-6 mb-1 ml-48 border-b border-border/50 bg-background">
             {weeklyGrid.weeks.map((week, index) => (
               <div
                 key={index}
