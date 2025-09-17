@@ -38,6 +38,7 @@ export function UserPreferencesDialog({
   const [defaultTeam, setDefaultTeam] = useState<string>('all');
   const [defaultProduct, setDefaultProduct] = useState<string>('all');
   const [preferredLandingPage, setPreferredLandingPage] = useState<string>('/');
+  const [defaultTimelineMonths, setDefaultTimelineMonths] = useState<number>(9);
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
 
@@ -51,7 +52,7 @@ export function UserPreferencesDialog({
     try {
       const { data, error } = await supabase
         .from('profiles')
-        .select('default_team_filter, default_product_filter, preferred_landing_page')
+        .select('default_team_filter, default_product_filter, preferred_landing_page, default_timeline_months')
         .eq('id', currentUserId)
         .single();
 
@@ -60,6 +61,7 @@ export function UserPreferencesDialog({
       setDefaultTeam(data.default_team_filter || 'all');
       setDefaultProduct(data.default_product_filter || 'all');
       setPreferredLandingPage(data.preferred_landing_page || '/');
+      setDefaultTimelineMonths(data.default_timeline_months || 9);
     } catch (error) {
       console.error('Error loading preferences:', error);
     }
@@ -76,6 +78,7 @@ export function UserPreferencesDialog({
           default_team_filter: defaultTeam,
           default_product_filter: defaultProduct,
           preferred_landing_page: preferredLandingPage,
+          default_timeline_months: defaultTimelineMonths,
         })
         .eq('id', currentUserId);
 
@@ -154,6 +157,23 @@ export function UserPreferencesDialog({
                     {teamName}
                   </SelectItem>
                 ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="grid gap-2">
+            <Label htmlFor="default-timeline-months">Default Timeline Length</Label>
+            <Select value={defaultTimelineMonths.toString()} onValueChange={(value) => setDefaultTimelineMonths(parseInt(value))}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select default timeline length" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="3">3 months</SelectItem>
+                <SelectItem value="6">6 months</SelectItem>
+                <SelectItem value="9">9 months</SelectItem>
+                <SelectItem value="12">12 months</SelectItem>
+                <SelectItem value="18">18 months</SelectItem>
+                <SelectItem value="24">24 months</SelectItem>
               </SelectContent>
             </Select>
           </div>

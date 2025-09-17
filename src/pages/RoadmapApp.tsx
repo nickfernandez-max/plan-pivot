@@ -29,18 +29,21 @@ export default function RoadmapApp() {
   const [isAddTeamDialogOpen, setIsAddTeamDialogOpen] = useState(false);
   const [userPreferencesLoaded, setUserPreferencesLoaded] = useState(false);
   const [timelineStartDate, setTimelineStartDate] = useState(() => startOfMonth(new Date()));
+  const [timelineMonths, setTimelineMonths] = useState(9); // Default months to show
   const [activeTab, setActiveTab] = useState<string>(() => {
     // Persist active tab in sessionStorage to survive data refetches
     return sessionStorage.getItem('roadmapActiveTab') || 'projects';
   });
   
-  // Timeline navigation functions
+  // Timeline navigation functions (use 3 months or timeline months, whichever is smaller)
+  const navigationIncrement = Math.min(3, timelineMonths);
+  
   const navigateTimelineForward = () => {
-    setTimelineStartDate(prev => addMonths(prev, 3));
+    setTimelineStartDate(prev => addMonths(prev, navigationIncrement));
   };
 
   const navigateTimelineBackward = () => {
-    setTimelineStartDate(prev => addMonths(prev, -3));
+    setTimelineStartDate(prev => addMonths(prev, -navigationIncrement));
   };
 
   const resetTimelineToToday = () => {
@@ -100,7 +103,7 @@ export default function RoadmapApp() {
         if (user && !userPreferencesLoaded) {
           const { data: profile } = await supabase
             .from('profiles')
-            .select('default_team_filter, default_product_filter')
+            .select('default_team_filter, default_product_filter, default_timeline_months')
             .eq('id', user.id)
             .single();
 
@@ -110,6 +113,9 @@ export default function RoadmapApp() {
             }
             if (profile.default_product_filter) {
               setSelectedProduct(profile.default_product_filter);
+            }
+            if (profile.default_timeline_months) {
+              setTimelineMonths(profile.default_timeline_months);
             }
           }
           setUserPreferencesLoaded(true);
@@ -159,9 +165,9 @@ export default function RoadmapApp() {
     // First, get visible team members (this already handles team/product filtering correctly)
     const visibleMemberIds = new Set(
       teamMembers.filter(member => {
-        // Calculate timeline range (9 months from timelineStartDate)
+        // Calculate timeline range based on user preference
         const timelineStart = format(timelineStartDate, 'yyyy-MM-01');
-        const timelineEnd = format(addMonths(timelineStartDate, 8), 'yyyy-MM-01');
+        const timelineEnd = format(addMonths(timelineStartDate, timelineMonths - 1), 'yyyy-MM-01');
         
         // Get all active team memberships for this member during the timeline period
         const activeMemberships = memberships.filter(membership => {
@@ -199,12 +205,12 @@ export default function RoadmapApp() {
       
       return hasVisibleAssignee;
     });
-  }, [projects, teamMembers, teams, memberships, selectedTeam, selectedProduct, timelineStartDate]);
+  }, [projects, teamMembers, teams, memberships, selectedTeam, selectedProduct, timelineStartDate, timelineMonths]);
 
   const filteredTeamMembers = useMemo(() => {
-    // Calculate timeline range (9 months from timelineStartDate)
+    // Calculate timeline range based on user preference
     const timelineStart = format(timelineStartDate, 'yyyy-MM-01');
-    const timelineEnd = format(addMonths(timelineStartDate, 8), 'yyyy-MM-01');
+    const timelineEnd = format(addMonths(timelineStartDate, timelineMonths - 1), 'yyyy-MM-01');
     
     return teamMembers.filter(member => {
       // Get all active team memberships for this member during the timeline period
@@ -232,7 +238,7 @@ export default function RoadmapApp() {
       
       return teamMatches && productMatches;
     });
-  }, [teamMembers, teams, memberships, selectedTeam, selectedProduct, timelineStartDate]);
+  }, [teamMembers, teams, memberships, selectedTeam, selectedProduct, timelineStartDate, timelineMonths]);
 
   // Event handlers for data manipulation
   const handleAddProject = async (projectData: any) => {

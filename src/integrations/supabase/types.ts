@@ -46,6 +46,7 @@ export type Database = {
           created_at: string
           default_product_filter: string | null
           default_team_filter: string | null
+          default_timeline_months: number | null
           email: string
           full_name: string | null
           id: string
@@ -57,6 +58,7 @@ export type Database = {
           created_at?: string
           default_product_filter?: string | null
           default_team_filter?: string | null
+          default_timeline_months?: number | null
           email: string
           full_name?: string | null
           id: string
@@ -68,6 +70,7 @@ export type Database = {
           created_at?: string
           default_product_filter?: string | null
           default_team_filter?: string | null
+          default_timeline_months?: number | null
           email?: string
           full_name?: string | null
           id?: string

@@ -22,12 +22,14 @@ interface TeamMembersViewProps {
   roles: Role[];
   memberships: TeamMembership[];
   teamIdealSizes: TeamIdealSize[];
+  timelineMonths: number;
   selectedProduct: string;
   selectedTeam: string;
   timelineStartDate: Date;
   onTimelineNavigateForward: () => void;
   onTimelineNavigateBackward: () => void;
   onTimelineResetToToday: () => void;
+  onTimelineMonthsChange?: (months: number) => void;
   onAddTeamMember: (member: Omit<TeamMember, 'id' | 'created_at' | 'updated_at'>) => void;
   onUpdateTeamMember: (id: string, updates: Partial<TeamMember>) => Promise<void>;
   onAddProduct: (product: Omit<Product, 'id' | 'created_at' | 'updated_at'>) => void;
@@ -58,12 +60,14 @@ export function TeamMembersView({
   roles, 
   memberships, 
   teamIdealSizes,
+  timelineMonths,
   selectedProduct,
   selectedTeam,
   timelineStartDate,
   onTimelineNavigateForward,
   onTimelineNavigateBackward,
   onTimelineResetToToday,
+  onTimelineMonthsChange,
   onAddTeamMember, 
   onUpdateTeamMember,
   onAddProduct,
@@ -174,11 +178,11 @@ export function TeamMembersView({
     return <ArrowUpDown className="w-3 h-3 opacity-30" />;
   };
 
-  // Generate timeline (9 months from timelineStartDate)
-  const timelineMonths = useMemo(() => {
+  // Generate timeline array based on timelineMonths prop
+  const timelineMonthsArray = useMemo(() => {
     const months = [];
     
-    for (let i = 0; i < 9; i++) {
+    for (let i = 0; i < timelineMonths; i++) {
       const monthDate = addMonths(timelineStartDate, i);
       months.push({
         date: monthDate,
@@ -188,7 +192,7 @@ export function TeamMembersView({
     }
     
     return months;
-  }, [timelineStartDate]);
+  }, [timelineStartDate, timelineMonths]);
 
   // Function to get ideal member count for a team in a specific month
   const getIdealMemberCount = useMemo(() => {
@@ -212,8 +216,8 @@ export function TeamMembersView({
 
   // Function to get actual member count for a team in a specific month
   const groupedData = useMemo(() => {
-    const timelineStart = format(timelineMonths[0].date, 'yyyy-MM-01');
-    const timelineEnd = format(timelineMonths[timelineMonths.length - 1].date, 'yyyy-MM-01');
+    const timelineStart = format(timelineMonthsArray[0].date, 'yyyy-MM-01');
+    const timelineEnd = format(timelineMonthsArray[timelineMonthsArray.length - 1].date, 'yyyy-MM-01');
     
     // Helper function to get members assigned to a team during the timeline period
     const getTimelineMembers = (teamId: string) => {
@@ -372,7 +376,7 @@ export function TeamMembersView({
                 {getSortIndicator('start_date')}
               </div>
             </TableHead>
-            {timelineMonths.map((month) => (
+            {timelineMonthsArray.map((month) => (
               <TableHead key={month.label} className="text-center w-8 px-0">
                 <div className="text-xs leading-tight">
                   <div className="text-xs font-medium">{month.shortLabel}</div>
@@ -415,7 +419,7 @@ export function TeamMembersView({
                   <span className="text-xs font-medium">Count →</span>
                 </TableCell>
                 <TableCell className="py-2"></TableCell>
-                {timelineMonths.map((month) => {
+                {timelineMonthsArray.map((month) => {
                   const actualCount = getActualMemberCount(team.id, month.date);
                   const idealCount = getIdealMemberCount(team.id, month.date);
                   return (
@@ -468,7 +472,7 @@ export function TeamMembersView({
                     {member.role?.display_name || member.role?.name}
                   </TableCell>
                   <TableCell className="text-sm py-2">{format(new Date(member.start_date), 'MMM d, yy')}</TableCell>
-                  {timelineMonths.map((month) => {
+                  {timelineMonthsArray.map((month) => {
                     const involvement = getMemberInvolvement(member, month.date, team.id);
                     return (
                       <TableCell key={month.label} className="text-center py-1 px-0">
@@ -503,7 +507,7 @@ export function TeamMembersView({
   };
 
   // Get timeline range display
-  const timelineRange = `${format(timelineMonths[0].date, 'MMM yyyy')} - ${format(timelineMonths[timelineMonths.length - 1].date, 'MMM yyyy')}`;
+  const timelineRange = `${format(timelineMonthsArray[0].date, 'MMM yyyy')} - ${format(timelineMonthsArray[timelineMonthsArray.length - 1].date, 'MMM yyyy')}`;
 
   return (
     <div className="space-y-3">
