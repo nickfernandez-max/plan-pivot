@@ -34,58 +34,40 @@ export function TimelineNavigation({
   showMonthSelector = false
 }: TimelineNavigationProps) {
   return (
-    <div className="flex items-center justify-between gap-4 mb-4">
+    <div className="flex items-center justify-between">
       <div className="flex items-center gap-2">
-        <Calendar className="h-4 w-4" />
-        <span className="text-sm font-medium">Timeline: {format(timelineStart, 'MMM yyyy')} - {format(timelineEnd, 'MMM yyyy')}</span>
+        <Calendar className="w-4 h-4 text-muted-foreground" />
+        <span className="text-sm font-medium text-muted-foreground">Timeline:</span>
+        <span className="text-sm font-semibold">{format(timelineStart, 'MMM yyyy')} - {format(timelineEnd, 'MMM yyyy')}</span>
       </div>
-      
       <div className="flex items-center gap-2">
-        {showMonthSelector && (
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-muted-foreground">Show:</span>
-            <Select value={timelineMonths.toString()} onValueChange={(value) => onTimelineMonthsChange(parseInt(value))}>
-              <SelectTrigger className="w-32">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="3">3 months</SelectItem>
-                <SelectItem value="6">6 months</SelectItem>
-                <SelectItem value="9">9 months</SelectItem>
-                <SelectItem value="12">12 months</SelectItem>
-                <SelectItem value="18">18 months</SelectItem>
-                <SelectItem value="24">24 months</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        )}
-        
-        <Button 
-          variant="outline" 
-          size="sm" 
+        <Button
+          variant="outline"
+          size="sm"
           onClick={onNavigateLeft}
           disabled={!canNavigateLeft}
+          className="flex items-center gap-1"
         >
-          <ChevronLeft className="h-4 w-4" />
-          {navigationIncrement} Month{navigationIncrement !== 1 ? 's' : ''}
+          <ChevronLeft className="w-3 h-3" />
+          3 Months
         </Button>
-        
-        <Button 
-          variant="outline" 
-          size="sm" 
+        <Button
+          variant="outline"
+          size="sm"
           onClick={onResetToToday}
+          className="text-xs"
         >
           Today
         </Button>
-        
-        <Button 
-          variant="outline" 
-          size="sm" 
+        <Button
+          variant="outline"
+          size="sm"
           onClick={onNavigateRight}
           disabled={!canNavigateRight}
+          className="flex items-center gap-1"
         >
-          {navigationIncrement} Month{navigationIncrement !== 1 ? 's' : ''}
-          <ChevronRight className="h-4 w-4" />
+          3 Months
+          <ChevronRight className="w-3 h-3" />
         </Button>
       </div>
     </div>

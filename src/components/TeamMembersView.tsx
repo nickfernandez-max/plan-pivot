@@ -8,7 +8,8 @@ import { User, Edit2, Settings, Users, ChevronLeft, ChevronRight, Calendar, Arro
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { format, addMonths, startOfMonth } from 'date-fns';
+import { format, addMonths, startOfMonth, endOfMonth } from "date-fns";
+import { TimelineNavigation } from '@/components/TimelineNavigation';
 import { TeamMember, Team, Product, TeamMembership, Role, TeamIdealSize } from '@/types/roadmap';
 import { EditTeamMemberDialog } from '@/components/EditTeamMemberDialog';
 import { EditTeamDialog } from '@/components/EditTeamDialog';
@@ -577,41 +578,19 @@ export function TeamMembersView({
       {/* Timeline Navigation */}
       <Card>
         <CardContent className="p-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Calendar className="w-4 h-4 text-muted-foreground" />
-              <span className="text-sm font-medium text-muted-foreground">Timeline:</span>
-              <span className="text-sm font-semibold">{timelineRange}</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={navigateBackward}
-                className="flex items-center gap-1"
-              >
-                <ChevronLeft className="w-3 h-3" />
-                3 Months
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={resetToToday}
-                className="text-xs"
-              >
-                Today
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={navigateForward}
-                className="flex items-center gap-1"
-              >
-                3 Months
-                <ChevronRight className="w-3 h-3" />
-              </Button>
-            </div>
-          </div>
+          <TimelineNavigation
+            title="Team Members"
+            timelineStart={timelineStartDate}
+            timelineEnd={endOfMonth(addMonths(timelineStartDate, timelineMonths - 1))}
+            timelineMonths={timelineMonths}
+            navigationIncrement={3}
+            canNavigateLeft={true}
+            canNavigateRight={true}
+            onNavigateLeft={navigateBackward}
+            onNavigateRight={navigateForward}
+            onResetToToday={resetToToday}
+            onTimelineMonthsChange={onTimelineMonthsChange || (() => {})}
+          />
         </CardContent>
       </Card>
 

@@ -18,6 +18,7 @@ import { AddProjectDialog } from '@/components/AddProjectDialog';
 import { DateConflictDialog } from '@/components/DateConflictDialog';
 import { ProjectResizeDialog } from '@/components/ProjectResizeDialog';
 import { useDateValidation } from '@/hooks/useDateValidation';
+import { TimelineNavigation } from '@/components/TimelineNavigation';
 import { toast } from '@/hooks/use-toast';
 
 interface RoadmapViewProps {
@@ -464,6 +465,10 @@ export function RoadmapView({
     }
   };
 
+  const resetToToday = () => {
+    setViewportStart(startOfMonth(new Date()));
+  };
+
   // Filter projects to only include those that intersect with the visible timeline
   const visibleProjects = useMemo(() => {
     return projects.filter(project => {
@@ -832,50 +837,19 @@ export function RoadmapView({
                 </Button>
               </div>
               
-              {/* Month selector */}
-              <div className="flex items-center gap-2 flex-shrink-0">
-                <span className="text-sm text-muted-foreground">Show:</span>
-                <Select value={monthsToShow.toString()} onValueChange={(value) => setMonthsToShow(parseInt(value))}>
-                  <SelectTrigger className="w-32">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="3">3 months</SelectItem>
-                    <SelectItem value="6">6 months</SelectItem>
-                    <SelectItem value="9">9 months</SelectItem>
-                    <SelectItem value="12">12 months</SelectItem>
-                    <SelectItem value="18">18 months</SelectItem>
-                    <SelectItem value="24">24 months</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              
-              {/* Navigation controls */}
-              <div className="flex items-center gap-2 flex-shrink-0 ml-auto">
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={navigateLeft}
-                  disabled={!canNavigateLeft}
-                  className="flex-shrink-0"
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                  Previous
-                </Button>
-                <span className="text-sm text-muted-foreground px-2 whitespace-nowrap">
-                  {format(timelineBounds.start, 'MMM yyyy')} - {format(timelineBounds.end, 'MMM yyyy')}
-                </span>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={navigateRight}
-                  disabled={!canNavigateRight}
-                  className="flex-shrink-0"
-                >
-                  Next
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
-              </div>
+              <TimelineNavigation
+                title="Roadmap"
+                timelineStart={timelineBounds.start}
+                timelineEnd={timelineBounds.end}
+                timelineMonths={monthsToShow}
+                navigationIncrement={3}
+                canNavigateLeft={canNavigateLeft}
+                canNavigateRight={canNavigateRight}
+                onNavigateLeft={navigateLeft}
+                onNavigateRight={navigateRight}
+                onResetToToday={resetToToday}
+                onTimelineMonthsChange={setMonthsToShow}
+              />
             </div>
           </div>
           <p className="text-xs text-muted-foreground">
