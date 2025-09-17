@@ -16,7 +16,9 @@ import { AddProjectAssignmentDialog } from '@/components/AddProjectAssignmentDia
 import { AddWorkAssignmentDialog } from '@/components/AddWorkAssignmentDialog';
 import { AddProjectDialog } from '@/components/AddProjectDialog';
 import { DateConflictDialog } from '@/components/DateConflictDialog';
+import { ProjectResizeDialog } from '@/components/ProjectResizeDialog';
 import { useDateValidation } from '@/hooks/useDateValidation';
+import { toast } from '@/hooks/use-toast';
 
 interface RoadmapViewProps {
   projects: Project[];
@@ -255,6 +257,25 @@ export function RoadmapView({
   
   const [editingProject, setEditingProject] = useState<Project | null>(null);
   
+  // State for resize dialog
+  const [resizeDialog, setResizeDialog] = useState<{
+    open: boolean;
+    projectId: string;
+    memberId: string;
+    memberName: string;
+    projectName: string;
+    newDates: { startDate: string; endDate: string };
+    resizeHandle: 'left' | 'right';
+  }>({
+    open: false,
+    projectId: '',
+    memberId: '',
+    memberName: '',
+    projectName: '',
+    newDates: { startDate: '', endDate: '' },
+    resizeHandle: 'left'
+  });
+  
   // Debug: Track editingProject state changes
   useEffect(() => {
     console.log('🔧 editingProject state changed:', editingProject?.name || 'null');
@@ -274,11 +295,102 @@ export function RoadmapView({
     setIsWorkAssignmentDialogOpen(true);
   };
 
+  // Handle resize dialog
+  const handleShowResizeDialog = useCallback((
+    projectId: string,
+    memberId: string,
+    newDates: { startDate: string; endDate: string },
+    resizeHandle: 'left' | 'right'
+  ) => {
+    const project = projects.find(p => p.id === projectId);
+    const member = teamMembers.find(m => m.id === memberId);
+    
+    if (project && member) {
+      setResizeDialog({
+        open: true,
+        projectId,
+        memberId,
+        memberName: member.name,
+        projectName: project.name,
+        newDates,
+        resizeHandle
+      });
+    }
+  }, [projects, teamMembers]);
+
+  const handleResizeUpdateAll = useCallback(async () => {
+    try {
+      // Update project dates (affects all assignments)
+      await onUpdateProject(resizeDialog.projectId, {
+        start_date: resizeDialog.newDates.startDate,
+        end_date: resizeDialog.newDates.endDate,
+      });
+
+      // Update all assignments to use new dates
+      const currentAssignments = assignments.filter(a => a.project_id === resizeDialog.projectId);
+      const updatedAssignments = currentAssignments.map(a => ({
+        teamMemberId: a.team_member_id,
+        percentAllocation: a.percent_allocation,
+        startDate: resizeDialog.newDates.startDate,
+        endDate: resizeDialog.newDates.endDate
+      }));
+
+      await onUpdateProjectAssignments(resizeDialog.projectId, updatedAssignments);
+      
+      setResizeDialog(prev => ({ ...prev, open: false }));
+      
+      toast({ 
+        title: "Success", 
+        description: "Project dates updated for all team members!" 
+      });
+    } catch (error) {
+      console.error('Error updating all assignments:', error);
+      toast({ 
+        title: "Error", 
+        description: "Failed to update project dates. Please try again.", 
+        variant: "destructive" 
+      });
+    }
+  }, [resizeDialog, onUpdateProject, onUpdateProjectAssignments, assignments]);
+
+  const handleResizeUpdateIndividual = useCallback(async () => {
+    try {
+      // Update only the specific member's assignment
+      const currentAssignments = assignments.filter(a => a.project_id === resizeDialog.projectId);
+      const updatedAssignments = currentAssignments.map(a => ({
+        teamMemberId: a.team_member_id,
+        percentAllocation: a.percent_allocation,
+        startDate: a.team_member_id === resizeDialog.memberId ? resizeDialog.newDates.startDate : a.start_date,
+        endDate: a.team_member_id === resizeDialog.memberId ? resizeDialog.newDates.endDate : a.end_date
+      }));
+
+      await onUpdateProjectAssignments(resizeDialog.projectId, updatedAssignments);
+      
+      setResizeDialog(prev => ({ ...prev, open: false }));
+      
+      toast({ 
+        title: "Success", 
+        description: `Assignment dates updated for ${resizeDialog.memberName}!` 
+      });
+    } catch (error) {
+      console.error('Error updating individual assignment:', error);
+      toast({ 
+        title: "Error", 
+        description: "Failed to update assignment dates. Please try again.", 
+        variant: "destructive" 
+      });
+    }
+  }, [resizeDialog, onUpdateProjectAssignments, assignments]);
+
   const handleCloseWorkAssignmentDialog = () => {
     setIsWorkAssignmentDialogOpen(false);
     setSelectedMember(null);
   };
   
+  const handleCloseResizeDialog = useCallback(() => {
+    setResizeDialog(prev => ({ ...prev, open: false }));
+  }, []);
+
   // Calculate the full timeline bounds to determine navigation limits
   const fullTimelineBounds = useMemo(() => {
     const now = new Date();
@@ -414,6 +526,7 @@ export function RoadmapView({
     onUpdateProject,
     onUpdateProjectAssignees,
     onUpdateProjectAssignments,
+    onShowResizeDialog: handleShowResizeDialog,
   });
 
   // Generate month headers
@@ -1306,6 +1419,16 @@ export function RoadmapView({
       open={isAddProjectDialogOpen}
       onOpenChange={setIsAddProjectDialogOpen}
       onAddProject={onAddProject}
+    />
+
+    {/* Project Resize Dialog */}
+    <ProjectResizeDialog
+      open={resizeDialog.open}
+      onClose={handleCloseResizeDialog}
+      onUpdateAll={handleResizeUpdateAll}
+      onUpdateIndividual={handleResizeUpdateIndividual}
+      projectName={resizeDialog.projectName}
+      memberName={resizeDialog.memberName}
     />
 
     {/* Date Conflict Dialog - Only render if conflict exists */}

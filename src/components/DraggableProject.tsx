@@ -34,6 +34,18 @@ export function DraggableProject({
     status_visibility: project.status_visibility,
     isTentative: project.status_visibility === 'tentative'
   });
+  // Handle resize detection
+  const handleResizeStart = (e: React.MouseEvent, handle: 'left' | 'right') => {
+    e.stopPropagation();
+    e.preventDefault();
+    
+    // Store resize data on the element for the drag system to detect
+    const element = e.currentTarget.closest('[data-project-id]') as HTMLElement;
+    if (element) {
+      element.setAttribute('data-resize-handle', handle);
+    }
+  };
+
   const {
     attributes,
     listeners,
@@ -77,6 +89,7 @@ export function DraggableProject({
   return (
     <div
       ref={setNodeRef}
+      data-project-id={project.id}
       className={`absolute rounded-md shadow-sm transition-all duration-200 hover:shadow-lg group animate-fade-in cursor-grab active:cursor-grabbing ${
         isTentative 
           ? 'border-2 border-dashed bg-gradient-to-r from-orange-100/90 to-yellow-100/90 border-orange-400' 
@@ -105,7 +118,21 @@ export function DraggableProject({
         }
       }}
     >
-      <div className="h-full flex items-center overflow-hidden">
+      <div className="h-full flex items-center overflow-hidden relative">
+        {/* Left resize handle */}
+        <div
+          className="absolute left-0 top-0 w-2 h-full cursor-ew-resize hover:bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity z-10"
+          data-resize-handle="left"
+          onMouseDown={(e) => handleResizeStart(e, 'left')}
+        />
+        
+        {/* Right resize handle */}
+        <div
+          className="absolute right-0 top-0 w-2 h-full cursor-ew-resize hover:bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity z-10"
+          data-resize-handle="right"
+          onMouseDown={(e) => handleResizeStart(e, 'right')}
+        />
+        
         {/* Drag handle area */}
         <div 
           {...listeners}
