@@ -534,106 +534,66 @@ export function AddProjectAssignmentDialog({
                       />
                       
                       {/* Show filtered results as a visible list */}
-                      {projectSearchTerm.trim() ? (
-                        <div className="border rounded-md max-h-64 overflow-y-auto bg-background">
-                          {filteredAndSortedProjects && filteredAndSortedProjects.length > 0 ? (
-                            <div className="p-1">
-                              <div className="text-xs text-muted-foreground px-2 py-1 mb-1">
-                                {filteredAndSortedProjects.length} project{filteredAndSortedProjects.length !== 1 ? 's' : ''} found
-                              </div>
-                              {filteredAndSortedProjects.map((project) => {
-                                if (!project || !project.id || !project.name) return null;
-                                
-                                const isGeneral = project.name.toLowerCase().includes('support') || 
-                                                project.name.toLowerCase().includes('queue') ||
-                                                project.name.toLowerCase().includes('maintenance') ||
-                                                project.name.toLowerCase().includes('ops');
-                                
-                                const selectedMember = teamMembers?.find(m => m && m.id === selectedMemberId);
-                                const memberTeam = teams?.find(t => t && t.id === selectedMember?.team_id);
-                                const isSameProduct = memberTeam?.product_id && 
-                                  (project.team?.product_id === memberTeam.product_id || 
-                                   (project.products && Array.isArray(project.products) && project.products.some(p => p && p.id === memberTeam.product_id)));
+                      <div className="border rounded-md max-h-64 overflow-y-auto bg-background">
+                        {filteredAndSortedProjects && filteredAndSortedProjects.length > 0 ? (
+                          <div className="p-1">
+                            <div className="text-xs text-muted-foreground px-2 py-1 mb-1">
+                              {projectSearchTerm.trim() 
+                                ? `${filteredAndSortedProjects.length} project${filteredAndSortedProjects.length !== 1 ? 's' : ''} found`
+                                : `${filteredAndSortedProjects.length} project${filteredAndSortedProjects.length !== 1 ? 's' : ''} available`
+                              }
+                            </div>
+                            {filteredAndSortedProjects.map((project) => {
+                              if (!project || !project.id || !project.name) return null;
+                              
+                              const isGeneral = project.name.toLowerCase().includes('support') || 
+                                              project.name.toLowerCase().includes('queue') ||
+                                              project.name.toLowerCase().includes('maintenance') ||
+                                              project.name.toLowerCase().includes('ops');
+                              
+                              const selectedMember = teamMembers?.find(m => m && m.id === selectedMemberId);
+                              const memberTeam = teams?.find(t => t && t.id === selectedMember?.team_id);
+                              const isSameProduct = memberTeam?.product_id && 
+                                (project.team?.product_id === memberTeam.product_id || 
+                                 (project.products && Array.isArray(project.products) && project.products.some(p => p && p.id === memberTeam.product_id)));
 
-                                const isSelected = field.value === project.id;
+                              const isSelected = field.value === project.id;
 
-                                return (
-                                  <div
-                                    key={project.id}
-                                    className={`flex items-center gap-2 p-2 rounded-md cursor-pointer hover:bg-accent hover:text-accent-foreground transition-colors ${
-                                      isSelected ? 'bg-primary text-primary-foreground' : ''
-                                    }`}
-                                    onClick={() => {
-                                      field.onChange(project.id);
-                                      setProjectSearchTerm(''); // Clear search after selection
-                                    }}
-                                  >
-                                    <div className="flex-1 min-w-0">
-                                      <div className="font-medium truncate">{project.name}</div>
-                                      <div className="text-xs text-muted-foreground truncate">
-                                        {project.team?.name || 'No Team'}
-                                        {project.description && ` • ${project.description}`}
-                                      </div>
-                                    </div>
-                                    <div className="flex gap-1 flex-shrink-0">
-                                      {isGeneral && <Badge variant="secondary" className="text-xs">General</Badge>}
-                                      {isSameProduct && !isGeneral && <Badge variant="outline" className="text-xs">Same Product</Badge>}
+                              return (
+                                <div
+                                  key={project.id}
+                                  className={`flex items-center gap-2 p-2 rounded-md cursor-pointer hover:bg-accent hover:text-accent-foreground transition-colors ${
+                                    isSelected ? 'bg-primary text-primary-foreground' : ''
+                                  }`}
+                                  onClick={() => {
+                                    field.onChange(project.id);
+                                    setProjectSearchTerm(''); // Clear search after selection
+                                  }}
+                                >
+                                  <div className="flex-1 min-w-0">
+                                    <div className="font-medium truncate">{project.name}</div>
+                                    <div className="text-xs text-muted-foreground truncate">
+                                      {project.team?.name || 'No Team'}
+                                      {project.description && ` • ${project.description}`}
                                     </div>
                                   </div>
-                                );
-                              })}
-                            </div>
-                          ) : (
-                            <div className="p-4 text-center text-muted-foreground text-sm">
-                              No projects match "{projectSearchTerm}"
-                            </div>
-                          )}
-                        </div>
-                      ) : (
-                        // Show dropdown selector when not searching
-                        <Select onValueChange={field.onChange} value={field.value}>
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select a project" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent className="max-h-64">
-                            {filteredAndSortedProjects && filteredAndSortedProjects.length > 0 ? (
-                              filteredAndSortedProjects.map((project) => {
-                                if (!project || !project.id || !project.name) return null;
-                                
-                                const isGeneral = project.name.toLowerCase().includes('support') || 
-                                                project.name.toLowerCase().includes('queue') ||
-                                                project.name.toLowerCase().includes('maintenance') ||
-                                                project.name.toLowerCase().includes('ops');
-                                
-                                const selectedMember = teamMembers?.find(m => m && m.id === selectedMemberId);
-                                const memberTeam = teams?.find(t => t && t.id === selectedMember?.team_id);
-                                const isSameProduct = memberTeam?.product_id && 
-                                  (project.team?.product_id === memberTeam.product_id || 
-                                   (project.products && Array.isArray(project.products) && project.products.some(p => p && p.id === memberTeam.product_id)));
-
-                                return (
-                                  <SelectItem key={project.id} value={project.id}>
-                                    <div className="flex items-center gap-2 w-full">
-                                      <span className="flex-1">{project.name} ({project.team?.name || 'No Team'})</span>
-                                      {isGeneral && <Badge variant="secondary" className="text-xs">General</Badge>}
-                                      {isSameProduct && !isGeneral && <Badge variant="outline" className="text-xs">Same Product</Badge>}
-                                    </div>
-                                  </SelectItem>
-                                );
-                              })
-                            ) : (
-                              <SelectItem value="no-projects" disabled>
-                                No projects available
-                              </SelectItem>
-                            )}
-                          </SelectContent>
-                        </Select>
-                      )}
+                                  <div className="flex gap-1 flex-shrink-0">
+                                    {isGeneral && <Badge variant="secondary" className="text-xs">General</Badge>}
+                                    {isSameProduct && !isGeneral && <Badge variant="outline" className="text-xs">Same Product</Badge>}
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        ) : (
+                          <div className="p-4 text-center text-muted-foreground text-sm">
+                            {projectSearchTerm.trim() ? `No projects match "${projectSearchTerm}"` : 'No projects available'}
+                          </div>
+                        )}
+                      </div>
                       
                       {/* Show selected project */}
-                      {field.value && !projectSearchTerm.trim() && (
+                      {field.value && (
                         <div className="text-sm text-muted-foreground">
                           Selected: {filteredAndSortedProjects.find(p => p.id === field.value)?.name}
                         </div>
