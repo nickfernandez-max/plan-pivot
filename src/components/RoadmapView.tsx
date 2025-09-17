@@ -20,6 +20,8 @@ import { ProjectResizeDialog } from '@/components/ProjectResizeDialog';
 import { useDateValidation } from '@/hooks/useDateValidation';
 import { TimelineNavigation } from '@/components/TimelineNavigation';
 import { toast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
+import React from 'react';
 
 interface RoadmapViewProps {
   projects: Project[];
@@ -32,6 +34,7 @@ interface RoadmapViewProps {
   selectedTeam?: string;
   selectedProduct?: string;
   monthsToShow?: number;
+  currentUserId?: string;
   onUpdateProject: (id: string, updates: Partial<Project>) => Promise<void>;
   onUpdateProjectAssignees: (projectId: string, assigneeIds: string[]) => Promise<void>;
   onUpdateProjectProducts: (projectId: string, productIds: string[]) => Promise<void>;
@@ -241,6 +244,7 @@ export function RoadmapView({
   selectedTeam = 'all',
   selectedProduct = 'all',
   monthsToShow: monthsToShowProp,
+  currentUserId,
   onUpdateProject, 
   onUpdateProjectAssignees,
   onUpdateProjectProducts,
@@ -290,6 +294,40 @@ export function RoadmapView({
   
   // State for number of months to display - use prop value if provided
   const [monthsToShow, setMonthsToShow] = useState<number>(monthsToShowProp || 9);
+  
+  // Sorting preferences from user profile
+  const [primarySort, setPrimarySort] = useState<'name' | 'role' | 'start_date'>('role');
+  const [primaryDirection, setPrimaryDirection] = useState<'asc' | 'desc'>('asc');
+  const [secondarySort, setSecondarySort] = useState<'name' | 'role' | 'start_date'>('name');
+  const [secondaryDirection, setSecondaryDirection] = useState<'asc' | 'desc'>('asc');
+
+  // Load sorting preferences from user profile
+  React.useEffect(() => {
+    const loadSortingPreferences = async () => {
+      if (currentUserId) {
+        try {
+          const { data, error } = await supabase
+            .from('profiles')
+            .select('team_member_primary_sort, team_member_primary_direction, team_member_secondary_sort, team_member_secondary_direction')
+            .eq('id', currentUserId)
+            .single();
+
+          if (error) throw error;
+
+          if (data) {
+            setPrimarySort((data.team_member_primary_sort as 'name' | 'role' | 'start_date') || 'role');
+            setPrimaryDirection((data.team_member_primary_direction as 'asc' | 'desc') || 'asc');
+            setSecondarySort((data.team_member_secondary_sort as 'name' | 'role' | 'start_date') || 'name');
+            setSecondaryDirection((data.team_member_secondary_direction as 'asc' | 'desc') || 'asc');
+          }
+        } catch (error) {
+          console.error('Error loading sorting preferences:', error);
+        }
+      }
+    };
+
+    loadSortingPreferences();
+  }, [currentUserId]);
   
   // Update internal state when prop changes
   useEffect(() => {
@@ -465,8 +503,43 @@ export function RoadmapView({
     }
   };
 
-  const resetToToday = () => {
-    setViewportStart(startOfMonth(new Date()));
+  // Sorting function for team members (now uses user preferences)
+  const sortMembers = (members: TeamMember[]) => {
+    return [...members].sort((a, b) => {
+      // Primary sort
+      let primaryCompare = 0;
+      switch (primarySort) {
+        case 'name':
+          primaryCompare = a.name.localeCompare(b.name);
+          break;
+        case 'role':
+          primaryCompare = (a.role?.display_name || a.role?.name || '').localeCompare(b.role?.display_name || b.role?.name || '');
+          break;
+        case 'start_date':
+          primaryCompare = new Date(a.start_date).getTime() - new Date(b.start_date).getTime();
+          break;
+      }
+      
+      if (primaryDirection === 'desc') primaryCompare *= -1;
+      if (primaryCompare !== 0) return primaryCompare;
+      
+      // Secondary sort
+      let secondaryCompare = 0;
+      switch (secondarySort) {
+        case 'name':
+          secondaryCompare = a.name.localeCompare(b.name);
+          break;
+        case 'role':
+          secondaryCompare = (a.role?.display_name || a.role?.name || '').localeCompare(b.role?.display_name || b.role?.name || '');
+          break;
+        case 'start_date':
+          secondaryCompare = new Date(a.start_date).getTime() - new Date(b.start_date).getTime();
+          break;
+      }
+      
+      if (secondaryDirection === 'desc') secondaryCompare *= -1;
+      return secondaryCompare;
+    });
   };
 
   // Filter projects to only include those that intersect with the visible timeline
@@ -845,10 +918,10 @@ export function RoadmapView({
                 navigationIncrement={3}
                 canNavigateLeft={canNavigateLeft}
                 canNavigateRight={canNavigateRight}
-                onNavigateLeft={navigateLeft}
-                onNavigateRight={navigateRight}
-                onResetToToday={resetToToday}
-                onTimelineMonthsChange={setMonthsToShow}
+            onNavigateLeft={navigateLeft}
+            onNavigateRight={navigateRight}
+            onResetToToday={() => setViewportStart(startOfMonth(new Date()))}
+            onTimelineMonthsChange={setMonthsToShow}
               />
             </div>
           </div>

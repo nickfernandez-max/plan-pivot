@@ -39,6 +39,10 @@ export function UserPreferencesDialog({
   const [defaultProduct, setDefaultProduct] = useState<string>('all');
   const [preferredLandingPage, setPreferredLandingPage] = useState<string>('/');
   const [defaultTimelineMonths, setDefaultTimelineMonths] = useState<number>(9);
+  const [teamMemberPrimarySort, setTeamMemberPrimarySort] = useState<string>('role');
+  const [teamMemberPrimaryDirection, setTeamMemberPrimaryDirection] = useState<string>('asc');
+  const [teamMemberSecondarySort, setTeamMemberSecondarySort] = useState<string>('name');
+  const [teamMemberSecondaryDirection, setTeamMemberSecondaryDirection] = useState<string>('asc');
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
 
@@ -52,7 +56,7 @@ export function UserPreferencesDialog({
     try {
       const { data, error } = await supabase
         .from('profiles')
-        .select('default_team_filter, default_product_filter, preferred_landing_page, default_timeline_months')
+        .select('default_team_filter, default_product_filter, preferred_landing_page, default_timeline_months, team_member_primary_sort, team_member_primary_direction, team_member_secondary_sort, team_member_secondary_direction')
         .eq('id', currentUserId)
         .single();
 
@@ -62,6 +66,10 @@ export function UserPreferencesDialog({
       setDefaultProduct(data.default_product_filter || 'all');
       setPreferredLandingPage(data.preferred_landing_page || '/');
       setDefaultTimelineMonths(data.default_timeline_months || 9);
+      setTeamMemberPrimarySort(data.team_member_primary_sort || 'role');
+      setTeamMemberPrimaryDirection(data.team_member_primary_direction || 'asc');
+      setTeamMemberSecondarySort(data.team_member_secondary_sort || 'name');
+      setTeamMemberSecondaryDirection(data.team_member_secondary_direction || 'asc');
     } catch (error) {
       console.error('Error loading preferences:', error);
     }
@@ -79,6 +87,10 @@ export function UserPreferencesDialog({
           default_product_filter: defaultProduct,
           preferred_landing_page: preferredLandingPage,
           default_timeline_months: defaultTimelineMonths,
+          team_member_primary_sort: teamMemberPrimarySort,
+          team_member_primary_direction: teamMemberPrimaryDirection,
+          team_member_secondary_sort: teamMemberSecondarySort,
+          team_member_secondary_direction: teamMemberSecondaryDirection,
         })
         .eq('id', currentUserId);
 
@@ -176,6 +188,68 @@ export function UserPreferencesDialog({
                 <SelectItem value="24">24 months</SelectItem>
               </SelectContent>
             </Select>
+          </div>
+
+          <div className="grid gap-4 py-2 border-t">
+            <h4 className="text-sm font-medium">Team Member Sorting</h4>
+            
+            <div className="grid grid-cols-2 gap-4">
+              <div className="grid gap-2">
+                <Label htmlFor="primary-sort">Primary Sort</Label>
+                <Select value={teamMemberPrimarySort} onValueChange={setTeamMemberPrimarySort}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select primary sort" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="role">Role</SelectItem>
+                    <SelectItem value="name">Name</SelectItem>
+                    <SelectItem value="start_date">Start Date</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div className="grid gap-2">
+                <Label htmlFor="primary-direction">Direction</Label>
+                <Select value={teamMemberPrimaryDirection} onValueChange={setTeamMemberPrimaryDirection}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select direction" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="asc">Ascending</SelectItem>
+                    <SelectItem value="desc">Descending</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="grid gap-2">
+                <Label htmlFor="secondary-sort">Secondary Sort</Label>
+                <Select value={teamMemberSecondarySort} onValueChange={setTeamMemberSecondarySort}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select secondary sort" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="role">Role</SelectItem>
+                    <SelectItem value="name">Name</SelectItem>
+                    <SelectItem value="start_date">Start Date</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div className="grid gap-2">
+                <Label htmlFor="secondary-direction">Direction</Label>
+                <Select value={teamMemberSecondaryDirection} onValueChange={setTeamMemberSecondaryDirection}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select direction" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="asc">Ascending</SelectItem>
+                    <SelectItem value="desc">Descending</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
           </div>
         </div>
 

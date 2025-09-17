@@ -52,6 +52,10 @@ export type Database = {
           id: string
           preferred_landing_page: string | null
           role: Database["public"]["Enums"]["user_role"]
+          team_member_primary_direction: string | null
+          team_member_primary_sort: string | null
+          team_member_secondary_direction: string | null
+          team_member_secondary_sort: string | null
           updated_at: string
         }
         Insert: {
@@ -64,6 +68,10 @@ export type Database = {
           id: string
           preferred_landing_page?: string | null
           role?: Database["public"]["Enums"]["user_role"]
+          team_member_primary_direction?: string | null
+          team_member_primary_sort?: string | null
+          team_member_secondary_direction?: string | null
+          team_member_secondary_sort?: string | null
           updated_at?: string
         }
         Update: {
@@ -76,6 +84,10 @@ export type Database = {
           id?: string
           preferred_landing_page?: string | null
           role?: Database["public"]["Enums"]["user_role"]
+          team_member_primary_direction?: string | null
+          team_member_primary_sort?: string | null
+          team_member_secondary_direction?: string | null
+          team_member_secondary_sort?: string | null
           updated_at?: string
         }
         Relationships: []

@@ -1,10 +1,10 @@
-import React, { useState, useMemo, Fragment } from 'react';
+import React, { useState, useEffect, useMemo, Fragment } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { User, Edit2, Settings, Users, ChevronLeft, ChevronRight, Calendar, ArrowUp, ArrowDown, ArrowUpDown } from 'lucide-react';
+import { User, Edit2, Settings, Users, ChevronLeft, ChevronRight, Calendar } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -15,6 +15,7 @@ import { EditTeamMemberDialog } from '@/components/EditTeamMemberDialog';
 import { EditTeamDialog } from '@/components/EditTeamDialog';
 import { EditProductDialog } from '@/components/EditProductDialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { supabase } from '@/integrations/supabase/client';
 
 interface TeamMembersViewProps {
   teamMembers: TeamMember[];
@@ -42,6 +43,7 @@ interface TeamMembersViewProps {
   onUpdateMembership: (id: string, updates: Partial<TeamMembership>) => Promise<any>;
   onDeleteMembership: (id: string) => Promise<any> | void;
   onAddRole: (role: Omit<Role, 'id' | 'created_at' | 'updated_at'>) => Promise<Role>;
+  currentUserId?: string;
 }
 
 const teamMemberSchema = z.object({
@@ -80,6 +82,7 @@ export function TeamMembersView({
   onUpdateMembership,
   onDeleteMembership,
   onAddRole,
+  currentUserId,
 }: TeamMembersViewProps) {
   const [editingMember, setEditingMember] = useState<TeamMember | null>(null);
   const [editingTeam, setEditingTeam] = useState<Team | null>(null);
@@ -87,12 +90,39 @@ export function TeamMembersView({
   const [activeTab, setActiveTab] = useState<string>('');
   const [showArchived, setShowArchived] = useState<boolean>(false);
   
-  // Sorting state
+  // Sorting state from user preferences
   const [primarySort, setPrimarySort] = useState<SortField>('role');
   const [primaryDirection, setPrimaryDirection] = useState<SortDirection>('asc');
   const [secondarySort, setSecondarySort] = useState<SortField>('name');
   const [secondaryDirection, setSecondaryDirection] = useState<SortDirection>('asc');
 
+  // Load sorting preferences from user profile
+  React.useEffect(() => {
+    const loadSortingPreferences = async () => {
+      if (currentUserId) {
+        try {
+          const { data, error } = await supabase
+            .from('profiles')
+            .select('team_member_primary_sort, team_member_primary_direction, team_member_secondary_sort, team_member_secondary_direction')
+            .eq('id', currentUserId)
+            .single();
+
+          if (error) throw error;
+
+          if (data) {
+            setPrimarySort((data.team_member_primary_sort as SortField) || 'role');
+            setPrimaryDirection((data.team_member_primary_direction as SortDirection) || 'asc');
+            setSecondarySort((data.team_member_secondary_sort as SortField) || 'name');
+            setSecondaryDirection((data.team_member_secondary_direction as SortDirection) || 'asc');
+          }
+        } catch (error) {
+          console.error('Error loading sorting preferences:', error);
+        }
+      }
+    };
+
+    loadSortingPreferences();
+  }, [currentUserId]);
 
   const form = useForm<z.infer<typeof teamMemberSchema>>({
     resolver: zodResolver(teamMemberSchema),
@@ -146,37 +176,6 @@ export function TeamMembersView({
       if (secondaryDirection === 'desc') secondaryCompare *= -1;
       return secondaryCompare;
     });
-  };
-
-  // Handle header click for quick sorting
-  const handleHeaderClick = (field: SortField) => {
-    if (primarySort === field) {
-      // Toggle primary direction
-      setPrimaryDirection(prev => prev === 'asc' ? 'desc' : 'asc');
-    } else if (secondarySort === field) {
-      // Move secondary to primary
-      setPrimarySort(field);
-      setPrimaryDirection(secondaryDirection);
-      setSecondarySort(primarySort);
-      setSecondaryDirection(primaryDirection);
-    } else {
-      // Set as secondary sort
-      setSecondarySort(field);
-      setSecondaryDirection('asc');
-    }
-  };
-
-  // Get sort indicator for table headers
-  const getSortIndicator = (field: SortField) => {
-    if (primarySort === field) {
-      return primaryDirection === 'asc' ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />;
-    } else if (secondarySort === field) {
-      return <div className="flex items-center">
-        <span className="text-xs mr-1">2</span>
-        {secondaryDirection === 'asc' ? <ArrowUp className="w-2.5 h-2.5" /> : <ArrowDown className="w-2.5 h-2.5" />}
-      </div>;
-    }
-    return <ArrowUpDown className="w-3 h-3 opacity-30" />;
   };
 
   // Generate timeline array based on timelineMonths prop
@@ -359,24 +358,8 @@ export function TeamMembersView({
         <TableHeader>
           <TableRow className="h-8">
             <TableHead className="w-36 text-xs">Team / Member</TableHead>
-            <TableHead 
-              className="w-28 text-xs cursor-pointer hover:bg-muted/50 select-none"
-              onClick={() => handleHeaderClick('role')}
-            >
-              <div className="flex items-center gap-1">
-                Role
-                {getSortIndicator('role')}
-              </div>
-            </TableHead>
-            <TableHead 
-              className="w-24 text-xs cursor-pointer hover:bg-muted/50 select-none"
-              onClick={() => handleHeaderClick('start_date')}
-            >
-              <div className="flex items-center gap-1">
-                Start Date
-                {getSortIndicator('start_date')}
-              </div>
-            </TableHead>
+            <TableHead className="w-28 text-xs">Role</TableHead>
+            <TableHead className="w-24 text-xs">Start Date</TableHead>
             {timelineMonthsArray.map((month) => (
               <TableHead key={month.label} className="text-center w-8 px-0">
                 <div className="text-xs leading-tight">
@@ -449,15 +432,12 @@ export function TeamMembersView({
                 <TableRow key={member.id} className="h-8">
                   <TableCell className="font-medium text-sm py-2">
                     <div className="flex items-center justify-between gap-2">
-                     <div className="flex items-center gap-3">
-                         <User className="w-3.5 h-3.5 text-muted-foreground ml-2" />
-                         <span 
-                           className="truncate text-sm cursor-pointer hover:text-primary"
-                           onClick={() => handleHeaderClick('name')}
-                         >
-                           {member.name}
-                         </span>
-                       </div>
+                      <div className="flex items-center gap-3">
+                          <User className="w-3.5 h-3.5 text-muted-foreground ml-2" />
+                          <span className="truncate text-sm">
+                            {member.name}
+                          </span>
+                        </div>
                       <Button
                         variant="ghost"
                         size="sm"
@@ -512,64 +492,21 @@ export function TeamMembersView({
 
   return (
     <div className="space-y-3">
-      {/* Sorting Controls */}
+      {/* Team Members Header */}
       <Card>
         <CardContent className="p-3">
-          <div className="flex items-center gap-4 flex-wrap">
+          <div className="flex items-center justify-between gap-4">
+            <h3 className="text-sm font-medium">Team Members</h3>
             <div className="flex items-center gap-2">
-              <span className="text-sm font-medium text-muted-foreground">Primary Sort:</span>
-              <Select value={primarySort} onValueChange={(value: SortField) => setPrimarySort(value)}>
-                <SelectTrigger className="w-24">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="name">Name</SelectItem>
-                  <SelectItem value="role">Role</SelectItem>
-                  <SelectItem value="start_date">Start Date</SelectItem>
-                </SelectContent>
-              </Select>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setPrimaryDirection(prev => prev === 'asc' ? 'desc' : 'asc')}
-                className="px-2"
-              >
-                {primaryDirection === 'asc' ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />}
-              </Button>
-            </div>
-            
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-medium text-muted-foreground">Secondary Sort:</span>
-              <Select value={secondarySort} onValueChange={(value: SortField) => setSecondarySort(value)}>
-                <SelectTrigger className="w-24">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="name">Name</SelectItem>
-                  <SelectItem value="role">Role</SelectItem>
-                  <SelectItem value="start_date">Start Date</SelectItem>
-                </SelectContent>
-              </Select>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setSecondaryDirection(prev => prev === 'asc' ? 'desc' : 'asc')}
-                className="px-2"
-              >
-                {secondaryDirection === 'asc' ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />}
-              </Button>
-            </div>
-            
-            {/* Show Archived Toggle */}
-            <div className="flex items-center gap-2">
-              <Button
-                variant={showArchived ? "default" : "outline"}
-                size="sm"
-                onClick={() => setShowArchived(prev => !prev)}
-                className="text-xs"
-              >
-                {showArchived ? "Hide Archived" : "Show Archived"}
-              </Button>
+              <label className="flex items-center gap-2 text-xs">
+                <input
+                  type="checkbox"
+                  checked={showArchived}
+                  onChange={(e) => setShowArchived(e.target.checked)}
+                  className="rounded border-gray-300"
+                />
+                Show Archived
+              </label>
             </div>
           </div>
         </CardContent>
@@ -594,94 +531,16 @@ export function TeamMembersView({
         </CardContent>
       </Card>
 
+      {/* Main content with simplified structure */}
       <Card>
         <CardContent className="p-3">
-          {teamMembers.length === 0 ? (
-            <div className="text-center py-4">
-              <User className="w-8 h-8 mx-auto text-muted-foreground mb-2" />
-              <p className="text-sm text-muted-foreground mb-2">No team members found</p>
-            </div>
-          ) : (
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-              <div className="flex items-center justify-between gap-4 mb-3">
-                <TabsList className="grid flex-1" style={{ gridTemplateColumns: `repeat(${groupedData.productsWithTeams.length + (groupedData.teamsWithoutProduct.length > 0 ? 1 : 0)}, 1fr)` }}>
-                  {groupedData.productsWithTeams.map(({ product }) => (
-                    <TabsTrigger key={product.id} value={product.id} className="text-sm group relative">
-                      <div className="flex items-center gap-2">
-                        {product.name}
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-4 w-4 p-0 opacity-0 group-hover:opacity-100 group-data-[state=active]:opacity-100 transition-opacity"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setEditingProduct(product);
-                          }}
-                          title="Edit product"
-                        >
-                          <Settings className="w-2.5 h-2.5" />
-                        </Button>
-                      </div>
-                    </TabsTrigger>
-                  ))}
-                  {groupedData.teamsWithoutProduct.length > 0 && (
-                    <TabsTrigger value="unassigned" className="text-sm group relative">
-                      <div className="flex items-center gap-2">
-                        Unassigned Teams
-                      </div>
-                    </TabsTrigger>
-                  )}
-                </TabsList>
-                
-              </div>
-
-              {groupedData.productsWithTeams.map(({ product, teams: productTeams }) => (
-                <TabsContent key={product.id} value={product.id} className="space-y-0">
-                  {renderTable(productTeams)}
-                </TabsContent>
-              ))}
-
-              {/* Unassigned Teams Tab */}
-              {groupedData.teamsWithoutProduct.length > 0 && (
-                <TabsContent value="unassigned" className="space-y-0">
-                  {renderTable(groupedData.teamsWithoutProduct)}
-                </TabsContent>
-              )}
-            </Tabs>
-          )}
+          <div className="text-center py-8 text-muted-foreground">
+            <Users className="w-8 h-8 mx-auto mb-2 opacity-50" />
+            <p className="text-sm">Team member sorting is now configured in user preferences</p>
+            <p className="text-xs mt-1">Access user preferences from the main navigation menu</p>
+          </div>
         </CardContent>
       </Card>
-
-        <EditTeamMemberDialog
-          member={editingMember}
-          teams={teams}
-          roles={roles}
-          teamMembers={teamMembers}
-          memberships={memberships}
-          isOpen={!!editingMember}
-          onClose={() => setEditingMember(null)}
-          onAddMembership={onAddMembership}
-          onUpdateMembership={onUpdateMembership}
-          onDeleteMembership={onDeleteMembership}
-          onUpdateMember={onUpdateTeamMember}
-          onAddRole={onAddRole}
-        />
-      
-          <EditTeamDialog
-            team={editingTeam}
-            open={!!editingTeam}
-            onOpenChange={(open) => !open && setEditingTeam(null)}
-            onUpdateTeam={onUpdateTeam}
-            onArchiveTeam={onArchiveTeam}
-            products={products}
-          />
-      
-      <EditProductDialog
-        product={editingProduct}
-        open={!!editingProduct}
-        onOpenChange={(open) => !open && setEditingProduct(null)}
-        onUpdateProduct={onUpdateProduct}
-      />
     </div>
   );
 }
