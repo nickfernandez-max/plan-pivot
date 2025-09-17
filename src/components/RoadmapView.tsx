@@ -30,6 +30,7 @@ interface RoadmapViewProps {
   memberships: TeamMembership[];
   selectedTeam?: string;
   selectedProduct?: string;
+  monthsToShow?: number;
   onUpdateProject: (id: string, updates: Partial<Project>) => Promise<void>;
   onUpdateProjectAssignees: (projectId: string, assigneeIds: string[]) => Promise<void>;
   onUpdateProjectProducts: (projectId: string, productIds: string[]) => Promise<void>;
@@ -238,6 +239,7 @@ export function RoadmapView({
   memberships,
   selectedTeam = 'all',
   selectedProduct = 'all',
+  monthsToShow: monthsToShowProp,
   onUpdateProject, 
   onUpdateProjectAssignees,
   onUpdateProjectProducts,
@@ -285,8 +287,15 @@ export function RoadmapView({
   const [frontProject, setFrontProject] = useState<string | null>(null);
   const [preSelectedMember, setPreSelectedMember] = useState<{ id: string; startDate: string } | null>(null);
   
-  // State for number of months to display
-  const [monthsToShow, setMonthsToShow] = useState<number>(9);
+  // State for number of months to display - use prop value if provided
+  const [monthsToShow, setMonthsToShow] = useState<number>(monthsToShowProp || 9);
+  
+  // Update internal state when prop changes
+  useEffect(() => {
+    if (monthsToShowProp && monthsToShowProp !== monthsToShow) {
+      setMonthsToShow(monthsToShowProp);
+    }
+  }, [monthsToShowProp, monthsToShow]);
   
   const handleOpenWorkAssignmentDialog = (memberId: string, memberName: string) => {
     setSelectedMember({ id: memberId, name: memberName });

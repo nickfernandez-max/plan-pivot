@@ -535,6 +535,7 @@ export default function RoadmapApp() {
               memberships={memberships}
               selectedTeam={selectedTeam}
               selectedProduct={selectedProduct}
+              monthsToShow={timelineMonths}
               onUpdateProject={handleUpdateProject}
               onUpdateProjectAssignees={async (projectId: string, assigneeIds: string[]) => {
                 await updateProjectAssignees(projectId, assigneeIds);
@@ -601,12 +602,14 @@ export default function RoadmapApp() {
               roles={roles}
               memberships={memberships}
               teamIdealSizes={teamIdealSizes}
+              timelineMonths={timelineMonths}
               selectedProduct={selectedProduct}
               selectedTeam={selectedTeam}
               timelineStartDate={timelineStartDate}
               onTimelineNavigateForward={navigateTimelineForward}
               onTimelineNavigateBackward={navigateTimelineBackward}
               onTimelineResetToToday={resetTimelineToToday}
+              onTimelineMonthsChange={setTimelineMonths}
               onAddTeamMember={handleAddTeamMember} 
               onUpdateTeamMember={handleUpdateTeamMember}
               onAddProduct={handleAddProduct}
