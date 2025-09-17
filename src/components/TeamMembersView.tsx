@@ -357,18 +357,22 @@ export function TeamMembersView({
       <div className="h-[70vh] w-full flex flex-col">
         {/* Fixed Timeline Header */}
         <div className="flex-shrink-0 border-b bg-background">
-          <div className="flex">
-            <div className="sticky left-0 w-36 text-xs bg-background z-30 border-r px-4 py-2 font-medium">Team / Member</div>
-            <div className="sticky left-36 w-28 text-xs bg-background z-30 border-r px-4 py-2 font-medium">Role</div>
-            <div className="sticky left-64 w-24 text-xs bg-background z-30 border-r px-4 py-2 font-medium">Start Date</div>
-            <div className="flex">
-              {timelineMonthsArray.map((month) => (
-                <div key={month.label} className="w-8 text-center px-0 py-2 bg-background text-xs font-medium border-r">
-                  {format(month.date, 'MMM - yy')}
-                </div>
-              ))}
-            </div>
-          </div>
+          <Table>
+            <TableHeader>
+              <TableRow className="h-8">
+                <TableHead className="sticky left-0 w-36 text-xs bg-background z-30 border-r">Team / Member</TableHead>
+                <TableHead className="sticky left-36 w-28 text-xs bg-background z-30 border-r">Role</TableHead>
+                <TableHead className="sticky left-64 w-24 text-xs bg-background z-30 border-r">Start Date</TableHead>
+                {timelineMonthsArray.map((month) => (
+                  <TableHead key={month.label} className="text-center w-8 px-0 bg-background">
+                    <div className="text-xs font-medium">
+                      {format(month.date, 'MMM - yy')}
+                    </div>
+                  </TableHead>
+                ))}
+              </TableRow>
+            </TableHeader>
+          </Table>
         </div>
         
         {/* Scrollable Content */}
