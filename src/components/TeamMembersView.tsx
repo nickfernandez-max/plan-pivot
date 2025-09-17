@@ -353,144 +353,139 @@ export function TeamMembersView({
       );
     }
     
+    // Calculate grid columns: 3 fixed columns + timeline months
+    const gridCols = `144px 112px 96px ${Array(timelineMonthsArray.length).fill('32px').join(' ')}`;
+
     return (
-      <div className="h-[70vh] w-full flex flex-col">
-        {/* Fixed Timeline Header */}
-        <div className="flex-shrink-0 border-b bg-background">
-          <Table>
-            <TableHeader>
-              <TableRow className="h-8">
-                <TableHead className="sticky left-0 w-36 text-xs bg-background z-30 border-r">Team / Member</TableHead>
-                <TableHead className="sticky left-36 w-28 text-xs bg-background z-30 border-r">Role</TableHead>
-                <TableHead className="sticky left-64 w-24 text-xs bg-background z-30 border-r">Start Date</TableHead>
-                {timelineMonthsArray.map((month) => (
-                  <TableHead key={month.label} className="text-center w-8 px-0 bg-background">
-                    <div className="text-xs font-medium">
-                      {format(month.date, 'MMM - yy')}
-                    </div>
-                  </TableHead>
-                ))}
-              </TableRow>
-            </TableHeader>
-          </Table>
-        </div>
-        
-        {/* Scrollable Content */}
-        <div className="flex-1 overflow-auto">
-          <Table>
-            <TableBody>
-              {teams.map(({ team, members }) => (
+      <div className="h-[70vh] w-full overflow-auto">
+        {/* CSS Grid Container */}
+        <div 
+          className="grid border border-border"
+          style={{ 
+            gridTemplateColumns: gridCols,
+            minWidth: `${144 + 112 + 96 + (timelineMonthsArray.length * 32)}px`
+          }}
+        >
+          {/* Header Row - spans all columns */}
+          <div className="sticky top-0 left-0 z-40 bg-background border-r border-b px-4 py-2 text-xs font-medium flex items-center">
+            Team / Member
+          </div>
+          <div className="sticky top-0 left-[144px] z-40 bg-background border-r border-b px-4 py-2 text-xs font-medium flex items-center">
+            Role
+          </div>
+          <div className="sticky top-0 left-[256px] z-40 bg-background border-r border-b px-4 py-2 text-xs font-medium flex items-center">
+            Start Date
+          </div>
+          {timelineMonthsArray.map((month) => (
+            <div key={`header-${month.label}`} className="sticky top-0 z-30 bg-background border-r border-b px-0 py-2 text-xs font-medium text-center flex items-center justify-center">
+              {format(month.date, 'MMM - yy')}
+            </div>
+          ))}
+
+          {/* Data Rows */}
+          {teams.map(({ team, members }) => (
             <Fragment key={team.id}>
-              {/* Team header row */}
-              <TableRow className="bg-gradient-to-r from-blue-100 to-blue-50 dark:from-blue-950 dark:to-blue-900 border-l-4 border-l-blue-500 shadow-sm h-9">
-                <TableCell 
-                  className="sticky left-0 font-semibold text-sm py-2 bg-gradient-to-r from-blue-100 to-blue-50 dark:from-blue-950 dark:to-blue-900 z-20 border-r"
+              {/* Team Header Row */}
+              <div className="sticky left-0 z-20 bg-gradient-to-r from-blue-100 to-blue-50 dark:from-blue-950 dark:to-blue-900 border-r border-b border-l-4 border-l-blue-500 px-4 py-2 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <Users className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                  <span className="text-blue-900 dark:text-blue-100 font-semibold text-sm">{team.name}</span>
+                  {team.archived && (
+                    <Badge variant="outline" className="text-xs px-2 py-1 text-muted-foreground">
+                      Archived
+                    </Badge>
+                  )}
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-6 w-6 p-0 hover:bg-blue-200 dark:hover:bg-blue-800"
+                  onClick={() => setEditingTeam(team)}
+                  title="Edit team"
                 >
-                  <div className="flex items-center justify-between gap-2">
-                     <div className="flex items-center gap-3">
-                       <Users className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-                       <span className="text-blue-900 dark:text-blue-100">{team.name}</span>
-                       {team.archived && (
-                         <Badge variant="outline" className="text-xs px-2 py-1 text-muted-foreground">
-                           Archived
-                         </Badge>
-                       )}
-                     </div>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-6 w-6 p-0 hover:bg-blue-200 dark:hover:bg-blue-800"
-                      onClick={() => setEditingTeam(team)}
-                      title="Edit team"
-                    >
-                      <Settings className="w-3 h-3 text-blue-600 dark:text-blue-400" />
-                    </Button>
+                  <Settings className="w-3 h-3 text-blue-600 dark:text-blue-400" />
+                </Button>
+              </div>
+              <div className="sticky left-[144px] z-20 bg-gradient-to-r from-blue-100 to-blue-50 dark:from-blue-950 dark:to-blue-900 border-r border-b px-4 py-2 flex items-center">
+                <span className="text-xs font-medium text-blue-700 dark:text-blue-300">Count →</span>
+              </div>
+              <div className="sticky left-[256px] z-20 bg-gradient-to-r from-blue-100 to-blue-50 dark:from-blue-950 dark:to-blue-900 border-r border-b px-4 py-2"></div>
+              {timelineMonthsArray.map((month) => {
+                const actualCount = getActualMemberCount(team.id, month.date);
+                const idealCount = getIdealMemberCount(team.id, month.date);
+                return (
+                  <div key={`team-${team.id}-${month.label}`} className="border-r border-b py-1 px-0 flex items-center justify-center">
+                    <div className="flex flex-col items-center gap-0.5">
+                      <Badge 
+                        variant="outline" 
+                        className={`text-xs px-0.5 py-0 min-w-[16px] justify-center h-4 ${getStaffingColorClass(actualCount, idealCount)}`}
+                      >
+                        {actualCount}
+                      </Badge>
+                      <span className="text-xs text-muted-foreground">
+                        /{idealCount}
+                      </span>
+                    </div>
                   </div>
-                </TableCell>
-                <TableCell className="sticky left-36 font-medium text-blue-700 dark:text-blue-300 py-2 bg-gradient-to-r from-blue-100 to-blue-50 dark:from-blue-950 dark:to-blue-900 z-20 border-r">
-                  <span className="text-xs font-medium">Count →</span>
-                </TableCell>
-                <TableCell className="sticky left-64 py-2 bg-gradient-to-r from-blue-100 to-blue-50 dark:from-blue-950 dark:to-blue-900 z-20 border-r"></TableCell>
-                {timelineMonthsArray.map((month) => {
-                  const actualCount = getActualMemberCount(team.id, month.date);
-                  const idealCount = getIdealMemberCount(team.id, month.date);
-                  return (
-                    <TableCell key={month.label} className="text-center py-1 px-0">
-                      <div className="flex flex-col items-center gap-0.5">
-                        <Badge 
-                          variant="outline" 
-                          className={`text-xs px-0.5 py-0 min-w-[16px] justify-center h-4 ${getStaffingColorClass(actualCount, idealCount)}`}
-                        >
-                          {actualCount}
-                        </Badge>
-                        <span className="text-xs text-muted-foreground">
-                          /{idealCount}
+                );
+              })}
+
+              {/* Team Member Rows */}
+              {members.map((member) => {
+                console.log('Member role object:', member.role);
+                return (
+                  <Fragment key={member.id}>
+                    <div className="sticky left-0 z-10 bg-background border-r border-b px-4 py-2 flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <User className="w-3.5 h-3.5 text-muted-foreground ml-2" />
+                        <span className="truncate text-sm font-medium">
+                          {member.name}
                         </span>
                       </div>
-                    </TableCell>
-                  );
-                })}
-              </TableRow>
-             
-               {/* Team member rows */}
-               {members.map((member) => {
-                 // Debug log to check role structure
-                 console.log('Member role object:', member.role);
-                 return (
-                 <TableRow key={member.id} className="h-8">
-                   <TableCell className="sticky left-0 font-medium text-sm py-2 bg-background z-10 border-r">
-                     <div className="flex items-center justify-between gap-2">
-                       <div className="flex items-center gap-3">
-                           <User className="w-3.5 h-3.5 text-muted-foreground ml-2" />
-                           <span className="truncate text-sm">
-                             {member.name}
-                           </span>
-                         </div>
-                       <Button
-                         variant="ghost"
-                         size="sm"
-                         className="h-5 w-5 p-0"
-                         onClick={() => setEditingMember(member)}
-                         title="Edit memberships"
-                       >
-                         <Edit2 className="w-2.5 h-2.5" />
-                       </Button>
-                     </div>
-                   </TableCell>
-                   <TableCell className="sticky left-36 text-muted-foreground text-sm py-2 bg-background z-10 border-r">
-                     {member.role?.display_name || member.role?.name}
-                   </TableCell>
-                   <TableCell className="sticky left-64 text-sm py-2 bg-background z-10 border-r">{format(new Date(member.start_date), 'MMM - yy')}</TableCell>
-                  {timelineMonthsArray.map((month) => {
-                    const involvement = getMemberInvolvement(member, month.date, team.id);
-                    return (
-                      <TableCell key={month.label} className="text-center py-1 px-0">
-                         <div 
-                           className="w-3 h-3 mx-auto rounded flex items-center justify-center text-xs font-medium"
-                           style={{
-                             backgroundColor: involvement > 0 
-                               ? 'hsl(var(--primary/20))'
-                               : 'transparent',
-                             color: involvement > 0 
-                               ? 'black'
-                               : 'hsl(var(--muted-foreground))',
-                             border: involvement > 0 
-                               ? '1px solid hsl(var(--primary))'
-                               : '1px solid hsl(var(--border))'
-                           }}
-                         >
-                          {involvement > 0 ? involvement : ''}
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-5 w-5 p-0"
+                        onClick={() => setEditingMember(member)}
+                        title="Edit memberships"
+                      >
+                        <Edit2 className="w-2.5 h-2.5" />
+                      </Button>
+                    </div>
+                    <div className="sticky left-[144px] z-10 bg-background border-r border-b px-4 py-2 text-muted-foreground text-sm flex items-center">
+                      {member.role?.display_name || member.role?.name}
+                    </div>
+                    <div className="sticky left-[256px] z-10 bg-background border-r border-b px-4 py-2 text-sm flex items-center">
+                      {format(new Date(member.start_date), 'MMM - yy')}
+                    </div>
+                    {timelineMonthsArray.map((month) => {
+                      const involvement = getMemberInvolvement(member, month.date, team.id);
+                      return (
+                        <div key={`member-${member.id}-${month.label}`} className="border-r border-b py-1 px-0 flex items-center justify-center">
+                          <div 
+                            className="w-3 h-3 rounded flex items-center justify-center text-xs font-medium"
+                            style={{
+                              backgroundColor: involvement > 0 
+                                ? 'hsl(var(--primary/20))'
+                                : 'transparent',
+                              color: involvement > 0 
+                                ? 'black'
+                                : 'hsl(var(--muted-foreground))',
+                              border: involvement > 0 
+                                ? '1px solid hsl(var(--primary))'
+                                : '1px solid hsl(var(--border))'
+                            }}
+                          >
+                            {involvement > 0 ? involvement : ''}
+                          </div>
                         </div>
-                      </TableCell>
-                     );
-                   })}
-                 </TableRow>
+                      );
+                    })}
+                  </Fragment>
                 );
               })}
             </Fragment>
           ))}
-        </TableBody>
-        </Table>
         </div>
       </div>
     );
