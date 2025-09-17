@@ -67,6 +67,7 @@ interface MemberRow {
   workAssignments: WorkAssignmentWithPosition[];
   allocatedPercentage: number;
   rowHeight: number;
+  membership?: TeamMembership;
 }
 
 // Function to assign flexible allocation positions to projects and work assignments based on temporal scheduling and percentage
@@ -277,9 +278,6 @@ export function RoadmapView({
   });
   
   // Debug: Track editingProject state changes
-  useEffect(() => {
-    console.log('🔧 editingProject state changed:', editingProject?.name || 'null');
-  }, [editingProject]);
   const [isAssignmentDialogOpen, setIsAssignmentDialogOpen] = useState(false);
   const [isWorkAssignmentDialogOpen, setIsWorkAssignmentDialogOpen] = useState(false);
   const [isAddProjectDialogOpen, setIsAddProjectDialogOpen] = useState(false);
@@ -599,19 +597,11 @@ export function RoadmapView({
 
   // Handle double-click on member row to add assignment
   const handleMemberRowDoubleClick = (memberId: string, clickedDate: Date) => {
-    console.log('🎯 Setting preSelectedMember and opening dialog:', {
-      memberId,
-      startDate: clickedDate.toISOString().split('T')[0],
-      currentDialogOpen: isAssignmentDialogOpen
-    });
-    
     setPreSelectedMember({
       id: memberId,
       startDate: clickedDate.toISOString().split('T')[0]
     });
     setIsAssignmentDialogOpen(true);
-    
-    console.log('🎯 Dialog should now be open');
   };
 
   // Handle close of assignment dialog
@@ -644,22 +634,17 @@ export function RoadmapView({
            );
            
            const membersInTeam = teamMembers.filter(member => {
-             // Check if member has active membership in this team during timeline
-             const hasActiveMembership = teamMemberships.some(membership => {
-               if (membership.team_member_id !== member.id) return false;
-               
-               const membershipStart = new Date(membership.start_month);
-               const membershipEnd = membership.end_month ? new Date(membership.end_month) : new Date('9999-12-01');
-               return membershipStart <= timelineBounds.end &&
-                      membershipEnd >= timelineBounds.start;
-             });
-             
-             // Debug logging for Bob Smith
-             if (member.name === 'Bob Smith' && hasActiveMembership) {
-               console.log(`✅ Bob Smith correctly assigned to team: ${team.name} (Product: ${team.product?.name || 'None'})`);
-             }
-             
-             return hasActiveMembership;
+              // Check if member has active membership in this team during timeline
+              const hasActiveMembership = teamMemberships.some(membership => {
+                if (membership.team_member_id !== member.id) return false;
+                
+                const membershipStart = new Date(membership.start_month);
+                const membershipEnd = membership.end_month ? new Date(membership.end_month) : new Date('9999-12-01');
+                return membershipStart <= timelineBounds.end &&
+                       membershipEnd >= timelineBounds.start;
+              });
+              
+              return hasActiveMembership;
            })
            .sort((a, b) => {
              // Primary sort by role (ascending)
@@ -757,7 +742,8 @@ export function RoadmapView({
             projects: projectsWithSlots,
             workAssignments: workAssignmentsWithSlots,
             allocatedPercentage,
-            rowHeight: FIXED_ROW_HEIGHT
+            rowHeight: FIXED_ROW_HEIGHT,
+            membership: teamMemberships.find(m => m.team_member_id === member.id)
           });
         });
 
@@ -1089,7 +1075,7 @@ export function RoadmapView({
                   teamGroups.forEach(({ team, memberRows: teamMemberRows }) => {
                     memberTopOffset += TEAM_HEADER_HEIGHT; // Skip team header
                     
-                    teamMemberRows.forEach(({ member, projects, workAssignments, rowHeight }) => {
+                    teamMemberRows.forEach(({ member, projects, workAssignments, rowHeight, membership }) => {
                       const currentMemberTop = memberTopOffset;
                       memberTopOffset += rowHeight;
                       
@@ -1107,6 +1093,7 @@ export function RoadmapView({
                           timelineBounds={timelineBounds}
                           totalDays={totalDays}
                           onDoubleClick={handleMemberRowDoubleClick}
+                          membership={membership}
                         >
                           {/* Week grid lines for better alignment during drag */}
                           {activeDrag && dragOverData.memberId === member.id && (
@@ -1131,7 +1118,6 @@ export function RoadmapView({
                                 team={team}
                                 memberId={member.id}
                                 onEdit={() => {
-                                  console.log('🔧 Setting editing project:', project.name, project.id);
                                   setEditingProject(project);
                                 }}
                                 onClick={() => setFrontProject(project.id)}
@@ -1199,7 +1185,6 @@ export function RoadmapView({
       assignments={assignments}
       isOpen={!!editingProject}
       onClose={() => {
-        console.log('🔧 Closing EditProjectDialog');
         setEditingProject(null);
       }}
       onUpdateProject={onUpdateProject}

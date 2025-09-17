@@ -129,19 +129,10 @@ export function AddProjectAssignmentDialog({
 
   // Handle pre-selected values when dialog opens
   useEffect(() => {
-    console.log('💬 AddProjectAssignmentDialog state change:', {
-      open,
-      preSelectedMemberId,
-      preSelectedStartDate,
-      dialogShouldBeVisible: open
-    });
-    
     if (open && preSelectedMemberId) {
-      console.log('💬 Setting form memberId to:', preSelectedMemberId);
       form.setValue('memberId', preSelectedMemberId);
     }
     if (open && preSelectedStartDate) {
-      console.log('💬 Setting form startDate to:', preSelectedStartDate);
       form.setValue('startDate', preSelectedStartDate);
     }
   }, [open, preSelectedMemberId, preSelectedStartDate, form]);
@@ -284,7 +275,6 @@ export function AddProjectAssignmentDialog({
 
     // Filter by search term - enhanced search
     if (!projectSearchTerm.trim()) {
-      console.log('✅ Returning sorted projects without search filter');
       return sortedProjects;
     }
     
@@ -295,12 +285,6 @@ export function AddProjectAssignmentDialog({
        project.team?.name?.toLowerCase().includes(searchLower) ||
        project.description?.toLowerCase().includes(searchLower))
     );
-    
-    console.log('🔍 Search results:', {
-      searchTerm: projectSearchTerm,
-      matchedProjects: searchFiltered.length,
-      matchedNames: searchFiltered.map(p => p.name)
-    });
     
     return searchFiltered;
   }, [projects, selectedMemberId, filteredTeamMembers, teams, projectSearchTerm]);
@@ -337,15 +321,12 @@ export function AddProjectAssignmentDialog({
           status_visibility: 'published' as const, // Default to published, let parent handler override
         };
         
-        console.log('🔧 Creating new project with data:', newProject);
         const createdProject = await onAddProject(newProject);
-        console.log('🔧 Created project result:', createdProject);
         projectId = createdProject.id;
         
         // Auto-assign the team's product to the project if team has a product
         const selectedTeamData = teams.find(t => t.id === data.newProjectTeamId);
         if (selectedTeamData?.product_id) {
-          console.log('🔧 Auto-assigning team product to project:', selectedTeamData.product_id);
           await onUpdateProjectProducts?.(projectId, [selectedTeamData.product_id]);
         }
       } else {
