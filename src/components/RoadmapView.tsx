@@ -705,23 +705,14 @@ export function RoadmapView({
     const ALLOCATION_SLOTS = 4;
     
     // Group teams by product, respecting filters
-    console.log('Filter Debug:', { selectedProduct, selectedTeam, productsCount: products.length, teamsCount: teams.length });
-    
     const filteredProducts = selectedProduct && selectedProduct !== 'all' 
-      ? products.filter(product => product.id === selectedProduct)
+      ? products.filter(product => product.name === selectedProduct)
       : products;
-    
-    console.log('Filtered Products:', { 
-      originalCount: products.length, 
-      filteredCount: filteredProducts.length,
-      selectedProduct,
-      productIds: products.map(p => ({ id: p.id, name: p.name }))
-    });
     
     const productsWithTeams = filteredProducts.map(product => {
       const productTeams = teams.filter(team => team.product_id === product.id);
       const filteredTeams = selectedTeam && selectedTeam !== 'all'
-        ? productTeams.filter(team => team.id === selectedTeam)
+        ? productTeams.filter(team => team.name === selectedTeam)
         : productTeams;
       
       return {
@@ -729,11 +720,6 @@ export function RoadmapView({
         teams: filteredTeams
       };
     }).filter(group => group.teams.length > 0);
-    
-    console.log('Products with Teams:', { 
-      groupsCount: productsWithTeams.length,
-      groups: productsWithTeams.map(g => ({ product: g.product.name, teamsCount: g.teams.length }))
-    });
 
     // Calculate rows for each group
     const calculateTeamRows = (teamsToProcess: Team[]) => {
