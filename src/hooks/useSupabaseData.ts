@@ -380,16 +380,29 @@ export function useSupabaseData() {
   };
 
   // Team CRUD operations
-  const addTeam = async (newTeam: Omit<Team, 'id' | 'created_at' | 'updated_at'> & { start_month?: string }) => {
+  const addTeam = async (newTeam: { 
+    name: string; 
+    description?: string; 
+    product_id: string; 
+    ideal_size?: number; 
+    start_month?: string;
+    color?: string;
+  }) => {
+    console.log('Adding team with data:', newTeam);
+    
     const { data, error } = await supabase
       .from('teams')
       .insert({
-        ...newTeam,
-        product_id: newTeam.product_id || null
+        name: newTeam.name,
+        description: newTeam.description,
+        product_id: newTeam.product_id,
+        ideal_size: newTeam.ideal_size,
+        color: newTeam.color || '#3B82F6'
       })
       .select('*, product:products(*)')
       .single();
 
+    console.log('Team insert error:', error);
     if (error) throw error;
     
     // If ideal_size is provided, create a team ideal size record
