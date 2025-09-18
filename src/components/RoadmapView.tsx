@@ -704,11 +704,22 @@ export function RoadmapView({
     const FIXED_ROW_HEIGHT = 100; // Increased to accommodate all 4 allocation slots (4 * 24px + padding)
     const ALLOCATION_SLOTS = 4;
     
-    // Group teams by product
-    const productsWithTeams = products.map(product => ({
-      product,
-      teams: teams.filter(team => team.product_id === product.id)
-    })).filter(group => group.teams.length > 0);
+    // Group teams by product, respecting filters
+    const filteredProducts = selectedProduct && selectedProduct !== 'all' 
+      ? products.filter(product => product.id === selectedProduct)
+      : products;
+    
+    const productsWithTeams = filteredProducts.map(product => {
+      const productTeams = teams.filter(team => team.product_id === product.id);
+      const filteredTeams = selectedTeam && selectedTeam !== 'all'
+        ? productTeams.filter(team => team.id === selectedTeam)
+        : productTeams;
+      
+      return {
+        product,
+        teams: filteredTeams
+      };
+    }).filter(group => group.teams.length > 0);
 
     // Calculate rows for each group
     const calculateTeamRows = (teamsToProcess: Team[]) => {
