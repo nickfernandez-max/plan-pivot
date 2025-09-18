@@ -421,7 +421,6 @@ export type Database = {
           archived_at: string | null
           color: string | null
           created_at: string
-          description: string | null
           id: string
           ideal_size: number | null
           name: string
@@ -433,7 +432,6 @@ export type Database = {
           archived_at?: string | null
           color?: string | null
           created_at?: string
-          description?: string | null
           id?: string
           ideal_size?: number | null
           name: string
@@ -445,7 +443,6 @@ export type Database = {
           archived_at?: string | null
           color?: string | null
           created_at?: string
-          description?: string | null
           id?: string
           ideal_size?: number | null
           name?: string

@@ -3,10 +3,10 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { MonthYearPicker } from '@/components/ui/month-year-picker';
 import { Team, Product, TeamIdealSize } from '@/types/roadmap';
 import { Plus, Calendar, Trash2 } from 'lucide-react';
 import { format } from 'date-fns';
@@ -39,7 +39,6 @@ export function EditTeamDialog({
   onDeleteTeamIdealSize
 }: EditTeamDialogProps) {
   const [name, setName] = useState('');
-  const [description, setDescription] = useState('');
   const [productId, setProductId] = useState('none');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isArchiving, setIsArchiving] = useState(false);
@@ -47,25 +46,28 @@ export function EditTeamDialog({
   // New ideal size form state
   const [showNewIdealSizeForm, setShowNewIdealSizeForm] = useState(false);
   const [newIdealSize, setNewIdealSize] = useState('1');
-  const [newStartMonth, setNewStartMonth] = useState('');
-  const [newEndMonth, setNewEndMonth] = useState('');
+  const [newStartDate, setNewStartDate] = useState<Date | undefined>(new Date());
+  const [newEndDate, setNewEndDate] = useState<Date | undefined>();
 
   useEffect(() => {
     if (team) {
       setName(team.name || '');
-      setDescription(team.description || '');
       setProductId(team.product_id || 'none');
       
       // Reset form when team changes
       setShowNewIdealSizeForm(false);
       setNewIdealSize('1');
-      setNewStartMonth('');
-      setNewEndMonth('');
+      setNewStartDate(new Date());
+      setNewEndDate(undefined);
     }
   }, [team, teamIdealSizes]);
 
+  const currentDate = new Date();
+  const currentMonth = currentDate.toISOString().slice(0, 7) + '-01';
+  
   const currentTeamIdealSizes = teamIdealSizes
     .filter(tis => team && tis.team_id === team.id)
+    .filter(tis => tis.end_month === null || tis.end_month >= currentMonth || tis.start_month >= currentMonth)
     .sort((a, b) => a.start_month.localeCompare(b.start_month));
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -77,7 +79,6 @@ export function EditTeamDialog({
       // Update team basic info (without ideal_size)
       await onUpdateTeam(team.id, {
         name: name.trim(),
-        description: description.trim() || undefined,
         product_id: productId === 'none' ? undefined : productId,
       });
 
@@ -90,21 +91,24 @@ export function EditTeamDialog({
   };
 
   const handleAddIdealSize = async () => {
-    if (!team || !newIdealSize || !newStartMonth) return;
+    if (!team || !newIdealSize || !newStartDate) return;
 
     try {
+      const startMonth = newStartDate.toISOString().slice(0, 7) + '-01';
+      const endMonth = newEndDate ? newEndDate.toISOString().slice(0, 7) + '-01' : undefined;
+      
       await onAddTeamIdealSize({
         team_id: team.id,
         ideal_size: parseInt(newIdealSize) || 1,
-        start_month: newStartMonth,
-        end_month: newEndMonth || undefined
+        start_month: startMonth,
+        end_month: endMonth
       });
       
       // Reset form
       setShowNewIdealSizeForm(false);
       setNewIdealSize('1');
-      setNewStartMonth('');
-      setNewEndMonth('');
+      setNewStartDate(new Date());
+      setNewEndDate(undefined);
     } catch (error) {
       console.error('Error adding ideal size:', error);
     }
@@ -176,16 +180,6 @@ export function EditTeamDialog({
               />
             </div>
             
-            <div className="space-y-2">
-              <Label htmlFor="description">Description</Label>
-              <Textarea
-                id="description"
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                placeholder="Enter team description (optional)"
-                rows={3}
-              />
-            </div>
             
             <div className="space-y-2">
               <Label htmlFor="product">Product</Label>
@@ -287,21 +281,18 @@ export function EditTeamDialog({
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="newStartMonth">Start Month</Label>
-                      <Input
-                        id="newStartMonth"
-                        type="month"
-                        value={newStartMonth ? newStartMonth.substring(0, 7) : ''}
-                        onChange={(e) => setNewStartMonth(e.target.value + '-01')}
-                        required
+                      <MonthYearPicker
+                        value={newStartDate}
+                        onChange={setNewStartDate}
+                        placeholder="Select start month"
                       />
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="newEndMonth">End Month (Optional)</Label>
-                      <Input
-                        id="newEndMonth"
-                        type="month"
-                        value={newEndMonth ? newEndMonth.substring(0, 7) : ''}
-                        onChange={(e) => setNewEndMonth(e.target.value ? e.target.value + '-01' : '')}
+                      <MonthYearPicker
+                        value={newEndDate}
+                        onChange={setNewEndDate}
+                        placeholder="Select end month"
                       />
                     </div>
                   </div>
@@ -313,8 +304,8 @@ export function EditTeamDialog({
                       onClick={() => {
                         setShowNewIdealSizeForm(false);
                         setNewIdealSize('1');
-                        setNewStartMonth('');
-                        setNewEndMonth('');
+                        setNewStartDate(new Date());
+                        setNewEndDate(undefined);
                       }}
                     >
                       Cancel
@@ -323,7 +314,7 @@ export function EditTeamDialog({
                       type="button" 
                       size="sm"
                       onClick={handleAddIdealSize}
-                      disabled={!newIdealSize || !newStartMonth}
+                      disabled={!newIdealSize || !newStartDate}
                     >
                       Add Period
                     </Button>
