@@ -97,6 +97,13 @@ export function EditTeamDialog({
       const startMonth = newStartDate.toISOString().slice(0, 7) + '-01';
       const endMonth = newEndDate ? newEndDate.toISOString().slice(0, 7) + '-01' : undefined;
       
+      // Check if this will close an existing open-ended period
+      const existingOpenPeriods = teamIdealSizes.filter(size => 
+        size.team_id === team.id && 
+        size.end_month === null &&
+        new Date(size.start_month) <= new Date(startMonth)
+      );
+      
       await onAddTeamIdealSize({
         team_id: team.id,
         ideal_size: parseInt(newIdealSize) || 1,
@@ -109,6 +116,11 @@ export function EditTeamDialog({
       setNewIdealSize('1');
       setNewStartDate(new Date());
       setNewEndDate(undefined);
+      
+      // Show success message if an existing period was closed
+      if (existingOpenPeriods.length > 0) {
+        alert('Period added successfully. Existing open-ended period was automatically closed.');
+      }
     } catch (error: any) {
       console.error('Error adding ideal size:', error);
       // Show user-friendly error message

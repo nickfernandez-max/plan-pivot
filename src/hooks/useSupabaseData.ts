@@ -667,14 +667,57 @@ export function useSupabaseData() {
     }
   };
 
+  // Helper function to calculate the previous month
+  const getPreviousMonth = (date: string): string => {
+    const d = new Date(date + '-01'); // Ensure we're working with first day of month
+    d.setMonth(d.getMonth() - 1);
+    return d.toISOString().slice(0, 7) + '-01'; // Return YYYY-MM-01 format
+  };
+
   // Team ideal size CRUD operations
   const addTeamIdealSize = async (idealSize: Omit<TeamIdealSize, 'id' | 'created_at' | 'updated_at'>) => {
-    const { error } = await supabase
-      .from('team_ideal_sizes')
-      .insert(idealSize);
+    try {
+      // First, check for existing open-ended periods for the same team
+      const { data: existingPeriods, error: fetchError } = await supabase
+        .from('team_ideal_sizes')
+        .select('id, start_month, end_month')
+        .eq('team_id', idealSize.team_id)
+        .is('end_month', null);
 
-    if (error) throw error;
-    await fetchData();
+      if (fetchError) throw fetchError;
+
+      // Check if the new period would overlap with any open-ended periods
+      const overlappingPeriod = existingPeriods?.find(period => {
+        const existingStart = new Date(period.start_month);
+        const newStart = new Date(idealSize.start_month);
+        // If existing period has no end date and starts before or at the same time as new period
+        return existingStart <= newStart;
+      });
+
+      if (overlappingPeriod) {
+        // Close the existing open-ended period by setting its end_month to the month before the new period
+        const previousMonth = getPreviousMonth(idealSize.start_month);
+        
+        // Use a transaction to ensure both operations succeed
+        const { error: updateError } = await supabase
+          .from('team_ideal_sizes')
+          .update({ end_month: previousMonth })
+          .eq('id', overlappingPeriod.id);
+
+        if (updateError) throw updateError;
+      }
+
+      // Now insert the new period
+      const { error } = await supabase
+        .from('team_ideal_sizes')
+        .insert(idealSize);
+
+      if (error) throw error;
+      await fetchData();
+    } catch (err) {
+      console.error('Error adding team ideal size:', err);
+      throw err;
+    }
   };
 
   const updateTeamIdealSize = async (id: string, updates: Partial<TeamIdealSize>) => {
