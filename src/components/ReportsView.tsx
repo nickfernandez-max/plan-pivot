@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect, useRef } from 'react';
-import { format, parseISO } from 'date-fns';
+import { format, parseISO, differenceInDays, max, min, subDays, subMonths, startOfYear, endOfDay, startOfDay } from 'date-fns';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
@@ -7,9 +7,12 @@ import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Label } from '@/components/ui/label';
-import { Search, Download } from 'lucide-react';
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Search, Download, Calendar as CalendarIcon, X } from 'lucide-react';
 import { Project, TeamMember, ProjectAssignment } from '@/types/roadmap';
 import { useUserRole } from '@/hooks/useUserRole';
+import { cn } from '@/lib/utils';
 
 interface ReportsViewProps {
   projects: Project[];
@@ -47,7 +50,8 @@ export function ReportsView({ projects, teamMembers, assignments }: ReportsViewP
   const [statusFilterValue, setStatusFilterValue] = useState<string>('all');
   const [assigneeFilterValue, setAssigneeFilterValue] = useState<string>('all');
   const [rdFilterValue, setRdFilterValue] = useState<string>('all');
-  
+  const [fromDate, setFromDate] = useState<Date | undefined>();
+  const [toDate, setToDate] = useState<Date | undefined>();
 
   const projectSearchRef = useRef<HTMLDivElement>(null);
 
@@ -65,6 +69,34 @@ export function ReportsView({ projects, teamMembers, assignments }: ReportsViewP
 
   const STANDARD_WORK_HOURS_PER_WEEK = 40;
 
+  // Helper function to calculate hours for a date range intersection
+  const calculateHoursForDateRange = (assignmentStart: string, assignmentEnd: string, percentAllocation: number, filterFromDate?: Date, filterToDate?: Date) => {
+    const assignmentStartDate = parseISO(assignmentStart);
+    const assignmentEndDate = parseISO(assignmentEnd);
+    const weeklyHours = (percentAllocation / 100) * STANDARD_WORK_HOURS_PER_WEEK;
+    
+    // If no date range filter, calculate full assignment duration
+    if (!filterFromDate || !filterToDate) {
+      const durationInDays = Math.ceil((assignmentEndDate.getTime() - assignmentStartDate.getTime()) / (1000 * 60 * 60 * 24));
+      const durationInWeeks = Math.ceil(durationInDays / 7);
+      return weeklyHours * durationInWeeks;
+    }
+    
+    // Calculate intersection between assignment period and filter date range
+    const intersectionStart = max([assignmentStartDate, startOfDay(filterFromDate)]);
+    const intersectionEnd = min([assignmentEndDate, endOfDay(filterToDate)]);
+    
+    // If no intersection, return 0 hours
+    if (intersectionStart > intersectionEnd) {
+      return 0;
+    }
+    
+    // Calculate hours for the intersection period
+    const intersectionDays = differenceInDays(intersectionEnd, intersectionStart) + 1;
+    const intersectionWeeks = intersectionDays / 7;
+    return weeklyHours * intersectionWeeks;
+  };
+
   // Process assignment data
   const reportData = useMemo(() => {
     const reports: AssignmentReport[] = [];
@@ -75,14 +107,8 @@ export function ReportsView({ projects, teamMembers, assignments }: ReportsViewP
       
       if (!project || !teamMember || !assignment.start_date || !assignment.end_date) return;
 
-      const startDate = parseISO(assignment.start_date);
-      const endDate = parseISO(assignment.end_date);
       const weeklyHours = (assignment.percent_allocation / 100) * STANDARD_WORK_HOURS_PER_WEEK;
-      
-      // Calculate total hours based on duration
-      const durationInDays = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
-      const durationInWeeks = Math.ceil(durationInDays / 7);
-      const totalHours = weeklyHours * durationInWeeks;
+      const totalHours = calculateHoursForDateRange(assignment.start_date, assignment.end_date, assignment.percent_allocation, fromDate, toDate);
       const hourlyRate = 0; // Removed financial tracking
       const totalCost = totalHours * hourlyRate;
 
@@ -107,7 +133,7 @@ export function ReportsView({ projects, teamMembers, assignments }: ReportsViewP
     });
 
     return reports;
-  }, [projects, teamMembers, assignments]);
+  }, [projects, teamMembers, assignments, fromDate, toDate]);
 
   // Filter data based on search and filters
   const filteredData = useMemo(() => {
@@ -178,6 +204,33 @@ export function ReportsView({ projects, teamMembers, assignments }: ReportsViewP
     setShowProjectDropdown(false);
   };
 
+  // Date range preset functions
+  const setDateRangePreset = (preset: string) => {
+    const today = new Date();
+    switch (preset) {
+      case 'last30':
+        setFromDate(subDays(today, 30));
+        setToDate(today);
+        break;
+      case 'last3months':
+        setFromDate(subMonths(today, 3));
+        setToDate(today);
+        break;
+      case 'last6months':
+        setFromDate(subMonths(today, 6));
+        setToDate(today);
+        break;
+      case 'thisyear':
+        setFromDate(startOfYear(today));
+        setToDate(today);
+        break;
+      case 'clear':
+        setFromDate(undefined);
+        setToDate(undefined);
+        break;
+    }
+  };
+
   // Get unique values for filters
   const availableProducts = useMemo(() => {
     const productMap = new Map<string, {id: string, name: string}>();
@@ -217,11 +270,19 @@ export function ReportsView({ projects, teamMembers, assignments }: ReportsViewP
   const nonRdCost = filteredData.filter(item => !item.isRnD).reduce((sum, item) => sum + item.totalCost, 0);
 
   const exportToCSV = () => {
+    const dateRangeStr = fromDate && toDate 
+      ? `${format(fromDate, 'yyyy-MM-dd')}-to-${format(toDate, 'yyyy-MM-dd')}`
+      : format(new Date(), 'yyyy-MM-dd');
+    
     const headers = [
       'Project', 'Team Member', 'Team', 'Role', 'Start Date', 'End Date', 
       'Allocation %', 'Weekly Hours', 'Total Hours', 'Status', 'R&D'
     ];
     
+    const dateRangeInfo = fromDate && toDate 
+      ? [`Date Range: ${format(fromDate, 'PPP')} - ${format(toDate, 'PPP')}`]
+      : ['Date Range: All dates'];
+      
     const rows = filteredData.map(item => {
       const baseRow = [
         item.projectName,
@@ -229,7 +290,6 @@ export function ReportsView({ projects, teamMembers, assignments }: ReportsViewP
         item.teamName,
         item.roleName
       ];
-
 
       baseRow.push(
         item.startDate,
@@ -239,7 +299,6 @@ export function ReportsView({ projects, teamMembers, assignments }: ReportsViewP
         item.totalHours.toFixed(1)
       );
 
-
       baseRow.push(
         item.projectStatus,
         item.isRnD ? 'Yes' : 'No'
@@ -248,15 +307,15 @@ export function ReportsView({ projects, teamMembers, assignments }: ReportsViewP
       return baseRow;
     });
 
-    const csvContent = [headers, ...rows]
-      .map(row => row.map(cell => `"${cell}"`).join(','))
+    const csvContent = [dateRangeInfo, [], headers, ...rows]
+      .map(row => Array.isArray(row) ? row.map(cell => `"${cell}"`).join(',') : '')
       .join('\n');
 
     const blob = new Blob([csvContent], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `project-assignments-${format(new Date(), 'yyyy-MM-dd')}.csv`;
+    a.download = `project-assignments-${dateRangeStr}.csv`;
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -285,6 +344,131 @@ export function ReportsView({ projects, teamMembers, assignments }: ReportsViewP
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
+            {/* Date Range Section */}
+            <div className="p-4 bg-muted/50 rounded-lg">
+              <div className="flex items-center justify-between mb-3">
+                <Label className="text-sm font-medium">Date Range Filter</Label>
+                {(fromDate || toDate) && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setDateRangePreset('clear')}
+                    className="h-6 px-2 text-xs"
+                  >
+                    <X className="w-3 h-3 mr-1" />
+                    Clear
+                  </Button>
+                )}
+              </div>
+              
+              <div className="flex flex-wrap gap-3 items-center">
+                {/* From Date Picker */}
+                <div className="flex items-center gap-2">
+                  <Label className="text-xs text-muted-foreground">From:</Label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className={cn(
+                          "w-[140px] justify-start text-left font-normal text-xs",
+                          !fromDate && "text-muted-foreground"
+                        )}
+                      >
+                        <CalendarIcon className="mr-2 h-3 w-3" />
+                        {fromDate ? format(fromDate, "MMM d, yyyy") : "Select date"}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={fromDate}
+                        onSelect={setFromDate}
+                        initialFocus
+                        className="pointer-events-auto"
+                      />
+                    </PopoverContent>
+                  </Popover>
+                </div>
+
+                {/* To Date Picker */}
+                <div className="flex items-center gap-2">
+                  <Label className="text-xs text-muted-foreground">To:</Label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className={cn(
+                          "w-[140px] justify-start text-left font-normal text-xs",
+                          !toDate && "text-muted-foreground"
+                        )}
+                      >
+                        <CalendarIcon className="mr-2 h-3 w-3" />
+                        {toDate ? format(toDate, "MMM d, yyyy") : "Select date"}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={toDate}
+                        onSelect={setToDate}
+                        initialFocus
+                        className="pointer-events-auto"
+                      />
+                    </PopoverContent>
+                  </Popover>
+                </div>
+
+                {/* Preset Buttons */}
+                <div className="flex gap-1">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setDateRangePreset('last30')}
+                    className="h-7 px-2 text-xs"
+                  >
+                    Last 30 Days
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setDateRangePreset('last3months')}
+                    className="h-7 px-2 text-xs"
+                  >
+                    Last 3 Months
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setDateRangePreset('last6months')}
+                    className="h-7 px-2 text-xs"
+                  >
+                    Last 6 Months
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setDateRangePreset('thisyear')}
+                    className="h-7 px-2 text-xs"
+                  >
+                    This Year
+                  </Button>
+                </div>
+              </div>
+
+              {/* Date Range Display */}
+              {(fromDate || toDate) && (
+                <div className="mt-2 text-xs text-muted-foreground">
+                  {fromDate && toDate ? (
+                    <>Showing hours for assignments between {format(fromDate, 'PPP')} and {format(toDate, 'PPP')}</>
+                  ) : fromDate ? (
+                    <>Showing hours for assignments from {format(fromDate, 'PPP')} onwards</>
+                  ) : toDate ? (
+                    <>Showing hours for assignments up to {format(toDate, 'PPP')}</>
+                  ) : null}
+                </div>
+              )}
+            </div>
+
             {/* Filter Row */}
             <div className="flex flex-wrap gap-4 items-end">
               <div className="min-w-[140px] relative" ref={projectSearchRef}>
