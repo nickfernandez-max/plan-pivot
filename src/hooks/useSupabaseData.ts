@@ -391,7 +391,26 @@ export function useSupabaseData() {
       .single();
 
     if (error) throw error;
+    
+    // If ideal_size is provided, create a team ideal size record for the current month
+    if (newTeam.ideal_size) {
+      const currentMonth = new Date().toISOString().slice(0, 7) + '-01'; // YYYY-MM-01 format
+      const { error: idealSizeError } = await supabase
+        .from('team_ideal_sizes')
+        .insert({
+          team_id: data.id,
+          ideal_size: newTeam.ideal_size,
+          start_month: currentMonth
+        });
+      
+      if (idealSizeError) {
+        console.error('Error creating team ideal size:', idealSizeError);
+        // Don't throw here to avoid rolling back team creation
+      }
+    }
+    
     setTeams(prev => [...prev, data]);
+    await fetchData(); // Refresh to get the ideal size data
     return data;
   };
 
