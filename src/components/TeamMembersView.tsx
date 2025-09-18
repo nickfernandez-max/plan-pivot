@@ -44,6 +44,8 @@ interface TeamMembersViewProps {
   onUpdateMembership: (id: string, updates: Partial<TeamMembership>) => Promise<any>;
   onDeleteMembership: (id: string) => Promise<any> | void;
   onAddRole: (role: Omit<Role, 'id' | 'created_at' | 'updated_at'>) => Promise<Role>;
+  onAddTeamIdealSize: (idealSize: Omit<TeamIdealSize, 'id' | 'created_at' | 'updated_at'>) => Promise<void>;
+  onUpdateTeamIdealSize: (id: string, updates: Partial<TeamIdealSize>) => Promise<void>;
   currentUserId?: string;
 }
 
@@ -83,6 +85,8 @@ export function TeamMembersView({
   onUpdateMembership,
   onDeleteMembership,
   onAddRole,
+  onAddTeamIdealSize,
+  onUpdateTeamIdealSize,
   currentUserId,
 }: TeamMembersViewProps) {
   const [editingMember, setEditingMember] = useState<TeamMember | null>(null);
@@ -233,37 +237,18 @@ export function TeamMembersView({
         }
       }
       
-      const filteredMembers = teamMembers.filter(member => {
+      return teamMembers.filter(member => {
         // Check if member has any membership for this team that overlaps with timeline
-        const hasValidMembership = (memberships || []).some(membership => {
+        return (memberships || []).some(membership => {
           const membershipStart = membership.start_month;
           const membershipEnd = membership.end_month || '9999-12-01'; // Use far future if no end date
           
-          const isValidMembership = membership.team_member_id === member.id &&
+          return membership.team_member_id === member.id &&
             membership.team_id === teamId &&
             membershipStart <= timelineEnd &&
             membershipEnd >= timelineStart;
-            
-          // Debug logging for Walker M.
-          if (member.name === 'Walker M.') {
-            console.log('Walker M. membership check:', {
-              membershipStart,
-              membershipEnd,
-              timelineStart,
-              timelineEnd,
-              teamId,
-              membershipTeamId: membership.team_id,
-              isValidMembership
-            });
-          }
-          
-          return isValidMembership;
         });
-        
-        return hasValidMembership;
       });
-      
-      return filteredMembers;
     };
 
     const productsWithTeams = products
@@ -648,6 +633,10 @@ export function TeamMembersView({
           products={products}
           onUpdateTeam={onUpdateTeam}
           onArchiveTeam={onArchiveTeam}
+          onUnarchiveTeam={onArchiveTeam}  // Using same function for unarchive
+          teamIdealSizes={teamIdealSizes}
+          onAddTeamIdealSize={onAddTeamIdealSize}
+          onUpdateTeamIdealSize={onUpdateTeamIdealSize}
         />
       )}
 

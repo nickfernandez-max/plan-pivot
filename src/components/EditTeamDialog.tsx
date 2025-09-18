@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Team, Product } from '@/types/roadmap';
+import { Team, Product, TeamIdealSize } from '@/types/roadmap';
 
 interface EditTeamDialogProps {
   team: Team | null;
@@ -15,9 +15,23 @@ interface EditTeamDialogProps {
   onArchiveTeam?: (id: string) => Promise<void>;
   onUnarchiveTeam?: (id: string) => Promise<void>;
   products: Product[];
+  teamIdealSizes: TeamIdealSize[];
+  onAddTeamIdealSize: (idealSize: Omit<TeamIdealSize, 'id' | 'created_at' | 'updated_at'>) => Promise<void>;
+  onUpdateTeamIdealSize: (id: string, updates: Partial<TeamIdealSize>) => Promise<void>;
 }
 
-export function EditTeamDialog({ team, open, onOpenChange, onUpdateTeam, onArchiveTeam, onUnarchiveTeam, products }: EditTeamDialogProps) {
+export function EditTeamDialog({ 
+  team, 
+  open, 
+  onOpenChange, 
+  onUpdateTeam, 
+  onArchiveTeam, 
+  onUnarchiveTeam, 
+  products,
+  teamIdealSizes,
+  onAddTeamIdealSize,
+  onUpdateTeamIdealSize
+}: EditTeamDialogProps) {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [productId, setProductId] = useState('none');
@@ -30,9 +44,14 @@ export function EditTeamDialog({ team, open, onOpenChange, onUpdateTeam, onArchi
       setName(team.name || '');
       setDescription(team.description || '');
       setProductId(team.product_id || 'none');
-      setIdealSize(String(team.ideal_size || 1));
+      
+      // Get current ideal size from team_ideal_sizes table
+      const currentIdealSize = teamIdealSizes.find(tis => 
+        tis.team_id === team.id && !tis.end_month
+      );
+      setIdealSize(String(currentIdealSize?.ideal_size || 1));
     }
-  }, [team]);
+  }, [team, teamIdealSizes]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -40,12 +59,37 @@ export function EditTeamDialog({ team, open, onOpenChange, onUpdateTeam, onArchi
 
     setIsSubmitting(true);
     try {
+      // Update team basic info (without ideal_size)
       await onUpdateTeam(team.id, {
         name: name.trim(),
         description: description.trim() || undefined,
         product_id: productId === 'none' ? undefined : productId,
-        ideal_size: parseInt(idealSize) || 1,
       });
+
+      // Handle ideal size separately using team_ideal_sizes table
+      const currentIdealSize = teamIdealSizes.find(tis => 
+        tis.team_id === team.id && !tis.end_month
+      );
+      
+      const newIdealSize = parseInt(idealSize) || 1;
+      
+      if (currentIdealSize) {
+        // Update existing ideal size record
+        if (currentIdealSize.ideal_size !== newIdealSize) {
+          await onUpdateTeamIdealSize(currentIdealSize.id, {
+            ideal_size: newIdealSize
+          });
+        }
+      } else {
+        // Create new ideal size record starting from current month
+        const currentMonth = new Date().toISOString().split('T')[0].substring(0, 7) + '-01';
+        await onAddTeamIdealSize({
+          team_id: team.id,
+          ideal_size: newIdealSize,
+          start_month: currentMonth
+        });
+      }
+
       onOpenChange(false);
     } catch (error) {
       console.error('Error updating team:', error);

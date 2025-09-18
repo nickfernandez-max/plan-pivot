@@ -89,6 +89,8 @@ export default function RoadmapApp() {
     addWorkAssignment,
     updateWorkAssignment,
     deleteWorkAssignment,
+    addTeamIdealSize,
+    updateTeamIdealSize,
     refetch,
   } = useSupabaseData();
 
@@ -621,6 +623,8 @@ export default function RoadmapApp() {
               onUpdateMembership={updateTeamMembership}
               onDeleteMembership={deleteTeamMembership}
               onAddRole={addRole}
+              onAddTeamIdealSize={addTeamIdealSize}
+              onUpdateTeamIdealSize={updateTeamIdealSize}
             />
           </TabsContent>
 
