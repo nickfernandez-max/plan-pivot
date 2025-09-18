@@ -233,18 +233,37 @@ export function TeamMembersView({
         }
       }
       
-      return teamMembers.filter(member => {
+      const filteredMembers = teamMembers.filter(member => {
         // Check if member has any membership for this team that overlaps with timeline
-        return (memberships || []).some(membership => {
+        const hasValidMembership = (memberships || []).some(membership => {
           const membershipStart = membership.start_month;
           const membershipEnd = membership.end_month || '9999-12-01'; // Use far future if no end date
           
-          return membership.team_member_id === member.id &&
+          const isValidMembership = membership.team_member_id === member.id &&
             membership.team_id === teamId &&
             membershipStart <= timelineEnd &&
             membershipEnd >= timelineStart;
+            
+          // Debug logging for Walker M.
+          if (member.name === 'Walker M.') {
+            console.log('Walker M. membership check:', {
+              membershipStart,
+              membershipEnd,
+              timelineStart,
+              timelineEnd,
+              teamId,
+              membershipTeamId: membership.team_id,
+              isValidMembership
+            });
+          }
+          
+          return isValidMembership;
         });
+        
+        return hasValidMembership;
       });
+      
+      return filteredMembers;
     };
 
     const productsWithTeams = products
