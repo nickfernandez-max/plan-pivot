@@ -5,7 +5,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { User, Edit2, Settings, Users, ChevronLeft, ChevronRight, Calendar } from 'lucide-react';
+import { User, Edit2, Settings, Users, ChevronLeft, ChevronRight, Calendar, Plus } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -15,6 +15,7 @@ import { TeamMember, Team, Product, TeamMembership, Role, TeamIdealSize } from '
 import { EditTeamMemberDialog } from '@/components/EditTeamMemberDialog';
 import { EditTeamDialog } from '@/components/EditTeamDialog';
 import { EditProductDialog } from '@/components/EditProductDialog';
+import { AddTeamMemberToTeamDialog } from '@/components/AddTeamMemberToTeamDialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -96,6 +97,7 @@ export function TeamMembersView({
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [activeTab, setActiveTab] = useState<string>('');
   const [showArchived, setShowArchived] = useState<boolean>(false);
+  const [quickAddTeam, setQuickAddTeam] = useState<Team | null>(null);
   
   // Sorting state from user preferences
   const [primarySort, setPrimarySort] = useState<SortField>('role');
@@ -436,15 +438,26 @@ export function TeamMembersView({
                     </Badge>
                   )}
                 </div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-6 w-6 p-0 hover:bg-blue-200 dark:hover:bg-blue-800"
-                  onClick={() => setEditingTeam(team)}
-                  title="Edit team"
-                >
-                  <Settings className="w-3 h-3 text-blue-600 dark:text-blue-400" />
-                </Button>
+                <div className="flex items-center gap-1">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-6 w-6 p-0 hover:bg-blue-200 dark:hover:bg-blue-800"
+                    onClick={() => setQuickAddTeam(team)}
+                    title={`Add member to ${team.name}`}
+                  >
+                    <Plus className="w-3 h-3 text-blue-600 dark:text-blue-400" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-6 w-6 p-0 hover:bg-blue-200 dark:hover:bg-blue-800"
+                    onClick={() => setEditingTeam(team)}
+                    title="Edit team"
+                  >
+                    <Settings className="w-3 h-3 text-blue-600 dark:text-blue-400" />
+                  </Button>
+                </div>
               </div>
               <div className="sticky left-[200px] z-20 bg-gradient-to-r from-blue-100 to-blue-50 dark:from-blue-950 dark:to-blue-900 border-r border-b px-4 py-2 flex items-center">
                 <span className="text-xs font-medium text-blue-700 dark:text-blue-300">Count →</span>
@@ -649,6 +662,17 @@ export function TeamMembersView({
           onOpenChange={(open) => !open && setEditingProduct(null)}
           product={editingProduct}
           onUpdateProduct={onUpdateProduct}
+        />
+      )}
+
+      {quickAddTeam && (
+        <AddTeamMemberToTeamDialog
+          isOpen={!!quickAddTeam}
+          onClose={() => setQuickAddTeam(null)}
+          team={quickAddTeam}
+          roles={roles}
+          onAddTeamMember={onAddTeamMember}
+          onAddRole={onAddRole}
         />
       )}
     </div>
