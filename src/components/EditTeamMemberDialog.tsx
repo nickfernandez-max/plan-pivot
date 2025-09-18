@@ -46,13 +46,6 @@ export function EditTeamMemberDialog({
   const [newRoleName, setNewRoleName] = useState('');
   const [newRoleDescription, setNewRoleDescription] = useState('');
   const [isCreatingRole, setIsCreatingRole] = useState(false);
-  
-  // New period form state
-  const [showAddPeriodForm, setShowAddPeriodForm] = useState(false);
-  const [addPeriodTeamId, setAddPeriodTeamId] = useState<string>('');
-  const [addPeriodStartMonth, setAddPeriodStartMonth] = useState<Date | undefined>(undefined);
-  const [addPeriodEndMonth, setAddPeriodEndMonth] = useState<Date | undefined>(undefined);
-  const [isAddingPeriod, setIsAddingPeriod] = useState(false);
 
   const memberMemberships = useMemo(() => {
     return memberships
@@ -92,10 +85,6 @@ export function EditTeamMemberDialog({
     setShowNewRoleForm(false);
     setNewRoleName('');
     setNewRoleDescription('');
-    setShowAddPeriodForm(false);
-    setAddPeriodTeamId('');
-    setAddPeriodStartMonth(undefined);
-    setAddPeriodEndMonth(undefined);
   };
 
   const handleCreateRole = async () => {
@@ -151,30 +140,6 @@ export function EditTeamMemberDialog({
       resetForm();
     } catch (error) {
       console.error('Failed to move team assignment:', error);
-    }
-  };
-
-  const handleAddNewPeriod = async () => {
-    if (!member || !addPeriodTeamId || !addPeriodStartMonth) return;
-    
-    setIsAddingPeriod(true);
-    try {
-      await onAddMembership({
-        team_member_id: member.id,
-        team_id: addPeriodTeamId,
-        start_month: startOfMonth(addPeriodStartMonth).toISOString(),
-        end_month: addPeriodEndMonth ? startOfMonth(addPeriodEndMonth).toISOString() : null,
-      } as any);
-      
-      // Reset add period form
-      setShowAddPeriodForm(false);
-      setAddPeriodTeamId('');
-      setAddPeriodStartMonth(undefined);
-      setAddPeriodEndMonth(undefined);
-    } catch (error) {
-      console.error('Failed to add new period:', error);
-    } finally {
-      setIsAddingPeriod(false);
     }
   };
 
@@ -267,7 +232,7 @@ export function EditTeamMemberDialog({
         </div>
 
         {/* Move Team Assignment */}
-        {activeMemberships.length > 0 && (
+        {activeMemberships.length > 0 ? (
           <div className="space-y-3 border-b pb-4">
             <div className="text-sm font-medium">Move Team Assignment</div>
             <div className="grid grid-cols-1 gap-3">
@@ -329,112 +294,65 @@ export function EditTeamMemberDialog({
               </Button>
             </div>
           </div>
-        )}
-
-        {/* Add New Period */}
-        <div className="space-y-3 border-b pb-4">
-          <div className="flex items-center justify-between">
-            <div className="text-sm font-medium">Add New Period</div>
-            {!showAddPeriodForm && (
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => setShowAddPeriodForm(true)}
-              >
-                <Plus className="w-4 h-4 mr-2" />
-                Add Period
-              </Button>
-            )}
-          </div>
-          
-          {showAddPeriodForm && (
-            <div className="space-y-3 p-3 border rounded-md bg-muted/50">
-              <div className="flex items-center justify-between">
-                <Label className="text-sm font-medium">New Team Assignment</Label>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => {
-                    setShowAddPeriodForm(false);
-                    setAddPeriodTeamId('');
-                    setAddPeriodStartMonth(undefined);
-                    setAddPeriodEndMonth(undefined);
-                  }}
-                >
-                  <X className="w-4 h-4" />
-                </Button>
-              </div>
-              
-              <div className="space-y-3">
-                <div>
-                  <Label className="text-sm">Team</Label>
-                  <Select value={addPeriodTeamId} onValueChange={setAddPeriodTeamId}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select team" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {teams.map(t => (
-                        <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                
-                <div>
-                  <Label className="text-sm">Start Month</Label>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button variant="outline" className="w-full justify-start">
-                        <CalendarIcon className="mr-2 h-4 w-4" />
-                        {addPeriodStartMonth ? format(addPeriodStartMonth, 'MMM yyyy') : 'Select start month'}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-4" align="start">
-                      <MonthYearPicker
-                        value={addPeriodStartMonth}
-                        onChange={(d) => setAddPeriodStartMonth(d ? startOfMonth(d) : undefined)}
-                        fromYear={2020}
-                        toYear={2030}
-                      />
-                    </PopoverContent>
-                  </Popover>
-                </div>
-                
-                <div>
-                  <Label className="text-sm">End Month (Optional)</Label>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button variant="outline" className="w-full justify-start">
-                        <CalendarIcon className="mr-2 h-4 w-4" />
-                        {addPeriodEndMonth ? format(addPeriodEndMonth, 'MMM yyyy') : 'Select end month (optional)'}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-4" align="start">
-                      <MonthYearPicker
-                        value={addPeriodEndMonth}
-                        onChange={(d) => setAddPeriodEndMonth(d ? startOfMonth(d) : undefined)}
-                        fromYear={2020}
-                        toYear={2030}
-                      />
-                    </PopoverContent>
-                  </Popover>
-                </div>
-                
-                <Button
-                  type="button"
-                  onClick={handleAddNewPeriod}
-                  disabled={!addPeriodTeamId || !addPeriodStartMonth || isAddingPeriod}
-                  size="sm"
-                  className="w-full"
-                >
-                  {isAddingPeriod ? 'Adding Period...' : 'Add Period'}
-                </Button>
-              </div>
+        ) : (
+          <div className="space-y-3 border-b pb-4">
+            <div className="text-sm font-medium">Add Initial Team Assignment</div>
+            <div className="text-sm text-muted-foreground mb-3">
+              This member has no active team assignments. Add their first assignment:
             </div>
-          )}
-        </div>
+            <div className="grid grid-cols-1 gap-3">
+              <Select value={newTeamId} onValueChange={setNewTeamId}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select team" />
+                </SelectTrigger>
+                <SelectContent>
+                  {teams.map(t => (
+                    <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" className="justify-start">
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {transitionMonth ? format(transitionMonth, 'MMM yyyy') : 'Start month'}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-4" align="start">
+                  <MonthYearPicker
+                    value={transitionMonth}
+                    onChange={(d) => setTransitionMonth(d ? startOfMonth(d) : undefined)}
+                    fromYear={2020}
+                    toYear={2030}
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+            <div className="flex justify-end">
+              <Button 
+                size="sm" 
+                onClick={async () => {
+                  if (!member || !newTeamId || !transitionMonth) return;
+                  try {
+                    await onAddMembership({
+                      team_member_id: member.id,
+                      team_id: newTeamId,
+                      start_month: startOfMonth(transitionMonth).toISOString(),
+                      end_month: null,
+                    } as any);
+                    resetForm();
+                  } catch (error) {
+                    console.error('Failed to add initial assignment:', error);
+                  }
+                }}
+                disabled={!member || !newTeamId || !transitionMonth}
+              >
+                <Plus className="mr-2 h-4 w-4" /> Add Assignment
+              </Button>
+            </div>
+          </div>
+        )}
 
         {/* Existing memberships */}
         <div className="space-y-2">
