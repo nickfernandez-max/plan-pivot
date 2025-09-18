@@ -266,34 +266,40 @@ export function EditTeamDialog({
                   <CardTitle className="text-sm">Add New Ideal Size Period</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <div className="grid grid-cols-3 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="newIdealSize">Ideal Size</Label>
-                      <Input
-                        id="newIdealSize"
-                        type="number"
-                        min="1"
-                        max="100"
-                        value={newIdealSize}
-                        onChange={(e) => setNewIdealSize(e.target.value)}
-                        placeholder="e.g. 3"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="newStartMonth">Start Month</Label>
-                      <MonthYearPicker
-                        value={newStartDate}
-                        onChange={setNewStartDate}
-                        placeholder="Select start month"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="newEndMonth">End Month (Optional)</Label>
-                      <MonthYearPicker
-                        value={newEndDate}
-                        onChange={setNewEndDate}
-                        placeholder="Select end month"
-                      />
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="newIdealSize">Ideal Size</Label>
+                        <Input
+                          id="newIdealSize"
+                          type="number"
+                          min="1"
+                          max="100"
+                          value={newIdealSize}
+                          onChange={(e) => setNewIdealSize(e.target.value)}
+                          placeholder="e.g. 3"
+                        />
+                      </div>
+                      <div className="space-y-2 sm:col-span-2">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <Label htmlFor="newStartMonth">Start Month</Label>
+                            <MonthYearPicker
+                              value={newStartDate}
+                              onChange={setNewStartDate}
+                              placeholder="Select start month"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="newEndMonth">End Month (Optional)</Label>
+                            <MonthYearPicker
+                              value={newEndDate}
+                              onChange={setNewEndDate}
+                              placeholder="Select end month"
+                            />
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   </div>
                   <div className="flex justify-end gap-2">
