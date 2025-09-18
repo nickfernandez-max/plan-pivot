@@ -62,20 +62,9 @@ export function EditTeamMemberDialog({
   // Get current/active memberships (no end date or end date in future)
   const activeMemberships = useMemo(() => {
     const currentMonth = startOfMonth(new Date()).toISOString();
-    const active = memberMemberships.filter(m => {
-      const isActive = !m.end_month || m.end_month >= currentMonth;
-      console.log(`Membership for ${member?.name}:`, {
-        startMonth: m.start_month,
-        endMonth: m.end_month,
-        currentMonth,
-        isActive,
-        comparison: m.end_month ? `${m.end_month} >= ${currentMonth} = ${m.end_month >= currentMonth}` : 'no end date'
-      });
-      return isActive;
-    });
-    console.log('Active memberships:', active, 'for member:', member?.name);
+    const active = memberMemberships.filter(m => !m.end_month || m.end_month >= currentMonth);
     return active;
-  }, [memberMemberships, member?.name]);
+  }, [memberMemberships]);
 
   // Auto-select the most recent active membership when dialog opens
   useEffect(() => {
