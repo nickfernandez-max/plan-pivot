@@ -269,15 +269,38 @@ export function useSupabaseData() {
   // Team member CRUD operations
   const addTeamMember = async (newMember: Omit<TeamMember, 'id' | 'created_at' | 'updated_at'>) => {
     try {
-      const { data, error } = await supabase
+      // First create the team member
+      const { data: memberData, error: memberError } = await supabase
         .from('team_members')
         .insert(newMember)
         .select('*, team:teams(*, product:products(*)), role:roles(*)')
         .single();
 
-      if (error) throw error;
-      setTeamMembers(prev => [...prev, data]);
-      return data;
+      if (memberError) throw memberError;
+
+      // Then create the team membership record
+      const membershipData = {
+        team_member_id: memberData.id,
+        team_id: newMember.team_id,
+        start_month: new Date(newMember.start_date).toISOString().split('T')[0]
+      };
+
+      const { error: membershipError } = await supabase
+        .from('team_memberships')
+        .insert(membershipData);
+
+      if (membershipError) {
+        console.error('Error creating team membership:', membershipError);
+        // Don't throw here to avoid partial state, but log the error
+        // The member was created successfully, membership can be added later
+      }
+
+      setTeamMembers(prev => [...prev, memberData]);
+      
+      // Refetch memberships to include the new one
+      fetchData();
+      
+      return memberData;
     } catch (err) {
       console.error('Error adding team member:', err);
       throw err;
