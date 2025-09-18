@@ -109,8 +109,15 @@ export function EditTeamDialog({
       setNewIdealSize('1');
       setNewStartDate(new Date());
       setNewEndDate(undefined);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error adding ideal size:', error);
+      // Show user-friendly error message
+      const errorMessage = error?.message || 'Failed to add ideal size period';
+      if (errorMessage.includes('Overlapping')) {
+        alert('This period overlaps with an existing ideal size period. Please choose different dates.');
+      } else {
+        alert(`Error: ${errorMessage}`);
+      }
     }
   };
 
