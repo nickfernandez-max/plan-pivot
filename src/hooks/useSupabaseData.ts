@@ -380,7 +380,7 @@ export function useSupabaseData() {
   };
 
   // Team CRUD operations
-  const addTeam = async (newTeam: Omit<Team, 'id' | 'created_at' | 'updated_at'>) => {
+  const addTeam = async (newTeam: Omit<Team, 'id' | 'created_at' | 'updated_at'> & { start_month?: string }) => {
     const { data, error } = await supabase
       .from('teams')
       .insert({
@@ -392,15 +392,15 @@ export function useSupabaseData() {
 
     if (error) throw error;
     
-    // If ideal_size is provided, create a team ideal size record for the current month
+    // If ideal_size is provided, create a team ideal size record
     if (newTeam.ideal_size) {
-      const currentMonth = new Date().toISOString().slice(0, 7) + '-01'; // YYYY-MM-01 format
+      const startMonth = newTeam.start_month || new Date().toISOString().slice(0, 7) + '-01'; // Use provided or current month
       const { error: idealSizeError } = await supabase
         .from('team_ideal_sizes')
         .insert({
           team_id: data.id,
           ideal_size: newTeam.ideal_size,
-          start_month: currentMonth
+          start_month: startMonth
         });
       
       if (idealSizeError) {

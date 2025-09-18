@@ -5,12 +5,13 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { MonthYearPicker } from '@/components/ui/month-year-picker';
 import { Product } from '@/types/roadmap';
 
 interface AddTeamDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onAddTeam: (teamData: { name: string; description?: string; product_id: string; ideal_size?: number }) => Promise<void>;
+  onAddTeam: (teamData: { name: string; description?: string; product_id: string; ideal_size?: number; start_month?: string }) => Promise<void>;
   products: Product[];
 }
 
@@ -19,6 +20,7 @@ export function AddTeamDialog({ open, onOpenChange, onAddTeam, products }: AddTe
   const [description, setDescription] = useState('');
   const [productId, setProductId] = useState('');
   const [idealSize, setIdealSize] = useState(3);
+  const [startDate, setStartDate] = useState(new Date());
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -27,16 +29,19 @@ export function AddTeamDialog({ open, onOpenChange, onAddTeam, products }: AddTe
 
     setIsSubmitting(true);
     try {
+      const startMonth = startDate.toISOString().slice(0, 7) + '-01'; // YYYY-MM-01 format
       await onAddTeam({
         name: name.trim(),
         description: description.trim() || undefined,
         product_id: productId,
         ideal_size: idealSize,
+        start_month: startMonth,
       });
       setName('');
       setDescription('');
       setProductId('');
       setIdealSize(3);
+      setStartDate(new Date());
       onOpenChange(false);
     } catch (error) {
       console.error('Error adding team:', error);
@@ -99,6 +104,15 @@ export function AddTeamDialog({ open, onOpenChange, onAddTeam, products }: AddTe
               max="20"
               value={idealSize}
               onChange={(e) => setIdealSize(Number(e.target.value))}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="startDate">Start Month for Ideal Size</Label>
+            <MonthYearPicker
+              value={startDate}
+              onChange={setStartDate}
+              placeholder="Select start month"
             />
           </div>
 
