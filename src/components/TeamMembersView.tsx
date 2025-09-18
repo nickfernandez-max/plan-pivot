@@ -46,6 +46,7 @@ interface TeamMembersViewProps {
   onAddRole: (role: Omit<Role, 'id' | 'created_at' | 'updated_at'>) => Promise<Role>;
   onAddTeamIdealSize: (idealSize: Omit<TeamIdealSize, 'id' | 'created_at' | 'updated_at'>) => Promise<void>;
   onUpdateTeamIdealSize: (id: string, updates: Partial<TeamIdealSize>) => Promise<void>;
+  onDeleteTeamIdealSize: (id: string) => Promise<void>;
   currentUserId?: string;
 }
 
@@ -87,6 +88,7 @@ export function TeamMembersView({
   onAddRole,
   onAddTeamIdealSize,
   onUpdateTeamIdealSize,
+  onDeleteTeamIdealSize,
   currentUserId,
 }: TeamMembersViewProps) {
   const [editingMember, setEditingMember] = useState<TeamMember | null>(null);
@@ -637,6 +639,7 @@ export function TeamMembersView({
           teamIdealSizes={teamIdealSizes}
           onAddTeamIdealSize={onAddTeamIdealSize}
           onUpdateTeamIdealSize={onUpdateTeamIdealSize}
+          onDeleteTeamIdealSize={onDeleteTeamIdealSize}
         />
       )}
 
