@@ -669,7 +669,9 @@ export function useSupabaseData() {
 
   // Helper function to calculate the previous month
   const getPreviousMonth = (date: string): string => {
-    const d = new Date(date + '-01'); // Ensure we're working with first day of month
+    // Handle both YYYY-MM and YYYY-MM-01 formats
+    const dateStr = date.includes('-01') ? date : date + '-01';
+    const d = new Date(dateStr);
     d.setMonth(d.getMonth() - 1);
     return d.toISOString().slice(0, 7) + '-01'; // Return YYYY-MM-01 format
   };
